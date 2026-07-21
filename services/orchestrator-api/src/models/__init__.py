@@ -4,5 +4,10 @@ from .job_assessments import JobAssessment
 from .competency_library import CompetencyLibrary
 from .candidates import Candidate
 from .clients import Client
+from .candidate_profiles import CandidateProfile
+from .assessment_sessions import AssessmentSession
 
-__all__ = ["Org", "User", "JobAssessment", "CompetencyLibrary", "Candidate", "Client"]
+__all__ = [
+    "Org", "User", "JobAssessment", "CompetencyLibrary",
+    "Candidate", "Client", "CandidateProfile", "AssessmentSession",
+]

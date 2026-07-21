@@ -1,0 +1,34 @@
+import uuid
+from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, func, text
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+
+from .base import Base
+
+
+class CandidateProfile(Base):
+    __tablename__ = "candidate_profiles"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orgs.id"), nullable=False)
+    candidate_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("candidates.id"), nullable=False)
+    job_assessment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("job_assessments.id"), nullable=False)
+    summary: Mapped[Optional[str]] = mapped_column(Text)
+    skill_matrix: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'"))
+    experience_matrix: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'"))
+    leadership_level_estimate: Mapped[Optional[str]] = mapped_column(String)
+    strengths: Mapped[list] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'")
+    )
+    risk_flags: Mapped[list] = mapped_column(
+        ARRAY(Text), nullable=False, server_default=text("'{}'")
+    )
+    parsing_confidence: Mapped[Optional[float]] = mapped_column(Numeric(4, 3))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

@@ -9,6 +9,8 @@ from src.models.job_assessments import JobAssessment
 from src.models.competency_library import CompetencyLibrary
 from src.models.candidates import Candidate
 from src.models.clients import Client
+from src.models.candidate_profiles import CandidateProfile
+from src.models.assessment_sessions import AssessmentSession
 
 
 # ── Org ──────────────────────────────────────────────────────────────────────
@@ -166,3 +168,68 @@ def test_clients_columns(engine):
         "login_token_expires_at", "last_login_at", "created_at",
     }
     assert cols == expected
+
+
+# ── CandidateProfile ──────────────────────────────────────────────────────────
+
+def test_candidate_profiles_columns(engine):
+    cols = {c["name"] for c in inspect(engine).get_columns("candidate_profiles")}
+    expected = {
+        "id", "org_id", "candidate_id", "job_assessment_id",
+        "summary", "skill_matrix", "experience_matrix",
+        "leadership_level_estimate", "strengths", "risk_flags",
+        "parsing_confidence", "created_at",
+    }
+    assert cols == expected
+
+
+# ── AssessmentSession ─────────────────────────────────────────────────────────
+
+def test_assessment_session_status_check(db):
+    org = Org(name="SessOrg")
+    db.add(org)
+    db.flush()
+    user = User(org_id=org.id, email="su@su.com", role="user", password_hash="h")
+    db.add(user)
+    db.flush()
+    ja = JobAssessment(
+        org_id=org.id, title="T", difficulty_level="mid",
+        duration_minutes=30, competency_weightage={}, created_by=user.id,
+    )
+    db.add(ja)
+    db.flush()
+    c = Candidate(org_id=org.id, name="A", email="a@ss.com")
+    db.add(c)
+    db.flush()
+    with pytest.raises(IntegrityError):
+        db.add(AssessmentSession(
+            org_id=org.id, job_assessment_id=ja.id,
+            candidate_id=c.id, status="archived", time_budget_seconds=3600,
+        ))
+        db.flush()
+    db.rollback()
+
+
+def test_assessment_session_default_status(db):
+    org = Org(name="DefSessOrg")
+    db.add(org)
+    db.flush()
+    user = User(org_id=org.id, email="def@su.com", role="user", password_hash="h")
+    db.add(user)
+    db.flush()
+    ja = JobAssessment(
+        org_id=org.id, title="T2", difficulty_level="senior",
+        duration_minutes=45, competency_weightage={}, created_by=user.id,
+    )
+    db.add(ja)
+    db.flush()
+    c = Candidate(org_id=org.id, name="B", email="b@ss.com")
+    db.add(c)
+    db.flush()
+    sess = AssessmentSession(
+        org_id=org.id, job_assessment_id=ja.id,
+        candidate_id=c.id, time_budget_seconds=3600,
+    )
+    db.add(sess)
+    db.flush()
+    assert sess.status == "invited"
