@@ -19,7 +19,7 @@ _RLS_TABLES = [
     "candidate_profiles", "assessment_sessions", "question_sets",
     "session_questions", "question_fingerprints", "behavior_profiles",
     "integrity_flags", "hiring_reports", "report_shares",
-    "competency_library", "audit_logs",
+    "competency_library", "prompt_templates", "audit_logs",
 ]
 
 _text = sa.text
@@ -361,7 +361,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute("REVOKE SELECT, INSERT ON audit_logs FROM PUBLIC")  # undo REVOKE guard
+    op.execute("GRANT UPDATE, DELETE ON audit_logs TO PUBLIC")  # undo REVOKE guard
 
     for table in reversed(_RLS_TABLES):
         op.execute(f"DROP POLICY IF EXISTS {table}_org_isolation ON {table}")
