@@ -27,7 +27,7 @@ def engine():
 
 @pytest.fixture
 def db(engine):
-    Session = sessionmaker(bind=engine)
+    Session = sessionmaker(engine)
     s = Session()
     yield s
     s.rollback()
