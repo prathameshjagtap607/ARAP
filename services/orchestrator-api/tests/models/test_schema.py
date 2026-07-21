@@ -15,6 +15,8 @@ from src.models.question_sets import QuestionSet
 from src.models.session_questions import SessionQuestion
 from src.models.behavior_profiles import BehaviorProfile
 from src.models.integrity_flags import IntegrityFlag
+from src.models.hiring_reports import HiringReport
+from src.models.report_shares import ReportShare
 
 
 # ── Org ──────────────────────────────────────────────────────────────────────
@@ -376,3 +378,45 @@ def test_integrity_flag_type_check(db):
         ))
         db.flush()
     db.rollback()
+
+
+# ── HiringReport ──────────────────────────────────────────────────────────────
+
+def test_hiring_reports_columns(engine):
+    cols = {c["name"] for c in inspect(engine).get_columns("hiring_reports")}
+    expected = {
+        "id", "org_id", "session_id", "executive_summary", "score_rollup",
+        "behavior_profile_id", "integrity_summary", "salary_band", "verdict",
+        "ai_confidence_score", "recommended_next_round", "training_needs",
+        "suggested_hr_questions", "suggested_ceo_questions",
+        "reviewer_override", "created_at",
+    }
+    assert cols == expected
+
+
+def test_hiring_report_verdict_check(db):
+    org = Org(name="HROrg")
+    db.add(org)
+    db.flush()
+    user = User(org_id=org.id, email="hr@hr.com", role="user", password_hash="h")
+    db.add(user)
+    db.flush()
+    ja = JobAssessment(org_id=org.id, title="T", difficulty_level="senior", duration_minutes=60, competency_weightage={}, created_by=user.id)
+    db.add(ja)
+    db.flush()
+    c = Candidate(org_id=org.id, name="Z", email="z@hr.com")
+    db.add(c)
+    db.flush()
+    sess = AssessmentSession(org_id=org.id, job_assessment_id=ja.id, candidate_id=c.id, time_budget_seconds=3600)
+    db.add(sess)
+    db.flush()
+    with pytest.raises(IntegrityError):
+        db.add(HiringReport(org_id=org.id, session_id=sess.id, verdict="maybe"))
+        db.flush()
+    db.rollback()
+
+
+def test_report_shares_columns(engine):
+    cols = {c["name"] for c in inspect(engine).get_columns("report_shares")}
+    expected = {"id", "org_id", "hiring_report_id", "client_id", "shared_by", "expires_at", "revoked_at", "created_at"}
+    assert cols == expected
