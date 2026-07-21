@@ -150,6 +150,7 @@ def upgrade() -> None:
         sa.Column("risk_flags", ARRAY(sa.Text()), nullable=False, server_default=_text("'{}'")),
         sa.Column("parsing_confidence", sa.Numeric(4, 3)),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.CheckConstraint("parsing_confidence BETWEEN 0 AND 1", name="ck_candidate_profiles_parsing_confidence"),
     )
 
     # ── assessment_sessions ───────────────────────────────────────────────────

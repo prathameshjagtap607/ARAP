@@ -189,6 +189,31 @@ def test_candidate_profiles_columns(engine):
     assert cols == expected
 
 
+def test_candidate_profile_parsing_confidence_check(db):
+    org = Org(name="CPConfOrg")
+    db.add(org)
+    db.flush()
+    user = User(org_id=org.id, email="cp@cp.com", role="user", password_hash="h")
+    db.add(user)
+    db.flush()
+    ja = JobAssessment(
+        org_id=org.id, title="T", difficulty_level="mid",
+        duration_minutes=30, competency_weightage={}, created_by=user.id,
+    )
+    db.add(ja)
+    db.flush()
+    c = Candidate(org_id=org.id, name="P", email="p@cp.com")
+    db.add(c)
+    db.flush()
+    with pytest.raises(IntegrityError):
+        db.add(CandidateProfile(
+            org_id=org.id, candidate_id=c.id, job_assessment_id=ja.id,
+            parsing_confidence=1.5,
+        ))
+        db.flush()
+    db.rollback()
+
+
 # ── AssessmentSession ─────────────────────────────────────────────────────────
 
 def test_assessment_session_status_check(db):

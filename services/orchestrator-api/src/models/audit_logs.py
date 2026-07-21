@@ -9,6 +9,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 
 
+# IMPORTANT: callers must SET app.current_org_id before INSERT; RLS silently
+# drops rows when the GUC is unset (NULL = NULL uuid check evaluates to false).
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 

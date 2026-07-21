@@ -14,6 +14,8 @@ import os
 import pytest
 from sqlalchemy import create_engine, text
 
+# NOTE: RLS tests require the test DB on port 5434 to be running.
+# Start it with: docker compose up -d  (from services/orchestrator-api/)
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql://arap:arap@localhost:5434/arap_test",
