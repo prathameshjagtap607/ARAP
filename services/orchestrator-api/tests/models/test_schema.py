@@ -13,6 +13,8 @@ from src.models.candidate_profiles import CandidateProfile
 from src.models.assessment_sessions import AssessmentSession
 from src.models.question_sets import QuestionSet
 from src.models.session_questions import SessionQuestion
+from src.models.behavior_profiles import BehaviorProfile
+from src.models.integrity_flags import IntegrityFlag
 
 
 # ── Org ──────────────────────────────────────────────────────────────────────
@@ -307,6 +309,70 @@ def test_session_question_difficulty_check(db):
             org_id=org.id, question_set_id=qs.id, sequence_no=1,
             question={}, category="Technical", difficulty="legendary",
             answer_format="short_text",
+        ))
+        db.flush()
+    db.rollback()
+
+
+# ── BehaviorProfile ───────────────────────────────────────────────────────────
+
+def test_behavior_profiles_columns(engine):
+    cols = {c["name"] for c in inspect(engine).get_columns("behavior_profiles")}
+    expected = {
+        "id", "org_id", "session_id", "disc_style", "big_five",
+        "leadership_style", "decision_style", "communication_style",
+        "work_style", "stress_signal", "eq_signal",
+        "team_compatibility_signal", "created_at",
+    }
+    assert cols == expected
+
+
+def test_behavior_profile_session_unique(db):
+    org = Org(name="BPOrg")
+    db.add(org)
+    db.flush()
+    user = User(org_id=org.id, email="bp@bp.com", role="user", password_hash="h")
+    db.add(user)
+    db.flush()
+    ja = JobAssessment(org_id=org.id, title="T", difficulty_level="mid", duration_minutes=30, competency_weightage={}, created_by=user.id)
+    db.add(ja)
+    db.flush()
+    c = Candidate(org_id=org.id, name="X", email="x@bp.com")
+    db.add(c)
+    db.flush()
+    sess = AssessmentSession(org_id=org.id, job_assessment_id=ja.id, candidate_id=c.id, time_budget_seconds=1800)
+    db.add(sess)
+    db.flush()
+    db.add(BehaviorProfile(org_id=org.id, session_id=sess.id))
+    db.flush()
+    with pytest.raises(IntegrityError):
+        db.add(BehaviorProfile(org_id=org.id, session_id=sess.id))
+        db.flush()
+    db.rollback()
+
+
+# ── IntegrityFlag ─────────────────────────────────────────────────────────────
+
+def test_integrity_flag_type_check(db):
+    org = Org(name="IFOrg")
+    db.add(org)
+    db.flush()
+    user = User(org_id=org.id, email="if@if.com", role="user", password_hash="h")
+    db.add(user)
+    db.flush()
+    ja = JobAssessment(org_id=org.id, title="T", difficulty_level="junior", duration_minutes=20, competency_weightage={}, created_by=user.id)
+    db.add(ja)
+    db.flush()
+    c = Candidate(org_id=org.id, name="Y", email="y@if.com")
+    db.add(c)
+    db.flush()
+    sess = AssessmentSession(org_id=org.id, job_assessment_id=ja.id, candidate_id=c.id, time_budget_seconds=1200)
+    db.add(sess)
+    db.flush()
+    with pytest.raises(IntegrityError):
+        db.add(IntegrityFlag(
+            org_id=org.id, session_id=sess.id,
+            flag_type="plagiarism", severity="high", evidence="copy-paste detected",
         ))
         db.flush()
     db.rollback()
