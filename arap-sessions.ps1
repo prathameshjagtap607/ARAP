@@ -32,33 +32,14 @@ $sessions = @{
     schema = @{
         model = $SONNET
         task  = "TASK-000"
-        label = "Phase 0 . Data Model (Postgres/pgvector)"
+        label = "Phase 0 . Data Model (Postgres/pgvector) [COMPLETE]"
         prompt = @'
-Stack: PostgreSQL, pgvector extension, SQLAlchemy/Alembic (FastAPI backend)
-Task file: tasks/TASK-000-phase0-foundation.md
-Module scope: services/orchestrator-api/src/models/ + migrations/ ONLY.
+*** SESSION COMPLETE — DO NOT RE-RUN ***
+All 17 models, Alembic migration, RLS policies, HNSW index, and 44 tests are
+done. Final commit: f1ac4e2 on main (pushed to origin).
+Progress ledger: .superpowers/sdd/progress.md
 
-Objective: Write all tables per PRD Section 12 (Data Model).
-
-Tables to produce:
-  orgs, users, job_assessments, candidates, clients, report_shares,
-  candidate_profiles, assessment_sessions, question_sets, session_questions,
-  question_fingerprints (vector column via pgvector), behavior_profiles,
-  integrity_flags, hiring_reports, competency_library, prompt_templates,
-  audit_logs
-
-Rules:
-- Every table (except orgs) carries org_id; enforce row-level security in PG
-- question_fingerprints.question_embedding is a pgvector column, indexed (ivfflat/hnsw)
-- session_questions.evaluation is jsonb (per-competency scores + explanation + evidence)
-- candidates/clients: auth_method enum (magic_link|otp|password), nullable
-  password_hash/login_token_hash/login_token_expires_at
-- audit_logs append-only (actor_id, action, entity_type, entity_id, metadata jsonb)
-- assessment_sessions.status enum: invited|in_progress|completed|expired
-
-Skill: request-code-review after writing, before any migration is run.
-Context7: use for SQLAlchemy + pgvector + Alembic syntax.
-PDCA: present schema draft for approval before wiring anything.
+Next session: .\arap-sessions.ps1 -Session scaffold
 '@
     }
 
