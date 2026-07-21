@@ -11,6 +11,8 @@ from src.models.candidates import Candidate
 from src.models.clients import Client
 from src.models.candidate_profiles import CandidateProfile
 from src.models.assessment_sessions import AssessmentSession
+from src.models.question_sets import QuestionSet
+from src.models.session_questions import SessionQuestion
 
 
 # ── Org ──────────────────────────────────────────────────────────────────────
@@ -233,3 +235,78 @@ def test_assessment_session_default_status(db):
     db.add(sess)
     db.flush()
     assert sess.status == "invited"
+
+
+# ── QuestionSet ───────────────────────────────────────────────────────────────
+
+def test_question_sets_columns(engine):
+    cols = {c["name"] for c in inspect(engine).get_columns("question_sets")}
+    assert cols == {"id", "org_id", "session_id", "generated_at", "locked_at", "generation_prompt_version"}
+
+
+def test_question_set_session_unique(db):
+    # Two question_sets cannot share the same session_id (UNIQUE constraint)
+    org = Org(name="QSOrg")
+    db.add(org)
+    db.flush()
+    user = User(org_id=org.id, email="qs@qs.com", role="user", password_hash="h")
+    db.add(user)
+    db.flush()
+    ja = JobAssessment(org_id=org.id, title="T", difficulty_level="mid", duration_minutes=30, competency_weightage={}, created_by=user.id)
+    db.add(ja)
+    db.flush()
+    c = Candidate(org_id=org.id, name="C", email="c@qs.com")
+    db.add(c)
+    db.flush()
+    sess = AssessmentSession(org_id=org.id, job_assessment_id=ja.id, candidate_id=c.id, time_budget_seconds=1800)
+    db.add(sess)
+    db.flush()
+    qs = QuestionSet(org_id=org.id, session_id=sess.id, generation_prompt_version="v1")
+    db.add(qs)
+    db.flush()
+    with pytest.raises(IntegrityError):
+        db.add(QuestionSet(org_id=org.id, session_id=sess.id, generation_prompt_version="v2"))
+        db.flush()
+    db.rollback()
+
+
+# ── SessionQuestion ───────────────────────────────────────────────────────────
+
+def test_session_questions_columns(engine):
+    cols = {c["name"] for c in inspect(engine).get_columns("session_questions")}
+    expected = {
+        "id", "org_id", "question_set_id", "sequence_no", "question",
+        "category", "target_competencies", "difficulty", "answer_format",
+        "options", "answer_text", "answered_at", "evaluation", "created_at",
+    }
+    assert cols == expected
+
+
+def test_session_question_difficulty_check(db):
+    # need a question_set first — reuse db state from prior tests is unreliable; build fresh
+    org = Org(name="SQOrg")
+    db.add(org)
+    db.flush()
+    user = User(org_id=org.id, email="sq@sq.com", role="user", password_hash="h")
+    db.add(user)
+    db.flush()
+    ja = JobAssessment(org_id=org.id, title="T", difficulty_level="junior", duration_minutes=20, competency_weightage={}, created_by=user.id)
+    db.add(ja)
+    db.flush()
+    c = Candidate(org_id=org.id, name="D", email="d@sq.com")
+    db.add(c)
+    db.flush()
+    sess = AssessmentSession(org_id=org.id, job_assessment_id=ja.id, candidate_id=c.id, time_budget_seconds=1200)
+    db.add(sess)
+    db.flush()
+    qs = QuestionSet(org_id=org.id, session_id=sess.id, generation_prompt_version="v1")
+    db.add(qs)
+    db.flush()
+    with pytest.raises(IntegrityError):
+        db.add(SessionQuestion(
+            org_id=org.id, question_set_id=qs.id, sequence_no=1,
+            question={}, category="Technical", difficulty="legendary",
+            answer_format="short_text",
+        ))
+        db.flush()
+    db.rollback()
