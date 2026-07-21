@@ -1,9 +1,0 @@
-pyproject.toml
-src/__init__.py
-src/models/__init__.py
-src/models/base.py
-src/orchestrator_api.egg-info/PKG-INFO
-src/orchestrator_api.egg-info/SOURCES.txt
-src/orchestrator_api.egg-info/dependency_links.txt
-src/orchestrator_api.egg-info/requires.txt
-src/orchestrator_api.egg-info/top_level.txt
