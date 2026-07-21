@@ -420,3 +420,39 @@ def test_report_shares_columns(engine):
     cols = {c["name"] for c in inspect(engine).get_columns("report_shares")}
     expected = {"id", "org_id", "hiring_report_id", "client_id", "shared_by", "expires_at", "revoked_at", "created_at"}
     assert cols == expected
+
+
+# ── PromptTemplate ────────────────────────────────────────────────────────────
+from src.models.prompt_templates import PromptTemplate
+from src.models.audit_logs import AuditLog
+
+
+def test_prompt_templates_columns(engine):
+    cols = {c["name"] for c in inspect(engine).get_columns("prompt_templates")}
+    assert cols == {"id", "org_id", "agent_name", "version", "template_body", "is_active", "created_at"}
+
+
+def test_prompt_template_global_null_org_id(db):
+    pt = PromptTemplate(org_id=None, agent_name="question_generation", version="v1", template_body="SYSTEM: ...")
+    db.add(pt)
+    db.flush()
+    assert pt.org_id is None
+
+
+def test_prompt_template_unique_org_agent_version(db):
+    org = Org(name="PTOrg")
+    db.add(org)
+    db.flush()
+    db.add(PromptTemplate(org_id=org.id, agent_name="evaluation", version="v1", template_body="T"))
+    db.flush()
+    with pytest.raises(IntegrityError):
+        db.add(PromptTemplate(org_id=org.id, agent_name="evaluation", version="v1", template_body="T2"))
+        db.flush()
+    db.rollback()
+
+
+# ── AuditLog ──────────────────────────────────────────────────────────────────
+
+def test_audit_logs_columns(engine):
+    cols = {c["name"] for c in inspect(engine).get_columns("audit_logs")}
+    assert cols == {"id", "org_id", "actor_id", "action", "entity_type", "entity_id", "metadata", "created_at"}
