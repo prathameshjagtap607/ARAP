@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: orchestrator-api
+Version: 0.1.0
+Requires-Python: >=3.11
+Requires-Dist: sqlalchemy>=2.0
+Requires-Dist: alembic>=1.13
+Requires-Dist: pgvector>=0.3
+Requires-Dist: psycopg2-binary>=2.9
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-env>=1.1; extra == "dev"
