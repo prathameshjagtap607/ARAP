@@ -22,5 +22,5 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 env = [
-    "TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/arap_test",
+    "TEST_DATABASE_URL=postgresql://arap:arap@localhost:5434/arap_test",
 ]
