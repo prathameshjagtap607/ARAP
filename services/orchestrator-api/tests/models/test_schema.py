@@ -7,6 +7,8 @@ from src.models.orgs import Org
 from src.models.users import User
 from src.models.job_assessments import JobAssessment
 from src.models.competency_library import CompetencyLibrary
+from src.models.candidates import Candidate
+from src.models.clients import Client
 
 
 # ── Org ──────────────────────────────────────────────────────────────────────
@@ -111,3 +113,56 @@ def test_competency_library_unique_name_per_org(db):
         db.add(CompetencyLibrary(org_id=org.id, name="Leadership", created_by=user.id))
         db.flush()
     db.rollback()
+
+
+# ── Candidate ─────────────────────────────────────────────────────────────────
+
+def test_candidates_table_exists(engine):
+    assert "candidates" in inspect(engine).get_table_names()
+
+
+def test_candidates_columns(engine):
+    cols = {c["name"] for c in inspect(engine).get_columns("candidates")}
+    expected = {
+        "id", "org_id", "name", "email",
+        "resume_file_url", "linkedin_url", "github_url", "portfolio_url",
+        "auth_method", "password_hash", "login_token_hash",
+        "login_token_expires_at", "last_login_at", "created_at",
+    }
+    assert cols == expected
+
+
+def test_candidate_auth_method_check(db):
+    org = Org(name="AuthOrg")
+    db.add(org)
+    db.flush()
+    with pytest.raises(IntegrityError):
+        db.add(Candidate(org_id=org.id, name="X", email="x@x.com", auth_method="sms"))
+        db.flush()
+    db.rollback()
+
+
+def test_candidate_auth_method_nullable(db):
+    org = Org(name="NoAuthOrg")
+    db.add(org)
+    db.flush()
+    c = Candidate(org_id=org.id, name="Jane", email="jane@x.com")
+    db.add(c)
+    db.flush()
+    assert c.auth_method is None
+
+
+# ── Client ────────────────────────────────────────────────────────────────────
+
+def test_clients_table_exists(engine):
+    assert "clients" in inspect(engine).get_table_names()
+
+
+def test_clients_columns(engine):
+    cols = {c["name"] for c in inspect(engine).get_columns("clients")}
+    expected = {
+        "id", "org_id", "name", "email",
+        "auth_method", "password_hash", "login_token_hash",
+        "login_token_expires_at", "last_login_at", "created_at",
+    }
+    assert cols == expected
