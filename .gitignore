@@ -1,0 +1,8 @@
+.claude/settings.local.json
+NUL
+node_modules/
+.env
+.env.local
+__pycache__/
+*.pyc
+.DS_Store
