@@ -44,7 +44,7 @@ later module has a working foundation to build on. No AI agents run yet.
       scoped JWT) all working and tested
 - [ ] A Candidate JWT cannot access any `assessment_session` other than its own
       (manually verified)
-- [ ] Both app shells boot, authenticate, and route-guard by role
+- [x] Both app shells boot, authenticate, and route-guard by role
 - [ ] CI pipeline green (lint, test, build) on a clean checkout
 
 ## Open questions
