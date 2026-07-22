@@ -3,9 +3,14 @@ import type { ConsoleUser, TokenClaims } from "@/types/auth";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export function decodeToken(token: string): TokenClaims {
-  const payload = token.split(".")[1];
-  const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-  return decoded as TokenClaims;
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
+    ) as TokenClaims;
+  } catch {
+    throw new Error("Invalid token format received from server");
+  }
 }
 
 function claimsToUser(claims: TokenClaims): ConsoleUser {

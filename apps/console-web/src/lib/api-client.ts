@@ -25,23 +25,31 @@ export function createApiClient(
     });
 
     if (res.status === 401 && !skipAuth) {
+      let newToken: string;
       try {
-        const { accessToken: newToken } = await refresh();
-        headers.set("Authorization", `Bearer ${newToken}`);
-        const retry = await fetch(`${API_BASE}${path}`, {
-          ...fetchOptions,
-          headers,
-          credentials: "include",
-        });
-        if (retry.status === 401) {
-          onUnauth();
-          throw new Error("Session expired");
-        }
-        return retry.json() as Promise<T>;
+        const refreshed = await refresh();
+        newToken = refreshed.accessToken;
       } catch {
         onUnauth();
         throw new Error("Session expired");
       }
+      headers.set("Authorization", `Bearer ${newToken}`);
+      const retry = await fetch(`${API_BASE}${path}`, {
+        ...fetchOptions,
+        headers,
+        credentials: "include",
+      });
+      if (retry.status === 401) {
+        onUnauth();
+        throw new Error("Session expired");
+      }
+      if (!retry.ok) {
+        const err = await retry.json().catch(() => ({}));
+        throw new Error(
+          (err as { detail?: string }).detail ?? `Request failed: ${retry.status}`
+        );
+      }
+      return retry.json() as Promise<T>;
     }
 
     if (!res.ok) {
