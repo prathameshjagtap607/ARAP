@@ -219,6 +219,13 @@ def verify_client_token(
     return client, share
 
 
+def write_refresh_audit(db: Session, user_id: str, org_id: str) -> None:
+    uid = uuid.UUID(user_id)
+    oid = uuid.UUID(org_id)
+    _write_audit(db, oid, uid, "token_refresh", "user", uid)
+    db.commit()
+
+
 def write_logout_audit(db: Session, claims: object) -> None:
     actor_id = uuid.UUID(claims.sub)
     org_id = claims.org_id

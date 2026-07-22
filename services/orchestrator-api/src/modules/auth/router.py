@@ -39,7 +39,11 @@ def login(
 
 
 @router.post("/refresh", response_model=LoginResponse)
-def refresh(body: RefreshRequest, r: redis_lib.Redis = Depends(get_redis)):
+def refresh(
+    body: RefreshRequest,
+    db: Session = Depends(get_db),
+    r: redis_lib.Redis = Depends(get_redis),
+):
     try:
         data, new_refresh = token_utils.rotate_refresh_token(r, body.refresh_token)
     except ValueError:
@@ -49,6 +53,7 @@ def refresh(body: RefreshRequest, r: redis_lib.Redis = Depends(get_redis)):
         )
     payload = {"sub": data["user_id"], "role": data["role"], "org_id": data["org_id"]}
     access = token_utils.create_access_token(payload)
+    service.write_refresh_audit(db, data["user_id"], data["org_id"])
     return LoginResponse(access_token=access, refresh_token=new_refresh)
 
 
