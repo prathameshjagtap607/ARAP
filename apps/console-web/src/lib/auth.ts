@@ -12,6 +12,9 @@ function claimsToUser(claims: TokenClaims): ConsoleUser {
   return { id: claims.sub, role: claims.role, orgId: claims.org_id };
 }
 
+// NOTE: The server sets both `refresh_token` (httpOnly) and `user_role` (plain)
+// cookies in the Set-Cookie header of the login response.
+// middleware.ts reads `user_role` to gate the /admin route.
 export async function login(
   email: string,
   password: string
