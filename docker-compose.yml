@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  db-dev:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: arap
+      POSTGRES_PASSWORD: arap
+      POSTGRES_DB: arap_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arap -d arap_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-test:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: arap
+      POSTGRES_PASSWORD: arap
+      POSTGRES_DB: arap_test
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata-test:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arap -d arap_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  orchestrator-api:
+    build:
+      context: services/orchestrator-api
+      dockerfile: ../../infra/docker/orchestrator-api.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://arap:arap@db-dev:5432/arap_dev
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db-dev:
+        condition: service_healthy
+    profiles:
+      - full
+
+  realtime-gateway:
+    build:
+      context: services/realtime-gateway
+      dockerfile: ../../infra/docker/realtime-gateway.Dockerfile
+    environment:
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    profiles:
+      - full
+
+volumes:
+  pgdata-dev:
+  pgdata-test:
