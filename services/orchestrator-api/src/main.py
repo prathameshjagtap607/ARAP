@@ -13,6 +13,7 @@ app = FastAPI(
     title="ARAP Orchestrator API",
     version=settings.APP_VERSION,
     docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
+    redoc_url="/redoc" if settings.ENVIRONMENT != "production" else None,
 )
 
 app.add_middleware(
