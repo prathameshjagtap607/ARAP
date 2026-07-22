@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const navItems = [
   { label: "Dashboard", href: "/" },
   { label: "Assessments", href: "/assessments" },
@@ -16,7 +18,7 @@ export function Sidebar() {
       </div>
       <nav className="flex-1 px-2 py-4 space-y-1">
         {navItems.map((item) => (
-          <a
+          <Link
             key={item.href}
             href={item.href}
             className="flex items-center px-3 py-2 rounded-md text-sm
@@ -24,7 +26,7 @@ export function Sidebar() {
                        transition-colors"
           >
             {item.label}
-          </a>
+          </Link>
         ))}
       </nav>
     </aside>
