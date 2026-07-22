@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ruff
+        run: pip install "ruff>=0.4"
+
+      - name: Lint Python
+        run: |
+          ruff check services/orchestrator-api/src \
+                       services/ingestion-service/src \
+                       agents/
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint JS
+        run: pnpm --filter "./apps/*" lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint
+
+    services:
+      db-test:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: arap
+          POSTGRES_PASSWORD: arap
+          POSTGRES_DB: arap_test
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U arap -d arap_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install orchestrator-api
+        working-directory: services/orchestrator-api
+        run: pip install -e ".[dev]"
+
+      - name: Run pytest
+        working-directory: services/orchestrator-api
+        env:
+          TEST_DATABASE_URL: postgresql://arap:arap@localhost:5434/arap_test
+          DATABASE_URL: postgresql://arap:arap@localhost:5434/arap_test
+          SECRET_KEY: ci-test-secret
+        run: pytest -v
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build candidate-web
+        run: pnpm --filter candidate-web build
+
+      - name: Build console-web
+        run: pnpm --filter console-web build
+
+      - name: Smoke-install Python services
+        run: |
+          pip install -e services/orchestrator-api/
+          pip install -e services/ingestion-service/
