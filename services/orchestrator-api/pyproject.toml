@@ -11,16 +11,25 @@ dependencies = [
     "alembic>=1.13",
     "pgvector>=0.3",
     "psycopg2-binary>=2.9",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
+    "pydantic-settings>=2.2",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
     "pytest-env>=1.1",
+    "httpx>=0.27",
+    "anyio[asyncio]>=4.0",
+    "pytest-asyncio>=0.23",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 env = [
     "TEST_DATABASE_URL=postgresql://arap:arap@localhost:5434/arap_test",
+    "DATABASE_URL=postgresql://arap:arap@localhost:5433/arap_dev",
+    "SECRET_KEY=test-secret-key-not-for-production",
 ]
