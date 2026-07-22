@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 from sqlalchemy import (
     CheckConstraint, DateTime, ForeignKey, Integer, String, Text,
