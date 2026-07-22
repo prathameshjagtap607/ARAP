@@ -24,23 +24,25 @@ export async function login(
   email: string,
   password: string
 ): Promise<{ user: ConsoleUser; accessToken: string }> {
-  const res = await fetch(`${API_BASE}/api/auth/login`, {
+  const res = await fetch(`${API_BASE}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, org_id: process.env.NEXT_PUBLIC_ORG_ID ?? "00000000-0000-0000-0000-000000000001" }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { detail?: string }).detail ?? "Login failed");
   }
-  const { access_token } = (await res.json()) as { access_token: string };
+  const { access_token, refresh_token } = (await res.json()) as { access_token: string; refresh_token: string };
   const claims = decodeToken(access_token);
+  document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
+  document.cookie = `user_role=${claims.role}; path=/; SameSite=Lax`;
   return { user: claimsToUser(claims), accessToken: access_token };
 }
 
 export async function refresh(): Promise<{ user: ConsoleUser; accessToken: string }> {
-  const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+  const res = await fetch(`${API_BASE}/auth/refresh`, {
     method: "POST",
     credentials: "include",
   });
@@ -51,7 +53,7 @@ export async function refresh(): Promise<{ user: ConsoleUser; accessToken: strin
 }
 
 export async function logout(): Promise<void> {
-  await fetch(`${API_BASE}/api/auth/logout`, {
+  await fetch(`${API_BASE}/auth/logout`, {
     method: "POST",
     credentials: "include",
   }).catch(() => undefined);
