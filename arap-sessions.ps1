@@ -94,7 +94,7 @@ Key decisions:
   - JWT_SECRET_KEY has NO default — pydantic raises ValidationError at startup if unset
   - bcrypt pinned >=4.0.1,<5.0 (bcrypt 5.x breaks passlib)
 
-Next session: .\arap-sessions.ps1 -Session job-assessment
+Next session: .\arap-sessions.ps1 -Session frontend-console
 '@
     }
 
