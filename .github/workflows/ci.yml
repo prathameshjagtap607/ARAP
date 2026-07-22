@@ -112,6 +112,11 @@ jobs:
       - name: Build console-web
         run: pnpm --filter console-web build
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Smoke-install Python services
         run: |
           pip install -e services/orchestrator-api/
