@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from src.database import get_db, get_redis
 from src.modules.auth import service
 from src.modules.auth import token as token_utils
-from src.modules.auth.dependencies import get_claims
 from src.modules.auth.schemas import (
     CandidateTokenRequest,
     CandidateTokenResponse,
