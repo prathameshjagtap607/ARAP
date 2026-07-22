@@ -68,30 +68,33 @@ Next session: .\arap-sessions.ps1 -Session auth
     auth = @{
         model = $SONNET
         task  = "TASK-000"
-        label = "Phase 0 . Auth, RBAC & Passwordless Login"
+        label = "Phase 0 . Auth, RBAC & Passwordless Login [COMPLETE]"
         prompt = @'
-Stack: FastAPI, PostgreSQL, JWT (access+refresh), Redis (token/session store)
-Task file: tasks/TASK-000-phase0-foundation.md
-Module scope: services/orchestrator-api/src/modules/auth ONLY.
+*** SESSION COMPLETE — DO NOT RE-RUN ***
+4-identity auth + RBAC + JWT scoping fully implemented and reviewed.
+107 tests passing. Final commit: 3563505 on main.
 
-Objective: Auth + RBAC per PRD Section 4 and Section 15.
-  4 identities: Admin, User (password login), Candidate, Client (both passwordless)
-  Admin/User: JWT access (short-lived) + refresh token; bcrypt password hashing
-  Candidate/Client: magic-link or OTP to invited/shared email; login tokens are
-    single-use, short-lived, and scoped to exactly ONE assessment_session
-    (Candidate) or ONE report_share record (Client) -- never a general account
-  Candidate JWT carries assessment_session_id scope claim; Client JWT carries
-    report_share_id scope claim -- enforced on every request, not just org_id
-  RBAC matrix enforced SERVER-SIDE per Section 4.2 access control matrix
-  Tenant isolation: every query scoped to org_id except Admin cross-tenant routes
-  All auth events + mutations written to audit_logs
+What was built (services/orchestrator-api/src/modules/auth):
+  - token.py: JWT encode/decode, refresh token Redis CRUD, magic-link token gen/hash
+  - schemas.py: 11 Pydantic models for all 4 login flows
+  - dependencies.py: get_claims, require_user, require_admin, RequireCandidateScope, RequireClientScope
+  - service.py: login, candidate/client token request+verify, audit writing, refresh+logout audit
+  - router.py: 7 routes under /auth prefix
+  - src/database.py: get_db() and get_redis() dependency providers
+  - src/middleware/auth.py: JWT decode → request.state.claims (passthrough only)
+  - src/middleware/rbac.py: DELETED (RBAC moved to Depends())
+  - tests/auth/: 7 test files, 107 tests total
 
-role and scope claims extracted from JWT payload -- never from request body.
+Key decisions:
+  - RBAC via FastAPI Depends() not middleware
+  - Refresh tokens: opaque 32-byte, stored as refresh:{sha256_hex} in Redis
+  - Magic-link: sha256 hash in candidates/clients.login_token_hash (single-use, cleared on verify)
+  - RLS GUC: SET LOCAL app.current_org_id before every audit_logs INSERT
+  - Savepoint pattern for FK violations in audit writes
+  - JWT_SECRET_KEY has NO default — pydantic raises ValidationError at startup if unset
+  - bcrypt pinned >=4.0.1,<5.0 (bcrypt 5.x breaks passlib)
 
-Exit criteria: all 4 login flows working; session/report scoping verified
-  (a candidate JWT cannot fetch any session other than its own).
-Context7: use for FastAPI security/OAuth2, PyJWT, passlib/bcrypt.
-PDCA: present plan before touching any file.
+Next session: .\arap-sessions.ps1 -Session job-assessment
 '@
     }
 
