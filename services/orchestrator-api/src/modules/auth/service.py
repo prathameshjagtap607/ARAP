@@ -59,6 +59,7 @@ def _try_write_audit(
         sp.commit()
     except Exception:
         sp.rollback()
+    db.commit()
 
 
 def login_user(db: Session, email: str, password: str, org_id: uuid.UUID) -> User:
@@ -70,6 +71,7 @@ def login_user(db: Session, email: str, password: str, org_id: uuid.UUID) -> Use
         )
         raise ValueError("invalid credentials")
     _write_audit(db, org_id, user.id, "user_login", "user", user.id)
+    db.commit()
     return user
 
 
@@ -102,6 +104,7 @@ def request_candidate_token(
         db, org_id, candidate.id,
         "candidate_token_requested", "assessment_session", session_id,
     )
+    db.commit()
     return raw
 
 
@@ -129,6 +132,7 @@ def verify_candidate_token(
             db, session.org_id, NIL_UUID, "login_failed", "candidate", NIL_UUID,
             {"session_id": str(session_id)},
         )
+        db.commit()
         raise ValueError("token invalid or expired")
 
     candidate.login_token_hash = None
@@ -137,6 +141,7 @@ def verify_candidate_token(
         db, session.org_id, candidate.id,
         "candidate_login", "assessment_session", session_id,
     )
+    db.commit()
     return candidate, session
 
 
@@ -173,6 +178,7 @@ def request_client_token(
         db, org_id, client.id,
         "client_token_requested", "report_share", share_id,
     )
+    db.commit()
     return raw
 
 
@@ -200,6 +206,7 @@ def verify_client_token(
             db, share.org_id, NIL_UUID, "login_failed", "client", NIL_UUID,
             {"share_id": str(share_id)},
         )
+        db.commit()
         raise ValueError("token invalid or expired")
 
     client.login_token_hash = None
@@ -208,6 +215,7 @@ def verify_client_token(
         db, share.org_id, client.id,
         "client_login", "report_share", share_id,
     )
+    db.commit()
     return client, share
 
 
@@ -215,3 +223,4 @@ def write_logout_audit(db: Session, claims: object) -> None:
     actor_id = uuid.UUID(claims.sub)
     org_id = claims.org_id
     _write_audit(db, org_id, actor_id, "logout", claims.role, actor_id)
+    db.commit()

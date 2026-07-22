@@ -34,7 +34,7 @@ def test_login_failed_writes_audit(db, seed):
     from src.models.audit_logs import AuditLog
     with pytest.raises(ValueError):
         svc.login_user(db, "nobody@test.com", "x", seed["org"].id)
-    row = db.query(AuditLog).filter_by(action="login_failed").first()
+    row = db.query(AuditLog).filter_by(action="login_failed", org_id=seed["org"].id).first()
     assert row is not None
     assert row.log_metadata.get("email") == "nobody@test.com"
 
