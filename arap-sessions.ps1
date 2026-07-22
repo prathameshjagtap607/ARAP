@@ -46,33 +46,22 @@ Next session: .\arap-sessions.ps1 -Session scaffold
     scaffold = @{
         model = $SONNET
         task  = "TASK-000"
-        label = "Phase 0 . Repo Scaffold & Shell"
+        label = "Phase 0 . Repo Scaffold & Shell [COMPLETE]"
         prompt = @'
-Stack: Next.js, TypeScript, Tailwind CSS, FastAPI (Python), Node.js, Docker
-Task file: tasks/TASK-000-phase0-foundation.md
-Module scope: repo root + apps/*/src/config ONLY.
+*** SESSION COMPLETE — DO NOT RE-RUN ***
+Full monorepo layout, FastAPI bootstrap, Next.js shells, CI, docker-compose done.
+46 tests passing. Final commit: 668328c on main.
 
-Objective: Phase 0 foundation per PRD Section 11.2 repository structure.
-  Monorepo layout per PRD 11.2:
-    apps/candidate-web/   (Next.js candidate interview runtime)
-    apps/console-web/     (Next.js HR/Admin/Analytics console)
-    services/orchestrator-api/  (FastAPI -- agent orchestration, session state)
-    services/realtime-gateway/  (Node.js -- session coordination)
-    services/ingestion-service/ (resume/LinkedIn/GitHub parsing)
-    agents/ (resume_analysis, job_description, question_generation,
-      evaluation, behavior_analysis, scoring, recommendation, report_generator)
-    packages/prompt-library/ (versioned prompt templates, M12-F02)
-    packages/shared-types/   (TS/Pydantic schema contracts between agents)
-    infra/docker/, infra/terraform/
+What was built:
+  - apps/candidate-web (port 3000) + apps/console-web (port 3002) — both boot ✓
+  - services/orchestrator-api: GET /health working, middleware stubs ready for auth
+  - services/realtime-gateway, services/ingestion-service: health stubs
+  - agents/: 8 skeleton folders
+  - packages/shared-types, packages/prompt-library
+  - root docker-compose.yml (.env.example), .github/workflows/ci.yml
+Progress ledger: .superpowers/sdd/progress.md (all 12 tasks logged)
 
-  FastAPI bootstrap: config, middleware (auth, RBAC, rate-limit, error), health endpoint
-  Next.js shells for BOTH apps: minimal low-distraction UI for candidate-web,
-    dense data-rich UI for console-web (per PRD 11.1)
-  .env.example, docker-compose.yml, CI (lint + test + build)
-
-Exit criteria: build/CI green; both app shells boot; agent folder skeletons in place.
-Context7: use for FastAPI setup, Next.js App Router, Tailwind config.
-PDCA: present plan before touching any file.
+Next session: .\arap-sessions.ps1 -Session auth
 '@
     }
 
