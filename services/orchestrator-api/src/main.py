@@ -8,6 +8,7 @@ from src.middleware.rbac import RBACMiddleware
 from src.middleware.rate_limit import RateLimitMiddleware
 from src.middleware.error_handler import http_exception_handler, unhandled_exception_handler
 from src.api.health import router as health_router
+from src.modules.auth.router import router as auth_router
 
 app = FastAPI(
     title="ARAP Orchestrator API",
@@ -31,3 +32,4 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)
 
 app.include_router(health_router)
+app.include_router(auth_router)
