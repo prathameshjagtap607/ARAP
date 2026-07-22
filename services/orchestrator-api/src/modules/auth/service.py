@@ -59,7 +59,6 @@ def _try_write_audit(
         sp.commit()
     except Exception:
         sp.rollback()
-    db.commit()
 
 
 def login_user(db: Session, email: str, password: str, org_id: uuid.UUID) -> User:
@@ -69,6 +68,7 @@ def login_user(db: Session, email: str, password: str, org_id: uuid.UUID) -> Use
             db, org_id, NIL_UUID, "login_failed", "user", NIL_UUID,
             {"email": email},
         )
+        db.commit()
         raise ValueError("invalid credentials")
     _write_audit(db, org_id, user.id, "user_login", "user", user.id)
     db.commit()
