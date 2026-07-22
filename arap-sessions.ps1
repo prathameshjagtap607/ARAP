@@ -98,6 +98,41 @@ Next session: .\arap-sessions.ps1 -Session frontend-console
 '@
     }
 
+    "frontend-console" = @{
+        model = $SONNET
+        task  = "TASK-000"
+        label = "Phase 0 . HR/Admin Console Shell [COMPLETE]"
+        prompt = @'
+*** SESSION COMPLETE — DO NOT RE-RUN ***
+console-web full shell built, reviewed, and manually verified. Final commit: 11372ea on main.
+
+What was built (apps/console-web):
+  - (console) route group with AuthContext, middleware, login page
+  - Typed API client with 401 refresh retry
+  - Role-aware Sidebar (Admin hidden for user role) + Topbar with logout
+  - Shared UI: SummaryCard, FilterBar, ChartCard (Recharts), ReportCard
+  - 5 module stub pages: assessments, candidates, reports, analytics, admin
+  - RBAC verified: admin sees 6 nav items, user sees 5
+
+Dev setup to test manually:
+  - docker compose up -d (DB)
+  - docker run -d --name arap-redis -p 6379:6379 redis:7-alpine (Redis)
+  - cd services/orchestrator-api && uvicorn src.main:app --reload --port 8000
+  - cd apps/console-web && pnpm dev
+  - Seed DB: docker exec -i orchestrator-api-db-1 psql -U arap -d arap_dev < scripts/seed-dev.sql
+  - Admin: admin@fidelitus.com / Test@1234
+  - User:  user@fidelitus.com  / Test@1234
+
+Key fixes found during testing:
+  - Auth paths are /auth/* not /api/auth/*
+  - Login requires org_id in body
+  - refresh_token + user_role cookies set client-side (server returns in JSON, not Set-Cookie)
+  - services/orchestrator-api/.env required (not committed) — copy from .env.example
+
+Next session: .\arap-sessions.ps1 -Session job-assessment
+'@
+    }
+
     # -- Phase 1 . MVP: Question Gen & Test Delivery ---------------------------
     "job-assessment" = @{
         model = $SONNET
