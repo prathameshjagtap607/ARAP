@@ -88,6 +88,25 @@ def _fetch_github(github_url: str) -> Optional[dict]:
         return None
 
 
+def _run_pipeline_bg(
+    candidate_id: uuid.UUID,
+    job_id: uuid.UUID,
+    org_id: uuid.UUID,
+    file_bytes: bytes,
+    mime: str,
+) -> None:
+    """Background task wrapper that opens its own fresh DB session to avoid DetachedInstanceError."""
+    from src.database import SessionLocal
+    db = SessionLocal()
+    try:
+        candidate = db.query(Candidate).filter_by(id=candidate_id).first()
+        job = db.query(JobAssessment).filter_by(id=job_id).first()
+        if candidate and job:
+            _run_pipeline(db, candidate, job, org_id, file_bytes, mime)
+    finally:
+        db.close()
+
+
 def _run_pipeline(
     db: Session,
     candidate: Candidate,
@@ -215,7 +234,14 @@ def analyze(body: AnalyzeRequest, background_tasks: BackgroundTasks, db: Session
         pass
 
     if is_large:
-        background_tasks.add_task(_run_pipeline, db, candidate, job, body.org_id, file_bytes, mime)
+        background_tasks.add_task(
+            _run_pipeline_bg,
+            candidate.id,
+            job.id,
+            body.org_id,
+            file_bytes,
+            mime,
+        )
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED,
             content={"status": "processing", "candidate_profile_id": None},
