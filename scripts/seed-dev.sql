@@ -9,7 +9,7 @@ ON CONFLICT DO NOTHING;
 INSERT INTO users (org_id, email, role, password_hash)
 VALUES
   ('00000000-0000-0000-0000-000000000001', 'admin@fidelitus.com', 'admin',
-   '$2b$12$K8BpSMcmCPMjCCn1DdMQBu5V3iFpIZEnfHyXFMqKfFJOhpvPBJ5fi'),
+   '$2b$12$.5IPbt4xsUUSTU2IyYGDX.gK12VVe9Ej9zyG6MjNVPUv/OBjPEhay'),
   ('00000000-0000-0000-0000-000000000001', 'user@fidelitus.com',  'user',
-   '$2b$12$K8BpSMcmCPMjCCn1DdMQBu5V3iFpIZEnfHyXFMqKfFJOhpvPBJ5fi')
+   '$2b$12$.5IPbt4xsUUSTU2IyYGDX.gK12VVe9Ej9zyG6MjNVPUv/OBjPEhay')
 ON CONFLICT DO NOTHING;
