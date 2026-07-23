@@ -85,3 +85,16 @@ def test_agent_accepts_none_job_profile():
     with patch("agents.resume_analysis.agent.anthropic.Anthropic", return_value=_mock_anthropic(MOCK_TOOL_OUTPUT)):
         result = run_resume_analysis_agent(RAW_TEXT, None)
     assert result is not None
+
+
+def test_derive_leadership_level_boundaries():
+    from agents.resume_analysis.agent import _derive_leadership_level
+    assert _derive_leadership_level(None) == "IC"
+    assert _derive_leadership_level(0) == "IC"
+    assert _derive_leadership_level(1) == "Team Lead"
+    assert _derive_leadership_level(4) == "Team Lead"
+    assert _derive_leadership_level(5) == "Manager"
+    assert _derive_leadership_level(15) == "Manager"
+    assert _derive_leadership_level(16) == "Director"
+    assert _derive_leadership_level(50) == "Director"
+    assert _derive_leadership_level(51) == "VP-equiv"

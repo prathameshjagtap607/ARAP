@@ -23,8 +23,6 @@ def _build_user_message(raw_text: str, job_profile: dict | None) -> str:
 def _derive_leadership_level(max_team_size: int | None) -> str:
     if not max_team_size:
         return "IC"
-    if max_team_size < 2:
-        return "IC"
     if max_team_size <= 4:
         return "Team Lead"
     if max_team_size <= 15:
