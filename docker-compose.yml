@@ -69,7 +69,7 @@ services:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - minio-data:/var/lib/minio/data
+      - minio-data:/data
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 5s
