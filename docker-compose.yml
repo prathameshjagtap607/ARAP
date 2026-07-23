@@ -78,8 +78,8 @@ services:
 
   ingestion-service:
     build:
-      context: services/ingestion-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/ingestion-service/Dockerfile
     environment:
       DATABASE_URL: postgresql://arap:arap@db-dev:5432/arap_dev
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}

@@ -1,6 +1,3 @@
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-
 from unittest.mock import MagicMock, patch
 
 from agents.resume_analysis.agent import run_resume_analysis_agent
