@@ -56,11 +56,8 @@ def create_assessment(
     db.add(row)
     db.commit()
     db.refresh(row)
-    try:
-        run_job_description_agent(db, row)
-        db.refresh(row)
-    except Exception:
-        pass
+    run_job_description_agent(db, row)
+    db.refresh(row)
     return row
 
 
@@ -72,11 +69,8 @@ def update_assessment(
         setattr(row, field, value)
     db.commit()
     db.refresh(row)
-    try:
-        run_job_description_agent(db, row)
-        db.refresh(row)
-    except Exception:
-        pass
+    run_job_description_agent(db, row)
+    db.refresh(row)
     return row
 
 
@@ -120,11 +114,8 @@ def clone_assessment(
     db.add(clone)
     db.commit()
     db.refresh(clone)
-    try:
-        run_job_description_agent(db, clone)
-        db.refresh(clone)
-    except Exception:
-        pass
+    run_job_description_agent(db, clone)
+    db.refresh(clone)
     return clone
 
 
@@ -134,18 +125,26 @@ def invite_candidate(
 ) -> InviteResponse:
     get_assessment(db, org_id, assessment_id)
 
+    from sqlalchemy.exc import IntegrityError
+
     candidate = db.query(Candidate).filter_by(
         org_id=org_id, email=data.candidate_email
     ).first()
     if candidate is None:
-        candidate = Candidate(
-            org_id=org_id,
-            name=data.candidate_name,
-            email=data.candidate_email,
-            auth_method="magic_link",
-        )
-        db.add(candidate)
-        db.flush()
+        try:
+            candidate = Candidate(
+                org_id=org_id,
+                name=data.candidate_name,
+                email=data.candidate_email,
+                auth_method="magic_link",
+            )
+            db.add(candidate)
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+            candidate = db.query(Candidate).filter_by(
+                org_id=org_id, email=data.candidate_email
+            ).first()
 
     session = AssessmentSession(
         org_id=org_id,

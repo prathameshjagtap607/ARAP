@@ -2,11 +2,11 @@ import uuid
 from datetime import datetime
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 def _validate_weightage(v: dict[str, float]) -> dict[str, float]:
-    if v and abs(sum(v.values()) - 100) > 0.01:
+    if v is not None and abs(sum(v.values()) - 100) > 0.01:
         raise ValueError("competency_weightage must sum to 100")
     return v
 
@@ -25,7 +25,7 @@ class JobAssessmentCreate(BaseModel):
     leadership_competencies: list[str] = []
     culture_values: list[str] = []
     difficulty_level: Literal["junior", "mid", "senior", "executive"]
-    duration_minutes: int
+    duration_minutes: int = Field(gt=0)
     competency_weightage: dict[str, float]
     is_template: bool = False
     role_family: Optional[str] = None
@@ -50,7 +50,7 @@ class JobAssessmentUpdate(BaseModel):
     leadership_competencies: Optional[list[str]] = None
     culture_values: Optional[list[str]] = None
     difficulty_level: Optional[Literal["junior", "mid", "senior", "executive"]] = None
-    duration_minutes: Optional[int] = None
+    duration_minutes: Optional[int] = Field(default=None, gt=0)
     competency_weightage: Optional[dict[str, float]] = None
     is_template: Optional[bool] = None
     role_family: Optional[str] = None
@@ -79,8 +79,8 @@ class CloneRequest(BaseModel):
 
 class InviteRequest(BaseModel):
     candidate_name: str
-    candidate_email: str
-    time_budget_seconds: int
+    candidate_email: EmailStr
+    time_budget_seconds: int = Field(gt=0)
 
 
 class InviteResponse(BaseModel):

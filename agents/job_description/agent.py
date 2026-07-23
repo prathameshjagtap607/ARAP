@@ -46,3 +46,4 @@ def run_job_description_agent(db: Session, assessment) -> None:
         db.commit()
     except Exception:
         logger.exception("JD agent failed for assessment %s — job_profile left NULL", assessment.id)
+        db.rollback()
