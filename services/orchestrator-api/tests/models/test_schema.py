@@ -185,7 +185,8 @@ def test_candidate_profiles_columns(engine):
         "id", "org_id", "candidate_id", "job_assessment_id",
         "summary", "skill_matrix", "experience_matrix",
         "leadership_level_estimate", "strengths", "risk_flags",
-        "parsing_confidence", "created_at",
+        "parsing_confidence", "field_confidence", "match_score", "github_enrichment",
+        "created_at",
     }
     assert cols == expected
 
