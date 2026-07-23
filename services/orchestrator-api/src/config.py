@@ -18,5 +18,7 @@ class Settings(BaseSettings):
     LOGIN_TOKEN_EXPIRE_MINUTES: int = 15
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    ANTHROPIC_API_KEY: str
+
 
 settings = Settings()
