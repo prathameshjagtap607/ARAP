@@ -59,6 +59,45 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: arap
+      MINIO_ROOT_PASSWORD: arap_secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/var/lib/minio/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ingestion-service:
+    build:
+      context: services/ingestion-service
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://arap:arap@db-dev:5432/arap_dev
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_ACCESS_KEY: arap
+      S3_SECRET_KEY: arap_secret
+      S3_BUCKET_RESUMES: arap-resumes
+    ports:
+      - "8001:8001"
+    depends_on:
+      db-dev:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    profiles:
+      - full
+
   realtime-gateway:
     build:
       context: services/realtime-gateway
@@ -73,3 +112,4 @@ services:
 volumes:
   pgdata-dev:
   pgdata-test:
+  minio-data:

@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     ANTHROPIC_API_KEY: str
+    OPENAI_API_KEY: str
+    INGESTION_SERVICE_URL: str = "http://localhost:8001"
 
 
 settings = Settings()
