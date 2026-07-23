@@ -56,8 +56,11 @@ def create_assessment(
     db.add(row)
     db.commit()
     db.refresh(row)
-    run_job_description_agent(db, row)
-    db.refresh(row)
+    try:
+        run_job_description_agent(db, row)
+        db.refresh(row)
+    except Exception:
+        pass
     return row
 
 
@@ -69,8 +72,11 @@ def update_assessment(
         setattr(row, field, value)
     db.commit()
     db.refresh(row)
-    run_job_description_agent(db, row)
-    db.refresh(row)
+    try:
+        run_job_description_agent(db, row)
+        db.refresh(row)
+    except Exception:
+        pass
     return row
 
 
@@ -114,8 +120,11 @@ def clone_assessment(
     db.add(clone)
     db.commit()
     db.refresh(clone)
-    run_job_description_agent(db, clone)
-    db.refresh(clone)
+    try:
+        run_job_description_agent(db, clone)
+        db.refresh(clone)
+    except Exception:
+        pass
     return clone
 
 

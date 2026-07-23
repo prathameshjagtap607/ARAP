@@ -1,7 +1,6 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.exceptions import HTTPException, RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException
 
 from src.config import settings
 from src.middleware.auth import AuthMiddleware
@@ -28,13 +27,6 @@ app.add_middleware(
 )
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(AuthMiddleware)
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    errors = exc.errors()
-    # Flatten to a single string so callers can check 'in detail'
-    messages = "; ".join(e.get("msg", str(e)) for e in errors)
-    return JSONResponse(status_code=422, content={"detail": messages})
 
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)

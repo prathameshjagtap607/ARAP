@@ -20,7 +20,7 @@ async def test_weightage_not_summing_to_100_returns_422(async_client, seed, user
         headers={"Authorization": f"Bearer {user_token}"},
     )
     assert resp.status_code == 422
-    assert "100" in resp.json()["detail"]
+    assert "100" in str(resp.json()["detail"])
 
 
 @pytest.mark.asyncio
