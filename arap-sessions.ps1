@@ -137,34 +137,25 @@ Next session: .\arap-sessions.ps1 -Session job-assessment
     "job-assessment" = @{
         model = $SONNET
         task  = "TASK-001"
-        label = "Phase 1 . Job Assessment Builder (M1)"
+        label = "Phase 1 . Job Assessment Builder (M1) [COMPLETE]"
         prompt = @'
-Stack: FastAPI, PostgreSQL, Next.js (console-web)
-Task file: tasks/TASK-001-phase1-question-test.md
-Module scope: services/orchestrator-api/src/modules/job_assessments +
-  agents/job_description ONLY.
+*** SESSION COMPLETE — DO NOT RE-RUN ***
+M1 (F01-F04) fully implemented and reviewed.
+What was built:
+  - migrations/versions/0002: is_template, role_family, job_profile columns on job_assessments
+  - agents/job_description/prompts.py + agent.py: Haiku structured output via tool_use; non-fatal on API error
+  - src/modules/competency_library/: CRUD, unique-per-org constraint, 409 on duplicate
+  - src/modules/job_assessments/: CRUD, weightage validation (sum=100 ±0.01), templates flag+filter, clone with overrides, candidate invite (upsert candidate + assessment_session)
+  - All endpoints: require_user (role user or admin); org_id from JWT claims
+  - pytest PYTHONPATH = [".", "../.."] enables agents/ import from service tests
 
-Objective: Job Assessment Builder per PRD M1 (F01-F04).
-  Job Assessment Creation (M1-F01): company, department, title, experience
-    min/max, required/preferred skills, responsibilities, education, certs,
-    behavioral + leadership competencies, culture values, difficulty level
-    (Junior/Mid/Senior/Executive), duration, per-competency weightage
-    (MUST sum to 100% -- validate server-side)
-  Competency Library (M1-F02): org-scoped reusable competency definitions
-    with rubric description; custom one-off competencies still allowed
-  Templates & Cloning (M1-F03): save assessment as reusable template per
-    role family, clone with adjustable weightage/skills
-  Candidate Invitation (M1-F04): invite creates a distinct assessment_session
-    scoped 1:1:1 to one candidate, one job_assessment, one resume upload
+Key decisions:
+  - JD agent called synchronously post-create/update; failure leaves job_profile=NULL (non-fatal)
+  - Template = is_template bool on job_assessments (no separate table)
+  - Invite upserts candidate on (org_id, email); creates fresh assessment_session each call
+  - DELETE guarded: 409 if any assessment_session exists for the assessment
 
-Job Description Agent (§7): normalizes job_assessment into job_profile JSON +
-  competency weightage map -- this is the grounding context for every
-  downstream agent (question gen, evaluation, report benchmarking).
-
-Exit criteria: assessment CRUD + templates + weightage validation working;
-  job_profile JSON produced and stored.
-Context7: use for FastAPI + Pydantic validation, Next.js forms.
-PDCA: present plan before touching any file.
+Next session: .\arap-sessions.ps1 -Session resume-ingestion
 '@
     }
 
@@ -579,32 +570,6 @@ Objective: Candidate-facing shell per PRD Section 11.1 + Section 10 (Usability
 Exit criteria: full login -> consent -> test -> submit -> status flow works
   on standard broadband; accessibility audit passes AA.
 Context7: use for Next.js App Router, accessible form patterns.
-PDCA: present plan before touching any file.
-'@
-    }
-
-    "frontend-console" = @{
-        model = $SONNET
-        task  = "TASK-000"
-        label = "Web . HR/Admin/Analytics Console Shell"
-        prompt = @'
-Stack: Next.js, TypeScript, Tailwind CSS, Recharts
-Task file: tasks/TASK-000-phase0-foundation.md
-Module scope: apps/console-web/ ONLY.
-
-Objective: Console shell per PRD Section 11.1 (dense, data-rich UI for
-  HR/Admin/Analytics).
-  Main nav covering the modules: Job Assessments (M1), Candidates/Sessions,
-    Reports (M10-F04), Analytics (M11), Admin (M10-F03/M12)
-  SHARED components reused across every list screen (single source of
-    truth): SummaryCard, FilterBar, ChartCard, ReportCard
-  Typed API client + JWT auth/refresh handling; route guards mirror server
-    RBAC (Section 4.2) -- User vs. Admin route visibility
-  Responsive: desktop-first, tablet functional
-
-Exit criteria: shell navigable across all module stubs; RBAC-gated routes
-  correctly hide Admin-only sections from User role.
-Context7: use for Next.js App Router, Recharts, RBAC route-guard patterns.
 PDCA: present plan before touching any file.
 '@
     }

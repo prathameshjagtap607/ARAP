@@ -86,6 +86,7 @@ def test_job_assessments_columns(engine):
         "certifications", "behavioral_competencies", "leadership_competencies",
         "culture_values", "difficulty_level", "duration_minutes",
         "competency_weightage", "created_by", "created_at",
+        "is_template", "role_family", "job_profile",
     }
     assert cols == expected
 
