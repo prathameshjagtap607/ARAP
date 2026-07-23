@@ -1,7 +1,5 @@
 from unittest.mock import patch
 
-from tests.conftest import MOCK_AGENT_OUTPUT, MOCK_EMBEDDING
-
 
 def test_large_doc_returns_202(client, db, seed, mock_agent, mock_embed):
     cand = seed["candidate"]

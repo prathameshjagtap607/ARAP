@@ -88,18 +88,17 @@ def _fetch_github(github_url: str) -> Optional[dict]:
         return None
 
 
-def _run_pipeline(db: Session, candidate: Candidate, job: JobAssessment, org_id: uuid.UUID) -> None:
+def _run_pipeline(
+    db: Session,
+    candidate: Candidate,
+    job: JobAssessment,
+    org_id: uuid.UUID,
+    file_bytes: Optional[bytes],
+    mime: Optional[str],
+) -> None:
     raw_text: Optional[str] = None
-    if candidate.resume_file_url:
+    if file_bytes and mime:
         try:
-            file_bytes = download_file(candidate.resume_file_url)
-            ext = candidate.resume_file_url.rsplit(".", 1)[-1].lower()
-            mime_map = {
-                "pdf": "application/pdf",
-                "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "txt": "text/plain",
-            }
-            mime = mime_map.get(ext, "text/plain")
             raw_text = extract_text(file_bytes, mime)
         except Exception:
             logger.exception("Text extraction failed for candidate %s", candidate.id)
@@ -198,22 +197,31 @@ def analyze(body: AnalyzeRequest, background_tasks: BackgroundTasks, db: Session
             detail="Candidate has no resume file uploaded",
         )
 
+    file_bytes: Optional[bytes] = None
+    mime: Optional[str] = None
     is_large = False
     try:
         file_bytes = download_file(candidate.resume_file_url)
+        ext = candidate.resume_file_url.rsplit(".", 1)[-1].lower()
+        mime_map = {
+            "pdf": "application/pdf",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "txt": "text/plain",
+        }
+        mime = mime_map.get(ext, "text/plain")
         if len(file_bytes) > settings.LARGE_DOC_BYTES:
             is_large = True
     except Exception:
         pass
 
     if is_large:
-        background_tasks.add_task(_run_pipeline, db, candidate, job, body.org_id)
+        background_tasks.add_task(_run_pipeline, db, candidate, job, body.org_id, file_bytes, mime)
         return JSONResponse(
             status_code=status.HTTP_202_ACCEPTED,
             content={"status": "processing", "candidate_profile_id": None},
         )
 
-    _run_pipeline(db, candidate, job, body.org_id)
+    _run_pipeline(db, candidate, job, body.org_id, file_bytes, mime)
 
     profile = db.query(CandidateProfile).filter_by(
         candidate_id=candidate.id, job_assessment_id=job.id
