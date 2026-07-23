@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import (
-    CheckConstraint, DateTime, ForeignKey, Integer, String, Text,
+    Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text,
     func, text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
@@ -52,6 +52,11 @@ class JobAssessment(Base):
     difficulty_level: Mapped[str] = mapped_column(String, nullable=False)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     competency_weightage: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    is_template: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    role_family: Mapped[Optional[str]] = mapped_column(Text)
+    job_profile: Mapped[Optional[dict]] = mapped_column(JSONB)
     created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
