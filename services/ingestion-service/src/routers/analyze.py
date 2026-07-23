@@ -6,6 +6,7 @@ import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from agents.resume_analysis.agent import run_resume_analysis_agent
@@ -102,7 +103,10 @@ def _run_pipeline_bg(
         candidate = db.query(Candidate).filter_by(id=candidate_id).first()
         job = db.query(JobAssessment).filter_by(id=job_id).first()
         if candidate and job:
-            _run_pipeline(db, candidate, job, org_id, file_bytes, mime)
+            try:
+                _run_pipeline(db, candidate, job, org_id, file_bytes, mime)
+            except ValueError as exc:
+                logger.error("Pipeline rejected resume for candidate %s: %s", candidate_id, exc)
     finally:
         db.close()
 
@@ -114,11 +118,13 @@ def _run_pipeline(
     org_id: uuid.UUID,
     file_bytes: Optional[bytes],
     mime: Optional[str],
-) -> None:
+) -> CandidateProfile:
     raw_text: Optional[str] = None
     if file_bytes and mime:
         try:
             raw_text = extract_text(file_bytes, mime)
+        except ValueError:
+            raise
         except Exception:
             logger.exception("Text extraction failed for candidate %s", candidate.id)
 
@@ -169,35 +175,37 @@ def _run_pipeline(
         except Exception:
             logger.exception("Match score computation failed for candidate %s", candidate.id)
 
-    existing = db.query(CandidateProfile).filter_by(
+    stmt = pg_insert(CandidateProfile).values(
+        org_id=org_id,
+        candidate_id=candidate.id,
+        job_assessment_id=job.id,
+        skill_matrix=skill_matrix,
+        experience_matrix=experience_matrix,
+        leadership_level_estimate=leadership_level_estimate,
+        strengths=[],
+        risk_flags=[],
+        parsing_confidence=parsing_confidence,
+        field_confidence=field_confidence,
+        match_score=match_score,
+        github_enrichment=github_enrichment,
+    ).on_conflict_do_update(
+        index_elements=["candidate_id", "job_assessment_id"],
+        set_={
+            "skill_matrix": skill_matrix,
+            "experience_matrix": experience_matrix,
+            "leadership_level_estimate": leadership_level_estimate,
+            "parsing_confidence": parsing_confidence,
+            "field_confidence": field_confidence,
+            "match_score": match_score,
+            "github_enrichment": github_enrichment,
+        },
+    )
+    db.execute(stmt)
+    db.commit()
+
+    return db.query(CandidateProfile).filter_by(
         candidate_id=candidate.id, job_assessment_id=job.id
     ).first()
-
-    if existing:
-        existing.skill_matrix = skill_matrix
-        existing.experience_matrix = experience_matrix
-        existing.leadership_level_estimate = leadership_level_estimate
-        existing.parsing_confidence = parsing_confidence
-        existing.field_confidence = field_confidence
-        existing.match_score = match_score
-        existing.github_enrichment = github_enrichment
-    else:
-        profile = CandidateProfile(
-            org_id=org_id,
-            candidate_id=candidate.id,
-            job_assessment_id=job.id,
-            skill_matrix=skill_matrix,
-            experience_matrix=experience_matrix,
-            leadership_level_estimate=leadership_level_estimate,
-            strengths=[],
-            risk_flags=[],
-            parsing_confidence=parsing_confidence,
-            field_confidence=field_confidence,
-            match_score=match_score,
-            github_enrichment=github_enrichment,
-        )
-        db.add(profile)
-    db.commit()
 
 
 @router.post("/analyze", status_code=status.HTTP_200_OK)
@@ -247,11 +255,11 @@ def analyze(body: AnalyzeRequest, background_tasks: BackgroundTasks, db: Session
             content={"status": "processing", "candidate_profile_id": None},
         )
 
-    _run_pipeline(db, candidate, job, body.org_id, file_bytes, mime)
+    try:
+        profile = _run_pipeline(db, candidate, job, body.org_id, file_bytes, mime)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
 
-    profile = db.query(CandidateProfile).filter_by(
-        candidate_id=candidate.id, job_assessment_id=job.id
-    ).first()
     return CandidateProfileResponse.model_validate(profile)
 
 

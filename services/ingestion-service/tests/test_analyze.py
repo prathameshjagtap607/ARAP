@@ -120,3 +120,22 @@ def test_get_analyze_returns_profile(client, db, seed, mock_agent, mock_embed):
 def test_get_analyze_404_not_yet_written(client, seed):
     response = client.get(f"/analyze/{uuid.uuid4()}/{uuid.uuid4()}")
     assert response.status_code == 404
+
+
+def test_analyze_short_resume_returns_422(client, db, seed):
+    """extract_text raising ValueError for < 50 chars must surface as HTTP 422."""
+    cand = seed["candidate"]
+    job = seed["job"]
+    cand.resume_file_url = "resumes/test/short.pdf"
+    db.commit()
+
+    with patch("src.routers.analyze.download_file", return_value=b"tiny"), \
+         patch("src.routers.analyze.extract_text", side_effect=ValueError("resume too short to parse")):
+        response = client.post("/analyze", json={
+            "candidate_id": str(cand.id),
+            "job_assessment_id": str(job.id),
+            "org_id": str(seed["org"].id),
+        })
+
+    assert response.status_code == 422
+    assert "short" in response.json()["detail"].lower()
