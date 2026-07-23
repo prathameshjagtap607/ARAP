@@ -162,33 +162,40 @@ Next session: .\arap-sessions.ps1 -Session resume-ingestion
     "resume-ingestion" = @{
         model = $SONNET
         task  = "TASK-001"
-        label = "Phase 1 . Resume & Profile Ingestion (M2)"
+        label = "Phase 1 . Resume & Profile Ingestion (M2) [COMPLETE]"
         prompt = @'
-Stack: FastAPI, PostgreSQL, S3-compatible storage, embedding model
-Task file: tasks/TASK-001-phase1-question-test.md
-Module scope: services/ingestion-service + agents/resume_analysis ONLY.
+*** SESSION COMPLETE — DO NOT RE-RUN ***
+M2 (F01-F04) fully implemented, reviewed, and final-review bugs fixed.
+35 tests passing. Final commit: e36c53c on main.
 
-Objective: Resume & Profile Ingestion per PRD M2 (F01-F04).
-  Multi-Format Upload (M2-F01): PDF/DOCX/plain text, LinkedIn URL, GitHub
-    handle/URL, portfolio URL; parse synchronously (<10s target) with a
-    job-queue fallback for larger docs
-  Resume Parsing Extraction (M2-F02): Resume Analysis Agent extracts skills
-    (explicit/inferred), projects, tech used, employment history, education,
-    certifications, quantified achievements, leadership indicators (team
-    size/scope), career timeline (gaps + length/count), domain keywords, and
-    a PER-FIELD parsing confidence score
-  GitHub/Portfolio Enrichment (M2-F03): pull public repo metadata (languages,
-    commit recency, README quality, pinned projects) + portfolio case studies
-    -- additive evidence only, never a hard gate
-  Resume-to-JD Match Score (M2-F04): embeddings-based semantic match between
-    parsed resume and job_assessment required/preferred skills
+What was built:
+  - migrations/versions/0003: field_confidence jsonb, match_score numeric(4,3),
+    github_enrichment jsonb on candidate_profiles; UNIQUE(candidate_id, job_assessment_id)
+  - services/ingestion-service/: standalone FastAPI on port 8001
+      src/config.py, database.py, models.py, parsers.py (PDF/DOCX/txt),
+      s3.py (MinIO/boto3), embeddings.py (OpenAI text-embedding-3-small),
+      routers/health.py, routers/upload.py, routers/analyze.py
+  - agents/resume_analysis/prompts.py + agent.py:
+      claude-sonnet-4-6 tool_use, 10-field extraction + per-field confidence
+      + _derive_leadership_level (IC/Team Lead/Manager/Director/VP-equiv)
+  - services/ingestion-service/Dockerfile: repo-root build context (needed for agents/ COPY)
+  - docker-compose.yml: minio service (port 9000/9001) + ingestion-service (port 8001)
 
-Output contract: candidate_profile JSON (feeds M3).
+Key decisions:
+  - Standalone service — own DeclarativeBase, own get_db(), own SessionLocal()
+  - Background task wrapper opens fresh SessionLocal() (NOT request-scoped db)
+  - Upsert: pg_insert ON CONFLICT DO UPDATE — atomic, race-safe
+  - Short resume (<50 chars) → ValueError → HTTPException(422)
+  - Agent failure → None → candidate_profiles row with parsing_confidence=NULL (non-fatal)
+  - moto v5: @mock_aws decorator; boto3 skips endpoint_url when S3_ENDPOINT_URL is empty
+  - pythonpath = [".", "../.."] in pyproject.toml enables agents.resume_analysis import in tests
 
-Exit criteria: parsing confidence scores populated; match score computed and
-  surfaced before interview scheduling.
-Context7: use for resume-parsing libraries, embedding API, S3 signed URLs.
-PDCA: present plan before touching any file.
+Dev setup:
+  - services/ingestion-service/.env required (not committed) — needs ANTHROPIC_API_KEY, OPENAI_API_KEY
+  - docker compose --profile full up -d (starts minio + ingestion-service)
+  - MinIO console: http://localhost:9001 (user: arap / pass: arap_secret)
+
+Next session: .\arap-sessions.ps1 -Session candidate-profile
 '@
     }
 
