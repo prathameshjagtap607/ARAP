@@ -30,11 +30,13 @@ def _build_user_message(
         f"risk_flags: {json.dumps(risk_flags)}",
         f"target_question_count: {target_question_count}",
         "",
-        "Generate exactly target_question_count questions. "
-        "At least one question MUST have resume_reference=true, "
-        "directly citing a specific detail from the candidate's resume. "
-        "Distribute questions across categories per category_weightage counts. "
-        "Seed at least one question per risk flag.",
+        (
+            "Generate exactly target_question_count questions. "
+            "At least one question MUST have resume_reference=true, "
+            "directly citing a specific detail from the candidate's resume. "
+            "Distribute questions across categories per category_weightage counts. "
+            "Seed at least one question per risk flag."
+        ),
     ])
 
 
