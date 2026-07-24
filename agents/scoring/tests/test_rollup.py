@@ -1,3 +1,6 @@
+import pytest
+
+from agents.scoring.agent import roll_up
 from agents.scoring.rubric import (
     COMPETENCY_TO_COMPOSITE,
     COMPOSITES,
@@ -38,3 +41,60 @@ def test_derive_verdict_thresholds():
     assert derive_verdict(2.00) == "borderline"
     assert derive_verdict(1.99) == "reject"
     assert derive_verdict(0.0) == "reject"
+
+
+def _make_q(competency: str, score: int, difficulty: str = "medium") -> dict:
+    return {
+        "target_competencies": [competency],
+        "difficulty": difficulty,
+        "evaluation": {
+            "competency_scores": [{"competency": competency, "score": score}]
+        },
+    }
+
+
+def test_rollup_single_question():
+    questions = [_make_q("problem_solving", 4, "medium")]
+    result = roll_up(questions, job_weightage={"problem_solving": 100.0})
+    assert result["competency_scores"]["problem_solving"] == pytest.approx(4.0)
+    assert result["composite_scores"]["Technical"] == pytest.approx(4.0)
+    assert result["overall"] == pytest.approx(4.0)
+    assert result["question_count"] == 1
+    assert result["answered_count"] == 1
+
+
+def test_rollup_difficulty_weighting():
+    # easy score=2, hard score=4 → weighted: (2*1.0 + 4*2.0)/(1.0+2.0) = 10/3 ≈ 3.333
+    questions = [
+        _make_q("problem_solving", 2, "easy"),
+        _make_q("problem_solving", 4, "hard"),
+    ]
+    result = roll_up(questions, job_weightage={"problem_solving": 100.0})
+    assert result["competency_scores"]["problem_solving"] == pytest.approx(10 / 3, rel=1e-3)
+
+
+def test_rollup_skips_unevaluated():
+    # question with no evaluation key is not counted
+    q_unevaluated = {"target_competencies": ["communication"], "difficulty": "easy", "evaluation": None}
+    questions = [_make_q("problem_solving", 3), q_unevaluated]
+    result = roll_up(questions, job_weightage={"problem_solving": 50.0, "communication": 50.0})
+    assert "communication" not in result["competency_scores"]
+    assert result["answered_count"] == 1
+
+
+def test_rollup_overall_is_mean_of_composites():
+    # Two composites, each with one competency
+    questions = [
+        _make_q("problem_solving", 4),   # Technical
+        _make_q("communication", 2),      # Communication
+    ]
+    result = roll_up(questions, job_weightage={"problem_solving": 50.0, "communication": 50.0})
+    expected_overall = (result["composite_scores"]["Technical"] + result["composite_scores"]["Communication"]) / 2
+    assert result["overall"] == pytest.approx(expected_overall, rel=1e-3)
+
+
+def test_rollup_empty_questions():
+    result = roll_up([], job_weightage={})
+    assert result["overall"] == 0.0
+    assert result["competency_scores"] == {}
+    assert result["composite_scores"] == {}
