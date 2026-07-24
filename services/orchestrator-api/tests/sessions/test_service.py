@@ -1,5 +1,4 @@
-import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
@@ -47,14 +46,16 @@ def test_start_session_transitions_status(db, seed):
 
 
 def test_start_session_idempotent(db, seed):
-    """Calling start_session twice returns same in_progress state."""
-    r1 = service.start_session(db, seed["session"].id, seed["org"].id)
-    r2 = service.start_session(db, seed["session"].id, seed["org"].id)
-    assert r2.status == "in_progress"
-    # started_at must not change on second call
+    """Calling start_session twice does not overwrite started_at."""
+    service.start_session(db, seed["session"].id, seed["org"].id)
     from src.models.assessment_sessions import AssessmentSession
-    s = db.query(AssessmentSession).filter_by(id=seed["session"].id).first()
-    assert s.started_at == db.query(AssessmentSession).filter_by(id=seed["session"].id).first().started_at
+    s_after_first = db.query(AssessmentSession).filter_by(id=seed["session"].id).first()
+    started_at_first = s_after_first.started_at
+    r2 = service.start_session(db, seed["session"].id, seed["org"].id)
+    s_after_second = db.query(AssessmentSession).filter_by(id=seed["session"].id).first()
+    db.refresh(s_after_second)
+    assert r2.status == "in_progress"
+    assert s_after_second.started_at == started_at_first
 
 
 def test_get_session_state_seconds_remaining_after_start(db, seed):
