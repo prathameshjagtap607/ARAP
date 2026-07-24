@@ -11,8 +11,13 @@ export default function ConsentPage() {
   const router = useRouter();
   const { state, dispatch } = useSession();
   const [agreed, setAgreed] = useState(false);
+  const [agreedData, setAgreedData] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.title = "Assessment Terms | ARAP";
+  }, []);
 
   useEffect(() => {
     if (!state.jwt) return;
@@ -42,7 +47,7 @@ export default function ConsentPage() {
   const session = state.session;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6">
+    <main id="main-content" className="flex min-h-screen flex-col items-center justify-center px-6">
       <div className="max-w-md w-full space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           {session?.job_title ?? "Assessment"}
@@ -53,17 +58,32 @@ export default function ConsentPage() {
           <li>You may navigate between questions before submitting.</li>
           <li>Your progress is saved after each answer.</li>
         </ul>
-        <div className="flex items-start gap-3">
-          <input
-            id="consent"
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-1"
-          />
-          <label htmlFor="consent" className="text-sm text-slate-700">
-            I confirm this is my own work and I agree to the assessment terms.
-          </label>
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <input
+              id="consent"
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-1"
+            />
+            <label htmlFor="consent" className="text-sm text-slate-700">
+              I confirm this is my own work and I agree to the assessment terms.
+            </label>
+          </div>
+          <div className="flex items-start gap-3">
+            <input
+              id="consent-data"
+              type="checkbox"
+              checked={agreedData}
+              onChange={(e) => setAgreedData(e.target.checked)}
+              className="mt-1"
+            />
+            <label htmlFor="consent-data" className="text-sm text-slate-700">
+              I understand my responses will be evaluated using AI analysis and
+              processed in accordance with the applicable privacy policy.
+            </label>
+          </div>
         </div>
         {error && (
           <p role="alert" className="text-sm text-red-600">
@@ -72,7 +92,7 @@ export default function ConsentPage() {
         )}
         <button
           onClick={handleStart}
-          disabled={!agreed || loading}
+          disabled={!agreed || !agreedData || loading}
           className="w-full rounded-lg bg-slate-900 px-6 py-3 text-white font-medium
                      disabled:opacity-40 disabled:cursor-not-allowed"
         >
