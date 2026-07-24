@@ -17,6 +17,7 @@ export default function QuestionPage() {
   const router = useRouter();
   const { state, dispatch } = useSession();
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const [timerSeed, setTimerSeed] = useState(0);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const submitCalledRef = useRef(false);
@@ -31,6 +32,7 @@ export default function QuestionPage() {
       dispatch({ type: "REHYDRATE", session: data });
       if (data.seconds_remaining !== null) {
         setSecondsLeft(data.seconds_remaining);
+        setTimerSeed(s => s + 1);
       }
     } catch {}
   }, [state.jwt, sessionId, dispatch]);
@@ -54,7 +56,7 @@ export default function QuestionPage() {
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [secondsLeft !== null]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [timerSeed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-submit at expiry
   useEffect(() => {

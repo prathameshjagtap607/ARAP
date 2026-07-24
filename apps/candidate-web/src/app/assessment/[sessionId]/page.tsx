@@ -10,7 +10,6 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { dispatch } = useSession();
-  const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -43,28 +42,10 @@ export default function LoginPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           Access Your Assessment
         </h1>
-        <p className="text-slate-500">
-          Enter the email address your invitation was sent to.
-        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-slate-700 mb-1"
-            >
-              Email address
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-4 py-2 text-slate-900
-                         focus:outline focus:outline-2 focus:outline-slate-900"
-            />
-          </div>
+          <p className="text-sm text-slate-500">
+            Click continue to access your assessment. Your identity is verified by the secure link in your invitation email.
+          </p>
           {error && (
             <p role="alert" className="text-sm text-red-600">
               {error}
