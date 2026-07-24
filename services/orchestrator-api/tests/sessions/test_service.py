@@ -95,13 +95,30 @@ def test_save_answer_rejects_completed_session(db, seed):
 
 def test_submit_session_marks_completed(db, seed):
     """submit_session transitions in_progress → completed."""
+    service.start_session(db, seed["session"].id, seed["org"].id)
     result = service.submit_session(db, seed["session"].id, seed["org"].id)
     assert result.status == "completed"
     assert result.completed_at is not None
 
 
+def test_save_answer_rejects_invited_session(db, seed):
+    """save_answer raises ValueError if session has not been started."""
+    from src.models.assessment_sessions import AssessmentSession
+    s = db.query(AssessmentSession).filter_by(id=seed["session"].id).first()
+    orig_status = s.status
+    s.status = "invited"
+    db.flush()
+    with pytest.raises(ValueError, match="invited"):
+        service.save_answer(
+            db, seed["session"].id, seed["q1"].id, seed["org"].id, "should fail"
+        )
+    s.status = orig_status
+    db.flush()
+
+
 def test_submit_session_idempotent(db, seed):
     """submit_session called twice returns completed without error."""
+    service.start_session(db, seed["session"].id, seed["org"].id)
     r1 = service.submit_session(db, seed["session"].id, seed["org"].id)
     r2 = service.submit_session(db, seed["session"].id, seed["org"].id)
     assert r2.status in ("completed", "expired")

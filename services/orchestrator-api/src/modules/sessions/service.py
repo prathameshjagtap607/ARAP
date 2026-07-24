@@ -72,6 +72,8 @@ def invite_candidate(
         raise ValueError("question set must be locked before sending invite")
 
     candidate = db.query(Candidate).filter_by(id=session.candidate_id, org_id=org_id).first()
+    if not candidate:
+        raise LookupError("candidate not found for this session")
     job = db.query(JobAssessment).filter_by(id=session.job_assessment_id).first()
 
     raw_token = auth_service.request_candidate_token(
@@ -118,8 +120,8 @@ def save_answer(
     answer_text: str,
 ) -> AnswerResponse:
     session = _get_session_or_404(db, session_id, org_id)
-    if session.status in ("completed", "expired"):
-        raise ValueError(f"session is {session.status} — answers no longer accepted")
+    if session.status != "in_progress":
+        raise ValueError(f"session is {session.status} — answers not accepted")
     q = (
         db.query(SessionQuestion)
         .join(QuestionSet, SessionQuestion.question_set_id == QuestionSet.id)
@@ -143,8 +145,12 @@ def submit_session(
     db: Session, session_id: uuid.UUID, org_id: uuid.UUID
 ) -> SubmitResponse:
     session = _get_session_or_404(db, session_id, org_id)
-    if session.status in ("completed", "expired"):
+    if session.status == "in_progress":
+        pass  # continue to submit logic below
+    elif session.status in ("completed", "expired"):
         return SubmitResponse(status=session.status, completed_at=session.completed_at)
+    else:
+        raise ValueError(f"session must be in_progress to submit (is {session.status})")
 
     now = datetime.now(UTC)
     has_answers = (

@@ -85,10 +85,10 @@ async def test_patch_answer_endpoint(started_client, seed, candidate_token):
 
 
 @pytest.mark.asyncio
-async def test_patch_answer_wrong_session_rejected(async_client, seed, candidate_token):
+async def test_patch_answer_wrong_session_rejected(started_client, seed, candidate_token):
     """PATCH with question not belonging to this session returns 404."""
     import uuid
-    resp = await async_client.patch(
+    resp = await started_client.patch(
         f"/sessions/{seed['session'].id}/questions/{uuid.uuid4()}/answer",
         json={"answer_text": "Anything"},
         headers={"Authorization": f"Bearer {candidate_token}"},
@@ -108,7 +108,7 @@ async def test_submit_endpoint(started_client, seed, candidate_token):
 
 
 @pytest.mark.asyncio
-async def test_patch_answer_question_from_different_session_rejected(async_client, seed, candidate_token, db):
+async def test_patch_answer_question_from_different_session_rejected(started_client, seed, candidate_token, db):
     """PATCH with question belonging to a different session returns 404."""
     from datetime import UTC, datetime
     from src.models.assessment_sessions import AssessmentSession
@@ -151,7 +151,7 @@ async def test_patch_answer_question_from_different_session_rejected(async_clien
 
     # candidate_token is scoped to seed["session"], not other_session
     # Using other_q.id (which belongs to other_session) should return 404
-    resp = await async_client.patch(
+    resp = await started_client.patch(
         f"/sessions/{seed['session'].id}/questions/{other_q.id}/answer",
         json={"answer_text": "Cross-session attempt"},
         headers={"Authorization": f"Bearer {candidate_token}"},
