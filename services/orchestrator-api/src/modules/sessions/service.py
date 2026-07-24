@@ -223,6 +223,11 @@ def calibrate_answer(
         overrides = list(report.reviewer_override or [])
         overrides.append({"question_id": str(question_id), **calibration})
         report.reviewer_override = overrides
+    else:
+        logger.warning(
+            "calibrate_answer: no hiring report found for session %s — reviewer_override not recorded",
+            session_id,
+        )
 
     db.commit()
     return calibration
