@@ -2,7 +2,7 @@
 
 **PRD ref:** Section 16, Phase 1 (Weeks 4–8)
 **Owner:** Srinivas / Fidelitus Corp
-**Status:** Not started
+**Status:** In Progress — M5 complete, next: M6 Evaluation Engine
 **Depends on:** TASK-000 (foundation must be complete)
 
 ## Objective
@@ -52,21 +52,34 @@ of ARAP that is actually usable on a live requisition.
 
 ## Exit criteria
 
-- [ ] Recruiter can create a job assessment with weightage summing to 100%
-      (validated server-side)
-- [ ] Resume upload → `candidate_profile` produced with per-field confidence
-      scores and a resume-to-JD match score
-- [ ] Question Generation Agent produces a full locked question set per
+- [x] Recruiter can create a job assessment with weightage summing to 100%
+      (validated server-side) — **DONE M1**
+- [x] Resume upload → `candidate_profile` produced with per-field confidence
+      scores and a resume-to-JD match score — **DONE M2**
+- [x] Question Generation Agent produces a full locked question set per
       candidate; two sessions for the same role/different candidates share
-      **zero** verbatim questions (PRD §3 goal)
-- [ ] Question-set generation p95 < 6s per question (PRD §3 goal)
-- [ ] Candidate can log in via emailed link, take the test DISC-style, and
+      **zero** verbatim questions (PRD §3 goal) — **DONE M4**
+- [ ] Question-set generation p95 < 6s per question (PRD §3 goal) — not measured yet
+- [x] Candidate can log in via emailed link, take the test DISC-style, and
       submit within the time window; a simulated disconnect does not lose
-      already-answered questions
+      already-answered questions — **DONE M5** (commit 4a5ea2b)
 - [ ] On submission, Evaluation Agent scores every answer with a cited
-      excerpt, and a session-level roll-up + basic verdict is produced
-- [ ] Basic report visible on the HR Dashboard within 5 minutes of submission
-- [ ] Candidate Dashboard never exposes a raw competency score
+      excerpt, and a session-level roll-up + basic verdict is produced — **NEXT: M6**
+- [ ] Basic report visible on the HR Dashboard within 5 minutes of submission — M9+M10
+- [ ] Candidate Dashboard never exposes a raw competency score — M10
+
+## Session checkpoints
+
+| Session | Module | Status | Final commit |
+|---|---|---|---|
+| job-assessment | M1 | ✅ complete | `4ece0e1` |
+| resume-ingestion | M2 | ✅ complete | `e36c53c` |
+| candidate-profile | M3 | ✅ complete | `52fe5a9` |
+| question-gen | M4 | ✅ complete | `6e979df` |
+| test-delivery | M5 | ✅ complete | `4a5ea2b` |
+| evaluation | M6 | ⏳ next | — |
+| report-gen | M9 | pending | — |
+| dashboards | M10 | pending | — |
 
 ## Open questions (PRD §18)
 
