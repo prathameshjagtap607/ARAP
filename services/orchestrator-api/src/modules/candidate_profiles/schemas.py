@@ -8,7 +8,6 @@ from pydantic import BaseModel, ConfigDict
 class SynthesizeRequest(BaseModel):
     candidate_id: uuid.UUID
     job_assessment_id: uuid.UUID
-    org_id: uuid.UUID
 
 
 class CandidateProfileResponse(BaseModel):

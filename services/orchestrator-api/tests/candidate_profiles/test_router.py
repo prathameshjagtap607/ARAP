@@ -8,7 +8,6 @@ async def test_synthesize_returns_200(async_client, seed, user_token, mock_cp_ag
         json={
             "candidate_id": str(seed["candidate"].id),
             "job_assessment_id": str(seed["job"].id),
-            "org_id": str(seed["org"].id),
         },
         headers={"Authorization": f"Bearer {user_token}"},
     )
@@ -30,7 +29,6 @@ async def test_synthesize_returns_404_when_no_profile(async_client, seed, user_t
         json={
             "candidate_id": str(uuid.uuid4()),
             "job_assessment_id": str(seed["job"].id),
-            "org_id": str(seed["org"].id),
         },
         headers={"Authorization": f"Bearer {user_token}"},
     )
@@ -57,7 +55,6 @@ async def test_synthesize_returns_422_when_parsing_confidence_null(
             json={
                 "candidate_id": str(seed["candidate"].id),
                 "job_assessment_id": str(seed["job"].id),
-                "org_id": str(seed["org"].id),
             },
             headers={"Authorization": f"Bearer {user_token}"},
         )
@@ -80,7 +77,6 @@ async def test_synthesize_returns_502_when_agent_fails(async_client, seed, user_
             json={
                 "candidate_id": str(seed["candidate"].id),
                 "job_assessment_id": str(seed["job"].id),
-                "org_id": str(seed["org"].id),
             },
             headers={"Authorization": f"Bearer {user_token}"},
         )
@@ -94,7 +90,6 @@ async def test_get_profile_returns_200_after_synthesize(async_client, seed, user
         json={
             "candidate_id": str(seed["candidate"].id),
             "job_assessment_id": str(seed["job"].id),
-            "org_id": str(seed["org"].id),
         },
         headers={"Authorization": f"Bearer {user_token}"},
     )
@@ -123,7 +118,14 @@ async def test_synthesize_requires_auth(async_client, seed):
         json={
             "candidate_id": str(seed["candidate"].id),
             "job_assessment_id": str(seed["job"].id),
-            "org_id": str(seed["org"].id),
         },
+    )
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_get_profile_requires_auth(async_client, seed):
+    resp = await async_client.get(
+        f"/candidate-profiles/{seed['candidate'].id}/{seed['job'].id}",
     )
     assert resp.status_code == 401

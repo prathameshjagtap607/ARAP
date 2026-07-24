@@ -28,7 +28,9 @@ def synthesize_profile(
     job = db.query(JobAssessment).filter_by(
         id=job_assessment_id, org_id=org_id
     ).first()
-    if job is None or job.job_profile is None:
+    if job is None:
+        raise LookupError("Job assessment not found")
+    if job.job_profile is None:
         raise ValueError("Job profile not generated — retry job assessment creation")
 
     extraction = {
@@ -56,6 +58,7 @@ def synthesize_profile(
     profile.experience_matrix = {
         **profile.experience_matrix,
         "leadership_scope": result["leadership"]["scope"],
+        "career_velocity": result["leadership"]["career_velocity"],
     }
     profile.leadership_level_estimate = result["leadership"]["level"]
     profile.strengths = result["strengths"]

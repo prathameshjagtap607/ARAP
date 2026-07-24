@@ -1,4 +1,5 @@
 import os
+import uuid as _uuid
 from unittest.mock import patch
 
 import fakeredis
@@ -79,15 +80,16 @@ def seed(db):
     db.add(org)
     db.flush()
 
+    _uid = _uuid.uuid4().hex[:8]
     admin = User(
-        org_id=org.id, email="admin@cp.com", role="admin",
+        org_id=org.id, email=f"admin-{_uid}@cp.com", role="admin",
         password_hash=pwd_context.hash("pw"),
     )
     db.add(admin)
     db.flush()
 
     candidate = Candidate(
-        org_id=org.id, name="Jane Doe", email="jane@example.com",
+        org_id=org.id, name="Jane Doe", email=f"jane-{_uid}@example.com",
         auth_method="magic_link",
     )
     db.add(candidate)

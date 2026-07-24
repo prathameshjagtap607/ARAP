@@ -28,6 +28,8 @@ def test_synthesize_profile_writes_all_fields(db, seed, mock_cp_agent):
     assert raw is not None
     assert "explicit" in raw
     assert "leadership_scope" in result.experience_matrix
+    assert "career_velocity" in result.experience_matrix
+    assert result.experience_matrix["career_velocity"] == "Promoted twice in 4 years"
 
 
 def test_synthesize_profile_raises_lookup_when_no_profile(db, seed):
