@@ -14,6 +14,7 @@ from src.modules.auth.router import router as auth_router
 from src.modules.candidate_profiles.router import router as candidate_profiles_router
 from src.modules.competency_library.router import router as competency_library_router
 from src.modules.job_assessments.router import router as job_assessments_router
+from src.modules.question_sets.router import router as question_sets_router
 
 app = FastAPI(
     title="ARAP Orchestrator API",
@@ -40,3 +41,4 @@ app.include_router(auth_router)
 app.include_router(competency_library_router)
 app.include_router(job_assessments_router)
 app.include_router(candidate_profiles_router)
+app.include_router(question_sets_router)
