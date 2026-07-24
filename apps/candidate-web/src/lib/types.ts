@@ -1,4 +1,10 @@
-export type AnswerFormat = "multiple_choice" | "short_text" | "long_text";
+export type AnswerFormat =
+  | "multiple_choice"
+  | "short_text"
+  | "long_text"
+  | "video"   // PRD §17 — deferred
+  | "voice"   // PRD §17 — deferred
+  | "code";   // PRD §17 — deferred
 
 export interface Question {
   id: string;
