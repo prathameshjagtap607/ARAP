@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useSession } from "@/context/SessionContext";
 
@@ -12,6 +12,10 @@ export default function LoginPage() {
   const { dispatch } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    document.title = "Access Your Assessment | ARAP";
+  }, []);
 
   const token = searchParams.get("token") ?? "";
 
@@ -37,14 +41,15 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6">
+    <main id="main-content" className="flex min-h-screen flex-col items-center justify-center px-6">
       <div className="max-w-md w-full space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
           Access Your Assessment
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <p className="text-sm text-slate-500">
-            Click continue to access your assessment. Your identity is verified by the secure link in your invitation email.
+          <p className="text-sm text-slate-600">
+            Click continue to access your assessment. Your identity is verified
+            by the secure link in your invitation email.
           </p>
           {error && (
             <p role="alert" className="text-sm text-red-600">
