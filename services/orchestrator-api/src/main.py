@@ -15,6 +15,7 @@ from src.modules.candidate_profiles.router import router as candidate_profiles_r
 from src.modules.competency_library.router import router as competency_library_router
 from src.modules.job_assessments.router import router as job_assessments_router
 from src.modules.question_sets.router import router as question_sets_router
+from src.modules.reports.router import router as reports_router
 from src.modules.sessions.router import router as sessions_router
 
 app = FastAPI(
@@ -44,3 +45,4 @@ app.include_router(job_assessments_router)
 app.include_router(candidate_profiles_router)
 app.include_router(question_sets_router)
 app.include_router(sessions_router)
+app.include_router(reports_router)
