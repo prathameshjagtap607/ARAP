@@ -82,6 +82,9 @@ jobs:
           TEST_DATABASE_URL: postgresql://arap:arap@localhost:5434/arap_test
           DATABASE_URL: postgresql://arap:arap@localhost:5434/arap_test
           SECRET_KEY: ci-test-secret
+          JWT_SECRET_KEY: ci-test-jwt-secret-key-not-for-production
+          ANTHROPIC_API_KEY: ci-test-anthropic-key-not-real
+          OPENAI_API_KEY: ci-test-openai-key-not-real
         run: pytest -v
 
   build:
