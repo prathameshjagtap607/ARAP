@@ -56,3 +56,15 @@ class AnswerResponse(BaseModel):
 class SubmitResponse(BaseModel):
     status: str
     completed_at: datetime | None
+
+
+class CalibrationRequest(BaseModel):
+    override_score: int
+    comment: str
+
+
+class CalibrationResponse(BaseModel):
+    override_score: int
+    comment: str
+    overridden_by: str
+    overridden_at: str

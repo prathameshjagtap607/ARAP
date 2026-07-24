@@ -1,5 +1,6 @@
 import logging
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
@@ -142,7 +143,10 @@ def save_answer(
 
 
 def submit_session(
-    db: Session, session_id: uuid.UUID, org_id: uuid.UUID
+    db: Session,
+    session_id: uuid.UUID,
+    org_id: uuid.UUID,
+    on_complete: Callable | None = None,
 ) -> SubmitResponse:
     session = _get_session_or_404(db, session_id, org_id)
     if session.status == "in_progress":
@@ -171,4 +175,54 @@ def submit_session(
     db.flush()
     db.commit()
     logger.info("session %s submitted status=%s", session_id, session.status)
+
+    if session.status == "completed" and on_complete is not None:
+        on_complete()
+
     return SubmitResponse(status=session.status, completed_at=session.completed_at)
+
+
+def calibrate_answer(
+    db: Session,
+    session_id: uuid.UUID,
+    question_id: uuid.UUID,
+    org_id: uuid.UUID,
+    override_score: int,
+    comment: str,
+    reviewer_id: str,
+) -> dict:
+    from src.models.hiring_reports import HiringReport
+
+    _get_session_or_404(db, session_id, org_id)
+
+    q = (
+        db.query(SessionQuestion)
+        .join(QuestionSet, SessionQuestion.question_set_id == QuestionSet.id)
+        .filter(
+            SessionQuestion.id == question_id,
+            QuestionSet.session_id == session_id,
+        )
+        .first()
+    )
+    if not q:
+        raise LookupError("question not found")
+
+    calibration = {
+        "override_score": override_score,
+        "comment": comment,
+        "overridden_by": str(reviewer_id),
+        "overridden_at": datetime.now(UTC).isoformat(),
+    }
+    current_eval = dict(q.evaluation) if q.evaluation else {}
+    current_eval["calibration"] = calibration
+    q.evaluation = current_eval
+    db.flush()
+
+    report = db.query(HiringReport).filter_by(session_id=session_id).first()
+    if report:
+        overrides = list(report.reviewer_override or [])
+        overrides.append({"question_id": str(question_id), **calibration})
+        report.reviewer_override = overrides
+
+    db.commit()
+    return calibration
