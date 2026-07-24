@@ -202,32 +202,43 @@ Next session: .\arap-sessions.ps1 -Session candidate-profile
     "candidate-profile" = @{
         model = $SONNET
         task  = "TASK-001"
-        label = "Phase 1 . Candidate Profile Engine (M3)"
+        label = "Phase 1 . Candidate Profile Engine (M3) [COMPLETE]"
         prompt = @'
-Stack: FastAPI, PostgreSQL
-Task file: tasks/TASK-001-phase1-question-test.md
-Module scope: services/orchestrator-api/src/modules/candidate_profiles ONLY.
+*** SESSION COMPLETE — DO NOT RE-RUN ***
+M3 (F01-F04) fully implemented, reviewed, and post-review fixes applied.
+14 tests passing. 151 total in orchestrator-api suite. Final commit: 52fe5a9 on main.
 
-Objective: Candidate Profile Engine per PRD M3 (F01-F04).
-  Candidate Summary Generation (M3-F01): 2-3 paragraph narrative -- current
-    role, trajectory, standout achievements, domain fit -- generated jointly
-    by Job Description Agent + Resume Analysis Agent against the specific
-    job_assessment
-  Skill & Experience Matrix (M3-F02): required/preferred skill -> evidence
-    (yes/partial/no), estimated years applied, confidence
-  Career Growth & Leadership Estimate (M3-F03): career velocity, current
-    leadership level (IC/Team Lead/Manager/Director/VP-equiv), scope (team
-    size, budget, geography) -- from resume signal, refined later by interview
-  Strength/Risk Flagging (M3-F04): flags that seed targeted M4 questions
-    (e.g. "no direct people-management despite Manager title", resume gaps)
+What was built:
+  - agents/candidate_profile/prompts.py + agent.py:
+      claude-sonnet-4-6 forced tool_use; synthesize_candidate_profile tool
+      produces summary (2-3 para), skill_matrix_aligned (yes/partial/no +
+      years + confidence + evidence per skill), leadership (level +
+      career_velocity + scope), strengths[], risk_flags[]
+      Non-fatal: returns None on any exception
+  - services/orchestrator-api/src/modules/candidate_profiles/:
+      schemas.py: SynthesizeRequest (candidate_id + job_assessment_id only,
+        no org_id — scoping from JWT), CandidateProfileResponse
+      service.py: synthesize_profile() + get_profile()
+        Guards: 404 no profile row, 404 job not found, 422 parsing_confidence
+        NULL, 422 job_profile NULL, 502 agent failure
+        skill_matrix written as {"aligned":[...], "raw":<M2 original>}
+        experience_matrix augmented with leadership_scope + career_velocity
+      router.py: POST /candidate-profiles/synthesize (200/404/422/502)
+                 GET  /candidate-profiles/{candidate_id}/{job_assessment_id}
+        Both: require_user, claims.org_id for org scoping
+  - main.py updated: candidate_profiles_router registered
 
-Persist to candidate_profiles table (summary, skill_matrix jsonb,
-  experience_matrix jsonb, leadership_level_estimate, strengths[], risk_flags[]).
+Key decisions:
+  - No migration — all columns existed on candidate_profiles already
+  - skill_matrix["raw"] preserves M2 extraction for M4 consumption
+  - career_velocity stored in experience_matrix["career_velocity"] (no new column)
+  - org_id NOT in SynthesizeRequest body — JWT claims.org_id only
+  - Seed fixture emails randomized (uuid hex suffix) to avoid UniqueViolation across tests
+  - GET auth test added alongside POST auth test
 
-Exit criteria: profile synthesized end-to-end from a real parsed resume;
-  risk_flags feed M4 question seeding.
-Context7: use for FastAPI + Pydantic, LLM structured-output patterns.
-PDCA: present plan before touching any file.
+SDD ledger: .superpowers/sdd/m3-candidate-profile-progress.md
+
+Next session: .\arap-sessions.ps1 -Session question-gen
 '@
     }
 
