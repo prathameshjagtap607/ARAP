@@ -22,5 +22,13 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     INGESTION_SERVICE_URL: str = "http://localhost:8001"
 
+    CANDIDATE_PORTAL_URL: str = "http://localhost:3000"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "noreply@arap.dev"
+    SENDGRID_API_KEY: str = ""
+
 
 settings = Settings()
