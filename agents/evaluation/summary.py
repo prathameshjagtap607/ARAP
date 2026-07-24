@@ -52,11 +52,12 @@ _SYSTEM_PROMPT = (
 )
 
 
-def generate_summary(job_title: str, rollup: dict, verdict: str) -> dict | None:
+def generate_summary(job_title: str, rollup: dict, verdict: str, candidate_name: str = "Unknown") -> dict | None:
     composite_scores = rollup.get("composite_scores", {})
     overall = rollup.get("overall", 0.0)
 
     user_message = "\n".join([
+        f"Candidate: {candidate_name}",
         f"Role: {job_title}",
         f"Verdict: {verdict}",
         f"Overall score: {overall:.2f} / 5.0",

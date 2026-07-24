@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class QuestionInSession(BaseModel):
@@ -59,7 +59,7 @@ class SubmitResponse(BaseModel):
 
 
 class CalibrationRequest(BaseModel):
-    override_score: int
+    override_score: int = Field(..., ge=1, le=5)
     comment: str
 
 

@@ -1,3 +1,4 @@
+import concurrent.futures
 import logging
 import uuid
 from typing import Callable
@@ -14,11 +15,12 @@ logger = logging.getLogger(__name__)
 def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]) -> None:
     """
     Runs after submit_session completes. Owns its own DB session (not request-scoped).
-    Phase 1: Score each answered question via LLM.
+    Phase 1: Score each answered question via LLM (parallel).
     Phase 2: Roll up competency scores.
     Phase 3: Write hiring_reports row.
     """
     from src.models.assessment_sessions import AssessmentSession
+    from src.models.candidates import Candidate
     from src.models.hiring_reports import HiringReport
     from src.models.job_assessments import JobAssessment
     from src.models.question_sets import QuestionSet
@@ -40,6 +42,9 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
             logger.error("evaluation_pipeline: question set not found for session %s", session_id)
             return
 
+        candidate = db.query(Candidate).filter_by(id=session.candidate_id).first()
+        candidate_name = candidate.name if candidate else "Unknown"
+
         questions = (
             db.query(SessionQuestion)
             .filter(SessionQuestion.question_set_id == qset.id)
@@ -47,10 +52,9 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
             .all()
         )
 
-        # Phase 1 — score each question
-        evaluated: list[dict] = []
-        for q in questions:
-            eval_result = score_answer(
+        # Phase 1 — score each question in parallel (LLM calls only)
+        def _score_one(q):
+            return q, score_answer(
                 question_text=q.question.get("text", ""),
                 category=q.category,
                 target_competencies=list(q.target_competencies),
@@ -58,6 +62,15 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
                 difficulty=q.difficulty,
                 job_title=job_title,
             )
+
+        max_workers = min(len(questions), 5) if questions else 1
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(_score_one, q) for q in questions]
+            scored_pairs = [f.result() for f in futures]
+
+        # Write DB results sequentially after all LLM calls complete
+        evaluated: list[dict] = []
+        for q, eval_result in scored_pairs:
             q.evaluation = eval_result
             db.flush()
             evaluated.append({
@@ -65,6 +78,14 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
                 "difficulty": q.difficulty,
                 "evaluation": eval_result if "error" not in eval_result else None,
             })
+
+        scored_ok = sum(1 for q in questions if q.evaluation and "error" not in q.evaluation)
+        logger.info(
+            "evaluation_pipeline: phase 1 complete — %d/%d questions scored successfully for session %s",
+            scored_ok,
+            len(questions),
+            session_id,
+        )
 
         db.commit()
         logger.info(
@@ -100,7 +121,7 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
             rollup["overall"],
         )
 
-        _generate_executive_summary(db, session_id, job_title, rollup, verdict)
+        _generate_executive_summary(db, session_id, job_title, candidate_name, rollup, verdict)
 
     except Exception:
         logger.exception("evaluation_pipeline failed for session %s", session_id)
@@ -113,6 +134,7 @@ def _generate_executive_summary(
     db: Session,
     session_id: uuid.UUID,
     job_title: str,
+    candidate_name: str,
     rollup: dict,
     verdict: str,
 ) -> None:
@@ -120,7 +142,7 @@ def _generate_executive_summary(
         from agents.evaluation.summary import generate_summary
         from src.models.hiring_reports import HiringReport
 
-        result = generate_summary(job_title=job_title, rollup=rollup, verdict=verdict)
+        result = generate_summary(job_title=job_title, rollup=rollup, verdict=verdict, candidate_name=candidate_name)
         report = db.query(HiringReport).filter_by(session_id=session_id).first()
         if report and result:
             report.executive_summary = result.get("executive_summary")

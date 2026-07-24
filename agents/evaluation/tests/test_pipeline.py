@@ -117,8 +117,11 @@ def test_evaluation_pipeline_scores_and_writes_report():
     q2 = _make_session_question("problem_solving", None)  # unanswered
 
     mock_db = MagicMock()
+    mock_candidate = MagicMock()
+    mock_candidate.name = "Alice"
+
     mock_db.query.return_value.filter_by.return_value.first.side_effect = [
-        mock_session, mock_job, mock_qset, None,  # None = no existing HiringReport
+        mock_session, mock_job, mock_qset, mock_candidate, None,  # None = no existing HiringReport
     ]
     mock_db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [q1, q2]
 
@@ -180,7 +183,7 @@ def test_generate_summary_calls_llm_and_returns_dict():
 
     with patch("agents.evaluation.summary.anthropic.Anthropic") as MockClient:
         MockClient.return_value.messages.create.return_value = response
-        result = generate_summary("Senior Engineer", rollup, "hire")
+        result = generate_summary("Senior Engineer", rollup, "hire", candidate_name="Alice")
 
     assert result["executive_summary"] == "Candidate shows strong technical skills."
     assert len(result["suggested_hr_questions"]) == 3

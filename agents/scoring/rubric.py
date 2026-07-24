@@ -27,6 +27,7 @@ COMPETENCY_TO_COMPOSITE: dict[str, str] = {
     "stress": "Behavior",
     "situational_judgment": "Behavior",
     "behavioral": "Behavior",
+    "case_study": "Technical",
 }
 
 # Ordered high → low; first threshold the overall score meets wins.
