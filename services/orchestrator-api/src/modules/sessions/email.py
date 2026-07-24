@@ -42,12 +42,16 @@ def _send_via_smtp(to: str, body_html: str, job_title: str) -> bool:
     msg["From"] = settings.SMTP_FROM
     msg["To"] = to
     msg.attach(MIMEText(body_html, "html"))
-    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as smtp:
-        smtp.starttls()
-        if settings.SMTP_USER:
-            smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-        smtp.sendmail(settings.SMTP_FROM, to, msg.as_string())
-    return True
+    try:
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as smtp:
+            smtp.starttls()
+            if settings.SMTP_USER:
+                smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            smtp.sendmail(settings.SMTP_FROM, to, msg.as_string())
+        return True
+    except Exception as e:
+        logger.error("smtp send failed: %s", e)
+        return False
 
 
 def _send_via_sendgrid(to: str, body_html: str, job_title: str) -> bool:
