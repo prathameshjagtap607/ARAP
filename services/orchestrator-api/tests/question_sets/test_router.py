@@ -2,7 +2,7 @@ import uuid
 
 import pytest
 
-from tests.question_sets.conftest import FAKE_EMBEDDINGS, FAKE_QUESTIONS
+from tests.question_sets.conftest import FAKE_QUESTIONS
 
 
 @pytest.mark.asyncio
