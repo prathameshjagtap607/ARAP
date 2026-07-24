@@ -1,9 +1,12 @@
+import logging
 import math
 import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from agents.question_generation.agent import run_question_generation_agent
 from agents.question_generation.prompts import CATEGORY_TO_COMPETENCY, PROMPT_VERSION
@@ -57,6 +60,11 @@ def _derive_category_counts(competency_weightage: dict, target: int) -> dict[str
     return {k: v for k, v in counts.items() if v > 0}
 
 
+# NOTE: The HNSW index covers the full table (not org-scoped). PostgreSQL cannot
+# use the index when an org_id WHERE predicate precedes the vector ORDER BY, so
+# this degrades to a sequential scan at large fingerprint counts. The separate
+# B-tree index on org_id mitigates this for the WHERE filter step. Acceptable
+# at MVP scale; revisit with IVFFlat per-org partitioning if fingerprints exceed ~100k rows.
 def _is_duplicate(db: Session, org_id: uuid.UUID, embedding: list[float]) -> bool:
     row = db.execute(
         text(
@@ -84,6 +92,26 @@ def _dedup(
         for q, emb in zip(questions, embeddings)
         if not _is_duplicate(db, org_id, emb)
     ]
+
+
+def _dedup_within_batch(
+    accepted: list[tuple[dict, list[float]]],
+) -> list[tuple[dict, list[float]]]:
+    result: list[tuple[dict, list[float]]] = []
+    for q, emb in accepted:
+        emb_arr = emb
+        duplicate = False
+        for _, prev_emb in result:
+            dot = sum(a * b for a, b in zip(emb_arr, prev_emb))
+            norm_a = sum(a * a for a in emb_arr) ** 0.5
+            norm_b = sum(b * b for b in prev_emb) ** 0.5
+            similarity = dot / (norm_a * norm_b) if norm_a and norm_b else 0.0
+            if similarity >= _SIMILARITY_THRESHOLD:
+                duplicate = True
+                break
+        if not duplicate:
+            result.append((q, emb))
+    return result
 
 
 def _call_agent(
@@ -154,6 +182,7 @@ def generate_question_set(
 
     embeddings = embed_texts([q["question"] for q in questions])
     accepted = _dedup(db, org_id, questions, embeddings)
+    accepted = _dedup_within_batch(accepted)
 
     # Pass 2: fill the gap if needed
     if len(accepted) < target:
@@ -165,6 +194,7 @@ def generate_question_set(
         if gap_questions:
             gap_embeddings = embed_texts([q["question"] for q in gap_questions])
             accepted += _dedup(db, org_id, gap_questions, gap_embeddings)
+            accepted = _dedup_within_batch(accepted)
 
     if len(accepted) < target:
         raise RuntimeError(
@@ -185,6 +215,10 @@ def generate_question_set(
                 ref_emb = embed_texts([ref_q["question"]])[0]
                 if not _is_duplicate(db, org_id, ref_emb):
                     accepted[-1] = (ref_q, ref_emb)
+        if not any(q.get("resume_reference") for q, _ in accepted):
+            logger.warning(
+                "M4-F03: resume_reference enforcement failed — persisting question set without a resume-referenced question"
+            )
 
     # Persist: question_set → session_questions → fingerprints → lock
     question_set = QuestionSet(
@@ -271,7 +305,7 @@ def _build_response(qs: QuestionSet, sqs: list[SessionQuestion]) -> QuestionSetR
             answer_format=sq.answer_format,
             options=list(sq.options) if sq.options else None,
         )
-        for sq in sqs
+        for sq in sorted(sqs, key=lambda x: x.sequence_no)
     ]
     return QuestionSetResponse(
         id=qs.id,

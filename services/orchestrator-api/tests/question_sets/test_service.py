@@ -20,7 +20,7 @@ def test_generate_persists_question_set(db, seed, mock_agent, mock_embed):
     assert result.questions[1].sequence_no == 2
 
 
-def test_generate_rejects_duplicate_above_threshold(db, seed, mock_agent):
+def test_generate_rejects_duplicate_above_threshold(db, seed):
     from src.models.question_fingerprints import QuestionFingerprint
     from src.modules.question_sets.service import generate_question_set
 
