@@ -4,7 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.database import get_db
-from src.modules.auth.dependencies import TokenClaims, require_candidate_scope, require_user
+from src.modules.auth.dependencies import (
+    TokenClaims,
+    require_candidate_scope,
+    require_user,
+)
 from src.modules.sessions import service
 from src.modules.sessions.schemas import (
     AnswerRequest,

@@ -55,7 +55,9 @@ def _send_via_smtp(to: str, body_html: str, job_title: str) -> bool:
 
 
 def _send_via_sendgrid(to: str, body_html: str, job_title: str) -> bool:
-    import urllib.request, json as _json, urllib.error
+    import json as _json
+    import urllib.error
+    import urllib.request
     payload = _json.dumps({
         "personalizations": [{"to": [{"email": to}]}],
         "from": {"email": settings.SMTP_FROM},
