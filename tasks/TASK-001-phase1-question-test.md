@@ -63,9 +63,9 @@ of ARAP that is actually usable on a live requisition.
 - [x] Candidate can log in via emailed link, take the test DISC-style, and
       submit within the time window; a simulated disconnect does not lose
       already-answered questions — **DONE M5** (commit 4a5ea2b)
-- [ ] On submission, Evaluation Agent scores every answer with a cited
-      excerpt, and a session-level roll-up + basic verdict is produced — **NEXT: M6**
-- [ ] Basic report visible on the HR Dashboard within 5 minutes of submission — M9+M10
+- [x] On submission, Evaluation Agent scores every answer with a cited
+      excerpt, and a session-level roll-up + basic verdict is produced — **DONE M6** (commit a168cc7)
+- [ ] Basic report visible on the HR Dashboard within 5 minutes of submission — M10 (report API done, dashboard UI pending)
 - [ ] Candidate Dashboard never exposes a raw competency score — M10
 
 ## Session checkpoints
@@ -77,9 +77,9 @@ of ARAP that is actually usable on a live requisition.
 | candidate-profile | M3 | ✅ complete | `52fe5a9` |
 | question-gen | M4 | ✅ complete | `6e979df` |
 | test-delivery | M5 | ✅ complete | `4a5ea2b` |
-| evaluation | M6 | ⏳ next | — |
-| report-gen | M9 | pending | — |
-| dashboards | M10 | pending | — |
+| evaluation | M6 | ✅ complete | `a168cc7` |
+| report-gen | M9 | ✅ complete (basic) | `a168cc7` |
+| dashboards | M10 | ⏳ next | — |
 
 ## Open questions (PRD §18)
 
