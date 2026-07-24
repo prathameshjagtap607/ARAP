@@ -108,6 +108,58 @@ async def test_submit_endpoint(started_client, seed, candidate_token):
 
 
 @pytest.mark.asyncio
+async def test_patch_answer_question_from_different_session_rejected(async_client, seed, candidate_token, db):
+    """PATCH with question belonging to a different session returns 404."""
+    from datetime import UTC, datetime
+    from src.models.assessment_sessions import AssessmentSession
+    from src.models.question_sets import QuestionSet
+    from src.models.session_questions import SessionQuestion
+
+    # Create a second session with its own question
+    other_session = AssessmentSession(
+        org_id=seed["org"].id,
+        job_assessment_id=seed["job"].id,
+        candidate_id=seed["candidate"].id,
+        time_budget_seconds=1800,
+        status="in_progress",
+        started_at=datetime.now(UTC),
+    )
+    db.add(other_session)
+    db.flush()
+
+    other_qset = QuestionSet(
+        org_id=seed["org"].id,
+        session_id=other_session.id,
+        generation_prompt_version="v1",
+        locked_at=datetime.now(UTC),
+    )
+    db.add(other_qset)
+    db.flush()
+
+    other_q = SessionQuestion(
+        org_id=seed["org"].id,
+        question_set_id=other_qset.id,
+        sequence_no=1,
+        question={"text": "Other session question"},
+        category="Technical",
+        target_competencies=["problem_solving"],
+        difficulty="easy",
+        answer_format="short_text",
+    )
+    db.add(other_q)
+    db.commit()
+
+    # candidate_token is scoped to seed["session"], not other_session
+    # Using other_q.id (which belongs to other_session) should return 404
+    resp = await async_client.patch(
+        f"/sessions/{seed['session'].id}/questions/{other_q.id}/answer",
+        json={"answer_text": "Cross-session attempt"},
+        headers={"Authorization": f"Bearer {candidate_token}"},
+    )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_candidate_cannot_access_other_session(async_client, seed, db):
     """Candidate JWT for session A cannot access session B."""
     import uuid

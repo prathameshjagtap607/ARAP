@@ -120,7 +120,15 @@ def save_answer(
     session = _get_session_or_404(db, session_id, org_id)
     if session.status in ("completed", "expired"):
         raise ValueError(f"session is {session.status} — answers no longer accepted")
-    q = db.query(SessionQuestion).filter_by(id=question_id).first()
+    q = (
+        db.query(SessionQuestion)
+        .join(QuestionSet, SessionQuestion.question_set_id == QuestionSet.id)
+        .filter(
+            SessionQuestion.id == question_id,
+            QuestionSet.session_id == session_id,
+        )
+        .first()
+    )
     if not q:
         raise LookupError("question not found")
     q.answer_text = answer_text
