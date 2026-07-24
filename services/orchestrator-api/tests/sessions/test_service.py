@@ -65,3 +65,72 @@ def test_get_session_state_seconds_remaining_after_start(db, seed):
     assert result.seconds_remaining is not None
     assert result.seconds_remaining <= 1800
     assert result.seconds_remaining >= 0
+
+
+def test_save_answer_long_text(db, seed):
+    """save_answer persists answer_text and answered_at for long_text question."""
+    # ensure session is started first
+    service.start_session(db, seed["session"].id, seed["org"].id)
+    result = service.save_answer(
+        db, seed["session"].id, seed["q1"].id, seed["org"].id, "My Python answer"
+    )
+    assert result.answer_text == "My Python answer"
+    assert result.answered_at is not None
+
+
+def test_save_answer_rejects_completed_session(db, seed):
+    """save_answer raises ValueError if session is completed."""
+    from src.models.assessment_sessions import AssessmentSession
+    s = db.query(AssessmentSession).filter_by(id=seed["session"].id).first()
+    orig_status = s.status
+    s.status = "completed"
+    db.flush()
+    with pytest.raises(ValueError, match="completed"):
+        service.save_answer(
+            db, seed["session"].id, seed["q1"].id, seed["org"].id, "late answer"
+        )
+    s.status = orig_status
+    db.flush()
+
+
+def test_submit_session_marks_completed(db, seed):
+    """submit_session transitions in_progress → completed."""
+    result = service.submit_session(db, seed["session"].id, seed["org"].id)
+    assert result.status == "completed"
+    assert result.completed_at is not None
+
+
+def test_submit_session_idempotent(db, seed):
+    """submit_session called twice returns completed without error."""
+    r1 = service.submit_session(db, seed["session"].id, seed["org"].id)
+    r2 = service.submit_session(db, seed["session"].id, seed["org"].id)
+    assert r2.status in ("completed", "expired")
+
+
+def test_submit_session_expired_no_answers(db, seed):
+    """submit_session with no answers and past deadline → expired."""
+    from datetime import timedelta
+    from src.models.assessment_sessions import AssessmentSession
+    # Create a fresh session that has already expired
+    from src.models.question_sets import QuestionSet
+    new_session = AssessmentSession(
+        org_id=seed["org"].id,
+        job_assessment_id=seed["job"].id,
+        candidate_id=seed["candidate"].id,
+        time_budget_seconds=1,
+        started_at=datetime.now(UTC) - timedelta(seconds=10),
+        status="in_progress",
+    )
+    db.add(new_session)
+    db.flush()
+    new_qset = QuestionSet(
+        org_id=seed["org"].id,
+        session_id=new_session.id,
+        generation_prompt_version="v1",
+        locked_at=datetime.now(UTC),
+    )
+    db.add(new_qset)
+    db.flush()
+    db.commit()
+    result = service.submit_session(db, new_session.id, seed["org"].id)
+    assert result.status == "expired"

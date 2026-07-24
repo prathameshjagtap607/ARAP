@@ -108,3 +108,53 @@ def start_session(
         db.flush()
         db.commit()
     return _build_state(db, session)
+
+
+def save_answer(
+    db: Session,
+    session_id: uuid.UUID,
+    question_id: uuid.UUID,
+    org_id: uuid.UUID,
+    answer_text: str,
+) -> AnswerResponse:
+    session = _get_session_or_404(db, session_id, org_id)
+    if session.status in ("completed", "expired"):
+        raise ValueError(f"session is {session.status} — answers no longer accepted")
+    q = db.query(SessionQuestion).filter_by(id=question_id).first()
+    if not q:
+        raise LookupError("question not found")
+    q.answer_text = answer_text
+    q.answered_at = datetime.now(UTC)
+    db.flush()
+    db.commit()
+    db.refresh(q)
+    return AnswerResponse.model_validate(q)
+
+
+def submit_session(
+    db: Session, session_id: uuid.UUID, org_id: uuid.UUID
+) -> SubmitResponse:
+    session = _get_session_or_404(db, session_id, org_id)
+    if session.status in ("completed", "expired"):
+        return SubmitResponse(status=session.status, completed_at=session.completed_at)
+
+    now = datetime.now(UTC)
+    has_answers = (
+        db.query(SessionQuestion)
+        .join(QuestionSet, SessionQuestion.question_set_id == QuestionSet.id)
+        .filter(QuestionSet.session_id == session_id, SessionQuestion.answered_at.isnot(None))
+        .count()
+    ) > 0
+
+    expired = _seconds_remaining(session) == 0
+
+    if expired and not has_answers:
+        session.status = "expired"
+    else:
+        session.status = "completed"
+        session.completed_at = now
+
+    db.flush()
+    db.commit()
+    logger.info("session %s submitted status=%s", session_id, session.status)
+    return SubmitResponse(status=session.status, completed_at=session.completed_at)
