@@ -1,8 +1,17 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Numeric, String, Text, UniqueConstraint, func, text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -28,14 +37,14 @@ class HiringReport(Base):
     )
     org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orgs.id"), nullable=False)
     session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("assessment_sessions.id"), nullable=False)
-    executive_summary: Mapped[Optional[str]] = mapped_column(Text)
+    executive_summary: Mapped[str | None] = mapped_column(Text)
     score_rollup: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'"))
-    behavior_profile_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("behavior_profiles.id"))
+    behavior_profile_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("behavior_profiles.id"))
     integrity_summary: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'"))
-    salary_band: Mapped[Optional[str]] = mapped_column(String)
-    verdict: Mapped[Optional[str]] = mapped_column(String)
-    ai_confidence_score: Mapped[Optional[float]] = mapped_column(Numeric(5, 2))
-    recommended_next_round: Mapped[Optional[str]] = mapped_column(Text)
+    salary_band: Mapped[str | None] = mapped_column(String)
+    verdict: Mapped[str | None] = mapped_column(String)
+    ai_confidence_score: Mapped[float | None] = mapped_column(Numeric(5, 2))
+    recommended_next_round: Mapped[str | None] = mapped_column(Text)
     training_needs: Mapped[list] = mapped_column(
         ARRAY(Text), nullable=False, server_default=text("'{}'")
     )
@@ -45,7 +54,7 @@ class HiringReport(Base):
     suggested_ceo_questions: Mapped[list] = mapped_column(
         ARRAY(Text), nullable=False, server_default=text("'{}'")
     )
-    reviewer_override: Mapped[Optional[dict]] = mapped_column(JSONB)
+    reviewer_override: Mapped[dict | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

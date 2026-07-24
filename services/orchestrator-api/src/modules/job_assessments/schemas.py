@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -13,13 +13,13 @@ def _validate_weightage(v: dict[str, float]) -> dict[str, float]:
 
 class JobAssessmentCreate(BaseModel):
     title: str
-    department: Optional[str] = None
-    experience_min: Optional[int] = None
-    experience_max: Optional[int] = None
+    department: str | None = None
+    experience_min: int | None = None
+    experience_max: int | None = None
     required_skills: list[str] = []
     preferred_skills: list[str] = []
-    responsibilities: Optional[str] = None
-    education: Optional[str] = None
+    responsibilities: str | None = None
+    education: str | None = None
     certifications: list[str] = []
     behavioral_competencies: list[str] = []
     leadership_competencies: list[str] = []
@@ -28,7 +28,7 @@ class JobAssessmentCreate(BaseModel):
     duration_minutes: int = Field(gt=0)
     competency_weightage: dict[str, float]
     is_template: bool = False
-    role_family: Optional[str] = None
+    role_family: str | None = None
 
     @field_validator("competency_weightage")
     @classmethod
@@ -37,41 +37,41 @@ class JobAssessmentCreate(BaseModel):
 
 
 class JobAssessmentUpdate(BaseModel):
-    title: Optional[str] = None
-    department: Optional[str] = None
-    experience_min: Optional[int] = None
-    experience_max: Optional[int] = None
-    required_skills: Optional[list[str]] = None
-    preferred_skills: Optional[list[str]] = None
-    responsibilities: Optional[str] = None
-    education: Optional[str] = None
-    certifications: Optional[list[str]] = None
-    behavioral_competencies: Optional[list[str]] = None
-    leadership_competencies: Optional[list[str]] = None
-    culture_values: Optional[list[str]] = None
-    difficulty_level: Optional[Literal["junior", "mid", "senior", "executive"]] = None
-    duration_minutes: Optional[int] = Field(default=None, gt=0)
-    competency_weightage: Optional[dict[str, float]] = None
-    is_template: Optional[bool] = None
-    role_family: Optional[str] = None
+    title: str | None = None
+    department: str | None = None
+    experience_min: int | None = None
+    experience_max: int | None = None
+    required_skills: list[str] | None = None
+    preferred_skills: list[str] | None = None
+    responsibilities: str | None = None
+    education: str | None = None
+    certifications: list[str] | None = None
+    behavioral_competencies: list[str] | None = None
+    leadership_competencies: list[str] | None = None
+    culture_values: list[str] | None = None
+    difficulty_level: Literal["junior", "mid", "senior", "executive"] | None = None
+    duration_minutes: int | None = Field(default=None, gt=0)
+    competency_weightage: dict[str, float] | None = None
+    is_template: bool | None = None
+    role_family: str | None = None
 
     @field_validator("competency_weightage")
     @classmethod
-    def weightage_sums_to_100(cls, v: Optional[dict[str, float]]) -> Optional[dict[str, float]]:
+    def weightage_sums_to_100(cls, v: dict[str, float] | None) -> dict[str, float] | None:
         if v is not None:
             return _validate_weightage(v)
         return v
 
 
 class CloneRequest(BaseModel):
-    competency_weightage: Optional[dict[str, float]] = None
-    required_skills: Optional[list[str]] = None
-    preferred_skills: Optional[list[str]] = None
-    role_family: Optional[str] = None
+    competency_weightage: dict[str, float] | None = None
+    required_skills: list[str] | None = None
+    preferred_skills: list[str] | None = None
+    role_family: str | None = None
 
     @field_validator("competency_weightage")
     @classmethod
-    def weightage_sums_to_100(cls, v: Optional[dict[str, float]]) -> Optional[dict[str, float]]:
+    def weightage_sums_to_100(cls, v: dict[str, float] | None) -> dict[str, float] | None:
         if v is not None:
             return _validate_weightage(v)
         return v
@@ -95,13 +95,13 @@ class JobAssessmentResponse(BaseModel):
     id: uuid.UUID
     org_id: uuid.UUID
     title: str
-    department: Optional[str]
-    experience_min: Optional[int]
-    experience_max: Optional[int]
+    department: str | None
+    experience_min: int | None
+    experience_max: int | None
     required_skills: list[str]
     preferred_skills: list[str]
-    responsibilities: Optional[str]
-    education: Optional[str]
+    responsibilities: str | None
+    education: str | None
     certifications: list[str]
     behavioral_competencies: list[str]
     leadership_competencies: list[str]
@@ -110,7 +110,7 @@ class JobAssessmentResponse(BaseModel):
     duration_minutes: int
     competency_weightage: dict
     is_template: bool
-    role_family: Optional[str]
-    job_profile: Optional[dict]
+    role_family: str | None
+    job_profile: dict | None
     created_by: uuid.UUID
     created_at: datetime

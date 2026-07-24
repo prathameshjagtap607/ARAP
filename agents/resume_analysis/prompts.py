@@ -1,4 +1,3 @@
-import os
 
 SYSTEM_PROMPT = (
     "You are a resume parsing assistant. "

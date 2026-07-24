@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 
 from sqlalchemy.orm import Session
 
@@ -8,13 +7,16 @@ from src.models.assessment_sessions import AssessmentSession
 from src.models.candidates import Candidate
 from src.models.job_assessments import JobAssessment
 from src.modules.job_assessments.schemas import (
-    CloneRequest, InviteRequest, InviteResponse,
-    JobAssessmentCreate, JobAssessmentUpdate,
+    CloneRequest,
+    InviteRequest,
+    InviteResponse,
+    JobAssessmentCreate,
+    JobAssessmentUpdate,
 )
 
 
 def list_assessments(
-    db: Session, org_id: uuid.UUID, is_template: Optional[bool] = None
+    db: Session, org_id: uuid.UUID, is_template: bool | None = None
 ) -> list[JobAssessment]:
     q = db.query(JobAssessment).filter_by(org_id=org_id)
     if is_template is not None:

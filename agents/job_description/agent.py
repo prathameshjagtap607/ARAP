@@ -3,9 +3,9 @@ from datetime import UTC, datetime
 
 import anthropic
 from sqlalchemy.orm import Session
+from src.config import settings
 
 from agents.job_description.prompts import JOB_PROFILE_TOOL, SYSTEM_PROMPT
-from src.config import settings
 
 logger = logging.getLogger(__name__)
 

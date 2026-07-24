@@ -1,6 +1,5 @@
 import logging
 import uuid
-from typing import Optional
 
 import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
@@ -32,19 +31,19 @@ class CandidateProfileResponse(BaseModel):
     candidate_id: uuid.UUID
     job_assessment_id: uuid.UUID
     org_id: uuid.UUID
-    parsing_confidence: Optional[float]
-    field_confidence: Optional[dict]
-    match_score: Optional[float]
-    github_enrichment: Optional[dict]
+    parsing_confidence: float | None
+    field_confidence: dict | None
+    match_score: float | None
+    github_enrichment: dict | None
     skill_matrix: dict
     experience_matrix: dict
-    leadership_level_estimate: Optional[str]
+    leadership_level_estimate: str | None
 
     class Config:
         from_attributes = True
 
 
-def _fetch_github(github_url: str) -> Optional[dict]:
+def _fetch_github(github_url: str) -> dict | None:
     try:
         handle = github_url.rstrip("/").rsplit("/", 1)[-1].lstrip("@")
         user_resp = httpx.get(
@@ -116,10 +115,10 @@ def _run_pipeline(
     candidate: Candidate,
     job: JobAssessment,
     org_id: uuid.UUID,
-    file_bytes: Optional[bytes],
-    mime: Optional[str],
+    file_bytes: bytes | None,
+    mime: str | None,
 ) -> CandidateProfile:
-    raw_text: Optional[str] = None
+    raw_text: str | None = None
     if file_bytes and mime:
         try:
             raw_text = extract_text(file_bytes, mime)
@@ -129,20 +128,20 @@ def _run_pipeline(
             logger.exception("Text extraction failed for candidate %s", candidate.id)
 
     job_profile = job.job_profile
-    extraction: Optional[dict] = None
+    extraction: dict | None = None
     if raw_text:
         extraction = run_resume_analysis_agent(raw_text, job_profile)
 
-    github_enrichment: Optional[dict] = None
+    github_enrichment: dict | None = None
     if candidate.github_url:
         github_enrichment = _fetch_github(candidate.github_url)
 
-    match_score: Optional[float] = None
-    field_confidence: Optional[dict] = None
-    parsing_confidence: Optional[float] = None
+    match_score: float | None = None
+    field_confidence: dict | None = None
+    parsing_confidence: float | None = None
     skill_matrix: dict = {}
     experience_matrix: dict = {}
-    leadership_level_estimate: Optional[str] = None
+    leadership_level_estimate: str | None = None
 
     if extraction:
         field_confidence = extraction.get("field_confidence")
@@ -224,8 +223,8 @@ def analyze(body: AnalyzeRequest, background_tasks: BackgroundTasks, db: Session
             detail="Candidate has no resume file uploaded",
         )
 
-    file_bytes: Optional[bytes] = None
-    mime: Optional[str] = None
+    file_bytes: bytes | None = None
+    mime: str | None = None
     is_large = False
     try:
         file_bytes = download_file(candidate.resume_file_url)

@@ -1,4 +1,4 @@
-from typing import Generator
+from collections.abc import Generator
 
 import redis as redis_lib
 from sqlalchemy import create_engine

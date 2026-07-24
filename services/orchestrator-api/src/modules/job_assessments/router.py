@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -8,8 +7,12 @@ from src.database import get_db
 from src.modules.auth.dependencies import TokenClaims, require_user
 from src.modules.job_assessments import service
 from src.modules.job_assessments.schemas import (
-    CloneRequest, InviteRequest, InviteResponse,
-    JobAssessmentCreate, JobAssessmentResponse, JobAssessmentUpdate,
+    CloneRequest,
+    InviteRequest,
+    InviteResponse,
+    JobAssessmentCreate,
+    JobAssessmentResponse,
+    JobAssessmentUpdate,
 )
 
 router = APIRouter(prefix="/job-assessments", tags=["job-assessments"])
@@ -17,7 +20,7 @@ router = APIRouter(prefix="/job-assessments", tags=["job-assessments"])
 
 @router.get("", response_model=list[JobAssessmentResponse])
 def list_assessments(
-    is_template: Optional[bool] = Query(default=None),
+    is_template: bool | None = Query(default=None),
     claims: TokenClaims = Depends(require_user),
     db: Session = Depends(get_db),
 ):

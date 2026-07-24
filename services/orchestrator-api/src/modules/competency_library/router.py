@@ -7,7 +7,9 @@ from src.database import get_db
 from src.modules.auth.dependencies import TokenClaims, require_user
 from src.modules.competency_library import service
 from src.modules.competency_library.schemas import (
-    CompetencyCreate, CompetencyResponse, CompetencyUpdate,
+    CompetencyCreate,
+    CompetencyResponse,
+    CompetencyUpdate,
 )
 
 router = APIRouter(prefix="/competency-library", tags=["competency-library"])

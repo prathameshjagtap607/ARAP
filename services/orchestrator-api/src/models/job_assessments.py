@@ -1,10 +1,16 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
-    Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text,
-    func, text,
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -26,17 +32,17 @@ class JobAssessment(Base):
     )
     org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orgs.id"), nullable=False)
     title: Mapped[str] = mapped_column(String, nullable=False)
-    department: Mapped[Optional[str]] = mapped_column(String)
-    experience_min: Mapped[Optional[int]] = mapped_column(Integer)
-    experience_max: Mapped[Optional[int]] = mapped_column(Integer)
+    department: Mapped[str | None] = mapped_column(String)
+    experience_min: Mapped[int | None] = mapped_column(Integer)
+    experience_max: Mapped[int | None] = mapped_column(Integer)
     required_skills: Mapped[list] = mapped_column(
         ARRAY(Text), nullable=False, server_default=text("'{}'")
     )
     preferred_skills: Mapped[list] = mapped_column(
         ARRAY(Text), nullable=False, server_default=text("'{}'")
     )
-    responsibilities: Mapped[Optional[str]] = mapped_column(Text)
-    education: Mapped[Optional[str]] = mapped_column(Text)
+    responsibilities: Mapped[str | None] = mapped_column(Text)
+    education: Mapped[str | None] = mapped_column(Text)
     certifications: Mapped[list] = mapped_column(
         ARRAY(Text), nullable=False, server_default=text("'{}'")
     )
@@ -55,8 +61,8 @@ class JobAssessment(Base):
     is_template: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
-    role_family: Mapped[Optional[str]] = mapped_column(Text)
-    job_profile: Mapped[Optional[dict]] = mapped_column(JSONB)
+    role_family: Mapped[str | None] = mapped_column(Text)
+    job_profile: Mapped[dict | None] = mapped_column(JSONB)
     created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

@@ -1,8 +1,16 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint, func, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -17,7 +25,7 @@ class PromptTemplate(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True, server_default=text("gen_random_uuid()")
     )
-    org_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("orgs.id"), nullable=True)
+    org_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("orgs.id"), nullable=True)
     agent_name: Mapped[str] = mapped_column(String, nullable=False)
     version: Mapped[str] = mapped_column(String, nullable=False)
     template_body: Mapped[str] = mapped_column(Text, nullable=False)

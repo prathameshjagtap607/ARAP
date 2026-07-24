@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, UploadFile, status
 
 from src.parsers import SUPPORTED_MIME_TYPES
 from src.s3 import ensure_bucket, upload_file
-from src.config import settings
 
 router = APIRouter(tags=["upload"])
 

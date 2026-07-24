@@ -1,8 +1,17 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func, text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -36,10 +45,10 @@ class SessionQuestion(Base):
     )
     difficulty: Mapped[str] = mapped_column(String, nullable=False)
     answer_format: Mapped[str] = mapped_column(String, nullable=False)
-    options: Mapped[Optional[dict]] = mapped_column(JSONB)
-    answer_text: Mapped[Optional[str]] = mapped_column(Text)
-    answered_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    evaluation: Mapped[Optional[dict]] = mapped_column(JSONB)
+    options: Mapped[dict | None] = mapped_column(JSONB)
+    answer_text: Mapped[str | None] = mapped_column(Text)
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    evaluation: Mapped[dict | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

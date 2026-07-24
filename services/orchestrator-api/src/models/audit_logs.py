@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey, String, func, text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -22,7 +21,7 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String, nullable=False)
     entity_type: Mapped[str] = mapped_column(String, nullable=False)
     entity_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
-    log_metadata: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=False, server_default=text("'{}'"))
+    log_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB, nullable=False, server_default=text("'{}'"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -1,6 +1,5 @@
 import uuid
 from dataclasses import dataclass
-from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
 
@@ -11,8 +10,8 @@ class TokenClaims:
     role: str
     org_id: uuid.UUID
     type: str
-    assessment_session_id: Optional[uuid.UUID] = None
-    report_share_id: Optional[uuid.UUID] = None
+    assessment_session_id: uuid.UUID | None = None
+    report_share_id: uuid.UUID | None = None
 
 
 def get_claims(request: Request) -> TokenClaims:

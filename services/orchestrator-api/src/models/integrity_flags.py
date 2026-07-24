@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -26,7 +25,7 @@ class IntegrityFlag(Base):
     )
     org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orgs.id"), nullable=False)
     session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("assessment_sessions.id"), nullable=False)
-    session_question_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("session_questions.id"))
+    session_question_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("session_questions.id"))
     flag_type: Mapped[str] = mapped_column(Text, nullable=False)
     severity: Mapped[str] = mapped_column(Text, nullable=False)
     evidence: Mapped[str] = mapped_column(Text, nullable=False)

@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session
 from src.database import get_db
 from src.modules.auth.dependencies import TokenClaims, require_user
 from src.modules.candidate_profiles import service
-from src.modules.candidate_profiles.schemas import CandidateProfileResponse, SynthesizeRequest
+from src.modules.candidate_profiles.schemas import (
+    CandidateProfileResponse,
+    SynthesizeRequest,
+)
 
 router = APIRouter(prefix="/candidate-profiles", tags=["candidate-profiles"])
 

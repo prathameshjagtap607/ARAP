@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 
-
 from sqlalchemy import DateTime, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
