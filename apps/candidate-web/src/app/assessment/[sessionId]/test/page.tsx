@@ -17,12 +17,16 @@ export default function QuestionPage() {
   const router = useRouter();
   const { state, dispatch } = useSession();
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const [announcedTime, setAnnouncedTime] = useState<string | null>(null);
   const [timerSeed, setTimerSeed] = useState(0);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const submitCalledRef = useRef(false);
 
-  // Rehydrate from server on mount and on reconnect
+  useEffect(() => {
+    document.title = "Assessment In Progress | ARAP";
+  }, []);
+
   const rehydrate = useCallback(async () => {
     if (!state.jwt) return;
     try {
@@ -32,7 +36,7 @@ export default function QuestionPage() {
       dispatch({ type: "REHYDRATE", session: data });
       if (data.seconds_remaining !== null) {
         setSecondsLeft(data.seconds_remaining);
-        setTimerSeed(s => s + 1);
+        setTimerSeed((s) => s + 1);
       }
     } catch {}
   }, [state.jwt, sessionId, dispatch]);
@@ -57,6 +61,14 @@ export default function QuestionPage() {
     }, 1000);
     return () => clearInterval(id);
   }, [timerSeed]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Rate-limited screen reader announcements: every 60s boundary and when ≤ 60s
+  useEffect(() => {
+    if (secondsLeft === null) return;
+    if (secondsLeft % 60 === 0 || secondsLeft <= 60) {
+      setAnnouncedTime(formatTime(secondsLeft));
+    }
+  }, [secondsLeft]);
 
   // Auto-submit at expiry
   useEffect(() => {
@@ -100,31 +112,42 @@ export default function QuestionPage() {
     }
   }
 
-  const allAnswered = questions.length > 0 && questions.every((q) => !!state.answers[q.id]);
+  const allAnswered =
+    questions.length > 0 && questions.every((q) => !!state.answers[q.id]);
   const timerWarning = secondsLeft !== null && secondsLeft <= 60;
 
   return (
-    <main className="flex min-h-screen flex-col px-6 py-8 max-w-2xl mx-auto">
+    <main id="main-content" className="flex min-h-screen flex-col px-6 py-8 max-w-2xl mx-auto">
       {/* Timer */}
       <div className="flex justify-between items-center mb-6">
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-slate-600">
           Question {state.currentIndex + 1} of {questions.length}
         </span>
         {secondsLeft !== null && (
-          <div
-            aria-live="polite"
-            aria-atomic="true"
-            className={`text-sm font-mono font-semibold ${
-              timerWarning ? "text-red-600" : "text-slate-700"
-            }`}
-          >
-            {formatTime(secondsLeft)}
-          </div>
+          <>
+            {/* Visible countdown — hidden from screen readers */}
+            <div
+              aria-hidden="true"
+              className={`text-sm font-mono font-semibold ${
+                timerWarning ? "text-red-600" : "text-slate-700"
+              }`}
+            >
+              {formatTime(secondsLeft)}
+            </div>
+            {/* Screen-reader live region — announces only at 60s intervals and ≤ 60s */}
+            <div aria-live="polite" aria-atomic="true" className="sr-only">
+              {announcedTime !== null ? `Time remaining: ${announcedTime}` : ""}
+            </div>
+          </>
         )}
       </div>
 
       {/* Question pill nav */}
-      <div className="flex gap-2 flex-wrap mb-6" role="navigation" aria-label="Questions">
+      <div
+        className="flex gap-2 flex-wrap mb-6"
+        role="navigation"
+        aria-label="Questions"
+      >
         {questions.map((q, i) => (
           <button
             key={q.id}
@@ -154,8 +177,9 @@ export default function QuestionPage() {
               {Object.entries(current.options).map(([key, label]) => (
                 <label
                   key={key}
-                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 cursor-pointer
-                             hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-slate-200
+                             cursor-pointer hover:border-slate-400
+                             has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50"
                 >
                   <input
                     type="radio"
@@ -203,11 +227,36 @@ export default function QuestionPage() {
             </div>
           )}
 
+          {/* Fallback for PRD §17 deferred formats (video / voice / code).
+              Captures a text answer so scoring continuity is preserved. */}
+          {current.answer_format !== "multiple_choice" &&
+            current.answer_format !== "short_text" &&
+            current.answer_format !== "long_text" && (
+              <div key={current.id}>
+                <p className="text-sm text-slate-600 mb-2">
+                  Please provide your response in text form below.
+                </p>
+                <label htmlFor={`fallback-${current.id}`} className="sr-only">
+                  Your answer
+                </label>
+                <textarea
+                  id={`fallback-${current.id}`}
+                  rows={6}
+                  defaultValue={state.answers[current.id] ?? ""}
+                  onBlur={(e) => saveAnswer(current.id, e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 text-slate-900
+                             focus:outline focus:outline-2 focus:outline-slate-900 resize-y"
+                />
+              </div>
+            )}
+
           {saving[current.id] && (
-            <p className="text-xs text-slate-400">Saving&hellip;</p>
+            <p className="text-xs text-slate-600">Saving&hellip;</p>
           )}
           {saveError && (
-            <p role="alert" className="text-xs text-red-600">{saveError}</p>
+            <p role="alert" className="text-xs text-red-600">
+              {saveError}
+            </p>
           )}
         </div>
       )}
@@ -215,7 +264,9 @@ export default function QuestionPage() {
       {/* Navigation */}
       <div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-100">
         <button
-          onClick={() => dispatch({ type: "SET_INDEX", index: state.currentIndex - 1 })}
+          onClick={() =>
+            dispatch({ type: "SET_INDEX", index: state.currentIndex - 1 })
+          }
           disabled={state.currentIndex === 0}
           className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm
                      disabled:opacity-40 disabled:cursor-not-allowed"
@@ -225,7 +276,9 @@ export default function QuestionPage() {
 
         {state.currentIndex < questions.length - 1 ? (
           <button
-            onClick={() => dispatch({ type: "SET_INDEX", index: state.currentIndex + 1 })}
+            onClick={() =>
+              dispatch({ type: "SET_INDEX", index: state.currentIndex + 1 })
+            }
             className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm"
           >
             Next
