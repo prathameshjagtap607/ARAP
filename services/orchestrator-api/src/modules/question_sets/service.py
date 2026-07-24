@@ -246,13 +246,9 @@ def get_question_set(
     session_id: uuid.UUID,
     org_id: uuid.UUID,
 ) -> QuestionSetResponse:
-    qs = db.query(QuestionSet).filter_by(session_id=session_id).first()
+    qs = db.query(QuestionSet).filter_by(session_id=session_id, org_id=org_id).first()
     if qs is None:
         raise LookupError("Question set not found — generate it first")
-
-    # Verify the set belongs to this org
-    if str(qs.org_id) != str(org_id):
-        raise LookupError("Question set not found")
 
     sqs = (
         db.query(SessionQuestion)
@@ -275,7 +271,7 @@ def _build_response(qs: QuestionSet, sqs: list[SessionQuestion]) -> QuestionSetR
             answer_format=sq.answer_format,
             options=list(sq.options) if sq.options else None,
         )
-        for sq in sorted(sqs, key=lambda x: x.sequence_no)
+        for sq in sqs
     ]
     return QuestionSetResponse(
         id=qs.id,

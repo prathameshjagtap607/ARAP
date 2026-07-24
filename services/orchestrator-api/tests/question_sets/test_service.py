@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
+from agents.question_generation.prompts import PROMPT_VERSION
 from tests.question_sets.conftest import FAKE_EMBEDDINGS, FAKE_QUESTIONS
 
 
@@ -13,7 +14,7 @@ def test_generate_persists_question_set(db, seed, mock_agent, mock_embed):
 
     assert result.session_id == seed["session"].id
     assert result.locked_at is not None
-    assert result.generation_prompt_version == "v1.0"
+    assert result.generation_prompt_version == PROMPT_VERSION
     assert len(result.questions) == 2
     assert result.questions[0].sequence_no == 1
     assert result.questions[1].sequence_no == 2
