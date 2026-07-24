@@ -170,7 +170,7 @@ export default function QuestionPage() {
           )}
 
           {current.answer_format === "short_text" && (
-            <div>
+            <div key={current.id}>
               <label htmlFor={`short-${current.id}`} className="sr-only">
                 Your answer
               </label>
@@ -186,7 +186,7 @@ export default function QuestionPage() {
           )}
 
           {current.answer_format === "long_text" && (
-            <div>
+            <div key={current.id}>
               <label htmlFor={`long-${current.id}`} className="sr-only">
                 Your answer
               </label>
