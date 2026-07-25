@@ -4,8 +4,8 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC
 
-_LATENCY_THRESHOLD_CPS = 3.0
-_STRUCTURAL_STD_THRESHOLD = 0.1
+_LATENCY_THRESHOLD_CPS = 20.0
+_STRUCTURAL_STD_THRESHOLD = 1.5
 _PHRASING_SIM_THRESHOLD = 0.30
 
 

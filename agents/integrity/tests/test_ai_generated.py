@@ -25,7 +25,7 @@ def _make_q(seq, text, fmt="long_text", answered_offset_s=300):
     return q
 
 
-# Case 1: Fewer than 2 long_text questions → skip, no flags
+# Case 1: fewer than 2 long_text questions → skip, no flags
 def test_too_few_long_text_skips():
     session = _make_session()
     qs = [_make_q(1, "Short answer.", fmt="short_text")]
@@ -33,23 +33,26 @@ def test_too_few_long_text_skips():
     assert result == []
 
 
-# Case 2: Varied answers (different sentence counts, reasonable latency) → no flag
+# Case 2: varied sentence counts (std_dev=2.0 > 1.5) → no structural flag;
+#          slow answers → no latency flag → no flags at all
 def test_varied_answers_no_flag():
     session = _make_session()
+    # sentence counts: 1, 5, 3 → pstdev = 1.63 > 1.5 → structural does NOT fire
     qs = [
-        _make_q(1, "I worked at Acme for three years. I built the billing pipeline. It handled $2M/day.", fmt="long_text", answered_offset_s=600),
-        _make_q(2, "Yeah, I know Python well. I have used it since college. Sometimes I use Go.", fmt="long_text", answered_offset_s=900),
-        _make_q(3, "My biggest challenge was a database migration. We had downtime risk. I solved it by staging the cutover. Then monitored for two days.", fmt="long_text", answered_offset_s=1200),
+        _make_q(1, "One sentence only.", fmt="long_text", answered_offset_s=300),
+        _make_q(2, "A. B. C. D. E.", fmt="long_text", answered_offset_s=600),
+        _make_q(3, "First. Second. Third.", fmt="long_text", answered_offset_s=900),
     ]
-    result = check_ai_generated(qs, session)
+    with patch("agents.integrity.checks.ai_generated._embed_texts_safe", return_value=None):
+        result = check_ai_generated(qs, session)
     assert result == []
 
 
-# Case 3: Uniform structure only (identical sentence count + all prose, reasonable latency) → flag low
+# Case 3: uniform sentence counts (std_dev=0 < 1.5) + slow (0.14 cps < 20) → structural only → low
 def test_structural_uniformity_flag_low():
     session = _make_session()
-    # All answers: exactly 2 sentences, all prose, within normal latency
-    uniform_answer = "This is sentence one. This is sentence two."
+    # all 2-sentence prose answers, submitted slowly
+    uniform_answer = "This is sentence one. This is sentence two."  # 43 chars
     qs = [
         _make_q(i, uniform_answer, fmt="long_text", answered_offset_s=300 * i)
         for i in range(1, 4)
@@ -62,14 +65,14 @@ def test_structural_uniformity_flag_low():
     assert result[0].session_question_id is None
 
 
-# Case 4: Latency anomaly only (answer typed impossibly fast) → flag low
+# Case 4: fast answer (500 chars / 10s = 50 cps > 20) + varied counts (pstdev=2.5 > 1.5) → latency only → low
 def test_latency_anomaly_flag_low():
     session = _make_session()
-    # 500 chars in 10 seconds = 50 cps (threshold is 20)
-    long_text = "x" * 500
+    # Q1: 500 chars in 10s = 50 cps (fires latency)
+    # Q2: 5 sentences vs Q1's 0 → pstdev([0,5])=2.5 > 1.5 → structural does NOT fire
     qs = [
-        _make_q(1, long_text, fmt="long_text", answered_offset_s=10),
-        _make_q(2, "Normal answer here. I took my time. It was good.", fmt="long_text", answered_offset_s=600),
+        _make_q(1, "x" * 500, fmt="long_text", answered_offset_s=10),
+        _make_q(2, "First. Second. Third. Fourth. Fifth.", fmt="long_text", answered_offset_s=600),
     ]
     with patch("agents.integrity.checks.ai_generated._embed_texts_safe", return_value=None):
         result = check_ai_generated(qs, session)
@@ -78,14 +81,16 @@ def test_latency_anomaly_flag_low():
     assert "latency_max" in result[0].evidence
 
 
-# Case 5: Two signals triggered → flag medium
+# Case 5: uniform counts (std_dev=0 < 1.5) + fast (50cps > 20) → both signals → medium
 def test_two_signals_medium():
     session = _make_session()
-    uniform_answer = "This is sentence one. This is sentence two."
+    # 506-char uniform answer: sentence_count=23 for all, pstdev=0 < 1.5 → structural fires
+    # Q1 submitted in 10s: 506/10=50.6 cps > 20 → latency fires
+    long_uniform = "This is sentence one. " * 23  # ~506 chars, 23 sentences
     qs = [
-        _make_q(1, uniform_answer, fmt="long_text", answered_offset_s=10),   # latency anomaly
-        _make_q(2, uniform_answer, fmt="long_text", answered_offset_s=300),
-        _make_q(3, uniform_answer, fmt="long_text", answered_offset_s=600),  # structural uniform
+        _make_q(1, long_uniform, fmt="long_text", answered_offset_s=10),
+        _make_q(2, long_uniform, fmt="long_text", answered_offset_s=300),
+        _make_q(3, long_uniform, fmt="long_text", answered_offset_s=600),
     ]
     with patch("agents.integrity.checks.ai_generated._embed_texts_safe", return_value=None):
         result = check_ai_generated(qs, session)
