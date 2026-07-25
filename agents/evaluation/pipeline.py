@@ -122,6 +122,7 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
         )
 
         _generate_executive_summary(db, session_id, job_title, candidate_name, rollup, verdict)
+        _run_behavior_inference(db, session_id, job)
 
     except Exception:
         logger.exception("evaluation_pipeline failed for session %s", session_id)
@@ -155,3 +156,25 @@ def _generate_executive_summary(
         logger.exception(
             "evaluation_pipeline: executive summary generation failed for session %s", session_id
         )
+
+
+def _run_behavior_inference(
+    db: Session,
+    session_id: uuid.UUID,
+    job,
+) -> None:
+    try:
+        from agents.behavior_analysis.agent import infer_behavior
+
+        org_working_style = (
+            ", ".join(job.culture_values)
+            if job and job.culture_values
+            else None
+        )
+        infer_behavior(
+            session_id=session_id,
+            db_factory=lambda: db,
+            org_working_style=org_working_style,
+        )
+    except Exception:
+        logger.exception("behavior inference failed for session %s", session_id)
