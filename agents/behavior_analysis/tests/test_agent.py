@@ -68,13 +68,11 @@ def _make_db(session_obj, qset_obj, questions):
 
     def query_side_effect(model):
         q = MagicMock()
-        name = getattr(model, "__tablename__", None) or getattr(model, "__name__", "")
 
         if "AssessmentSession" in str(model):
             q.filter_by.return_value.first.return_value = session_obj
         elif "BehaviorProfile" in str(model):
             q.filter_by.return_value.first.return_value = None
-            original_add = db.add
             def _add(obj):
                 profiles_stored.append(obj)
             db.add.side_effect = _add
@@ -94,8 +92,9 @@ def _make_db(session_obj, qset_obj, questions):
 # ---------------------------------------------------------------------------
 
 def test_infer_behavior_happy_path():
-    from agents.behavior_analysis.agent import infer_behavior
     from types import SimpleNamespace
+
+    from agents.behavior_analysis.agent import infer_behavior
 
     session_obj = MagicMock()
     session_obj.org_id = uuid.uuid4()
@@ -130,12 +129,11 @@ def test_infer_behavior_happy_path():
         mock_client.messages.create.side_effect = fake_create
         mock_anthropic.return_value = mock_client
 
-        with patch("agents.behavior_analysis.agent.Session"):
-            with patch("src.models.behavior_profiles.BehaviorProfile", side_effect=mock_behavior_profile_class):
-                infer_behavior(
-                    session_id=_SESSION_ID,
-                    db_factory=lambda: db,
-                )
+        with patch("agents.behavior_analysis.agent.Session"), patch("src.models.behavior_profiles.BehaviorProfile", side_effect=mock_behavior_profile_class):
+            infer_behavior(
+                session_id=_SESSION_ID,
+                db_factory=lambda: db,
+            )
 
     assert len(profiles_stored) == 1
     profile = profiles_stored[0]
