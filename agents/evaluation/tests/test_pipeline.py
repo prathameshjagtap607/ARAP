@@ -81,9 +81,9 @@ def test_score_answer_llm_failure_returns_error():
 # Pipeline integration test
 # ---------------------------------------------------------------------------
 
-import uuid  # noqa: E402
+import uuid
 
-from agents.evaluation.pipeline import evaluation_pipeline  # noqa: E402
+from agents.evaluation.pipeline import evaluation_pipeline
 
 
 def _make_session_question(comp: str = "problem_solving", answer: str = "My answer") -> MagicMock:
@@ -161,7 +161,7 @@ def test_evaluation_pipeline_scores_and_writes_report():
 # Executive summary agent tests
 # ---------------------------------------------------------------------------
 
-from agents.evaluation.summary import generate_summary  # noqa: E402
+from agents.evaluation.summary import generate_summary
 
 
 def test_generate_summary_calls_llm_and_returns_dict():
