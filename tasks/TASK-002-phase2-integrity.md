@@ -2,7 +2,7 @@
 
 **PRD ref:** Section 16, Phase 2 (Weeks 9–13)
 **Owner:** Srinivas / Fidelitus Corp
-**Status:** Not started
+**Status:** In progress — M7 complete, M8 and M9 remaining
 **Depends on:** TASK-001 (MVP loop must be working end to end)
 
 ## Objective
@@ -43,7 +43,7 @@ document. This is what makes ARAP more than a scored quiz.
 
 ## Exit criteria
 
-- [ ] `behavior_profile` generated for 100% of completed sessions (PRD §3 goal)
+- [x] `behavior_profile` generated for 100% of completed sessions (PRD §3 goal) — M7 COMPLETE (commit a77495c)
 - [ ] Fraud checks run against a labeled validation set once available;
       recall > 85%, false-positive < 10% (PRD §3 goal — see open question #4
       below if the labeled set doesn't exist yet)
