@@ -123,6 +123,7 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
 
         _generate_executive_summary(db, session_id, job_title, candidate_name, rollup, verdict)
         _run_behavior_inference(db, session_id, job)
+        _run_integrity_checks(db, session_id)
 
     except Exception:
         logger.exception("evaluation_pipeline failed for session %s", session_id)
@@ -178,3 +179,11 @@ def _run_behavior_inference(
         )
     except Exception:
         logger.exception("behavior inference failed for session %s", session_id)
+
+
+def _run_integrity_checks(db: Session, session_id: uuid.UUID) -> None:
+    try:
+        from agents.integrity.agent import run_integrity_checks
+        run_integrity_checks(session_id=session_id, db_factory=lambda: db)
+    except Exception:
+        logger.exception("integrity checks failed for session %s", session_id)

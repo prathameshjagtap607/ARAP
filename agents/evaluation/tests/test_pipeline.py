@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock, patch
+﻿from unittest.mock import MagicMock, patch
+import sys
 
 from agents.evaluation.agent import score_answer
 
@@ -145,7 +146,8 @@ def test_evaluation_pipeline_scores_and_writes_report():
              "answered_count": 1,
          }) as mock_rollup, \
          patch("agents.evaluation.pipeline.derive_verdict", return_value="hire") as mock_verdict, \
-         patch("agents.evaluation.pipeline._generate_executive_summary"):
+         patch("agents.evaluation.pipeline._generate_executive_summary"), \
+         patch("agents.evaluation.pipeline._run_integrity_checks"):
 
         db_factory = MagicMock(return_value=mock_db)
         evaluation_pipeline(session_id, db_factory)
@@ -194,3 +196,51 @@ def test_generate_summary_returns_none_on_failure():
         MockClient.return_value.messages.create.side_effect = RuntimeError("fail")
         result = generate_summary("Engineer", {}, "reject")
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Integrity checks helper tests
+# ---------------------------------------------------------------------------
+
+
+def test_run_integrity_checks_helper_delegates():
+    db = MagicMock()
+    sid = uuid.uuid4()
+
+    # Create fake module structure in sys.modules for the import
+    mock_integrity_agent = MagicMock()
+    mock_integrity_agent.run_integrity_checks = MagicMock()
+
+    with patch.dict(sys.modules, {
+        'agents.integrity': MagicMock(),
+        'agents.integrity.agent': mock_integrity_agent
+    }):
+        # Force reload of pipeline module to pick up new sys.modules
+        import importlib
+        import agents.evaluation.pipeline as pipeline_mod
+        importlib.reload(pipeline_mod)
+        
+        pipeline_mod._run_integrity_checks(db, sid)
+        mock_integrity_agent.run_integrity_checks.assert_called_once()
+        call_kwargs = mock_integrity_agent.run_integrity_checks.call_args
+        assert call_kwargs.kwargs["session_id"] == sid
+
+
+def test_run_integrity_checks_helper_swallows_exception():
+    db = MagicMock()
+    sid = uuid.uuid4()
+
+    # Create fake module structure that raises an exception
+    mock_integrity_agent = MagicMock()
+    mock_integrity_agent.run_integrity_checks = MagicMock(side_effect=RuntimeError("boom"))
+
+    with patch.dict(sys.modules, {
+        'agents.integrity': MagicMock(),
+        'agents.integrity.agent': mock_integrity_agent
+    }):
+        # Force reload of pipeline module to pick up new sys.modules
+        import importlib
+        import agents.evaluation.pipeline as pipeline_mod
+        importlib.reload(pipeline_mod)
+        
+        pipeline_mod._run_integrity_checks(db, sid)  # must not raise
