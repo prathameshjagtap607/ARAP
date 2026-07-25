@@ -62,13 +62,14 @@ export default function QuestionPage() {
     return () => clearInterval(id);
   }, [timerSeed]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Rate-limited screen reader announcements: every 60s boundary and when ≤ 60s
+  // Announce at minute boundaries and discrete thresholds in the final minute
+  const ANNOUNCE_AT = new Set([60, 30, 10, 5, 0]);
   useEffect(() => {
     if (secondsLeft === null) return;
-    if (secondsLeft % 60 === 0 || secondsLeft <= 60) {
+    if (secondsLeft % 60 === 0 || ANNOUNCE_AT.has(secondsLeft)) {
       setAnnouncedTime(formatTime(secondsLeft));
     }
-  }, [secondsLeft]);
+  }, [secondsLeft]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-submit at expiry
   useEffect(() => {
@@ -251,7 +252,7 @@ export default function QuestionPage() {
             )}
 
           {saving[current.id] && (
-            <p className="text-xs text-slate-600">Saving&hellip;</p>
+            <p aria-live="polite" className="text-xs text-slate-600">Saving&hellip;</p>
           )}
           {saveError && (
             <p role="alert" className="text-xs text-red-600">
