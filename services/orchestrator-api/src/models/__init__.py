@@ -1,3 +1,4 @@
+from .answer_corpus import AnswerCorpus
 from .assessment_sessions import AssessmentSession
 from .audit_logs import AuditLog
 from .behavior_profiles import BehaviorProfile
@@ -17,6 +18,7 @@ from .session_questions import SessionQuestion
 from .users import User
 
 __all__ = [
+    "AnswerCorpus",
     "AssessmentSession",
     "AuditLog",
     "BehaviorProfile",
