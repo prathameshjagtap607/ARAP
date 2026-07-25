@@ -54,13 +54,18 @@ def run_integrity_checks(
         except Exception:
             logger.exception("F01 ai_generated check failed for session %s", session_id)
 
-        # F02 — duplicate detection + corpus ingest
+        # F02 — duplicate detection
         try:
             dup_flags = _f02.check_duplicate(questions, session, db)
             all_flags.extend(dup_flags)
-            _f02.ingest_corpus(questions, session, db)
         except Exception:
             logger.exception("F02 duplicate check failed for session %s", session_id)
+
+        # F02 — corpus ingest (isolated so a UNIQUE constraint violation doesn't drop the flags)
+        try:
+            _f02.ingest_corpus(questions, session, db)
+        except Exception:
+            logger.exception("answer_corpus ingest failed for session %s", session_id)
 
         # F03 — resume consistency (skip if no candidate profile)
         try:
@@ -118,8 +123,6 @@ def run_integrity_checks(
     except Exception:
         logger.exception("run_integrity_checks failed for session %s", session_id)
         db.rollback()
-    finally:
-        db.close()
 
 
 def _compile_integrity_summary(flags: list[FlagResult]) -> dict:

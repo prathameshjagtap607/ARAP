@@ -35,22 +35,26 @@ def check_ai_generated(questions: list, session) -> list[FlagResult]:
     if std_dev < _STRUCTURAL_STD_THRESHOLD and all_same_format:
         signals.append("structural_uniformity")
 
-    # Signal 2: latency anomaly
+    # Signal 2: latency anomaly (per-answer typing rate, not cumulative from session start)
     started = session.started_at
     if started and started.tzinfo is None:
         started = started.replace(tzinfo=UTC)
     max_cps = 0.0
     if started:
-        for q in long_qs:
+        sorted_long_qs = sorted(
+            [q for q in long_qs if q.answered_at is not None and q.answer_text],
+            key=lambda q: q.answered_at,
+        )
+        prev_time = started
+        for q in sorted_long_qs:
             answered = q.answered_at
-            if answered is None or not q.answer_text:
-                continue
             if answered.tzinfo is None:
                 answered = answered.replace(tzinfo=UTC)
-            elapsed = (answered - started).total_seconds()
+            elapsed = (answered - prev_time).total_seconds()
             if elapsed > 0:
                 cps = len(q.answer_text) / elapsed
                 max_cps = max(max_cps, cps)
+            prev_time = answered
     stats_parts.append(f"latency_max={max_cps:.1f}cps")
     if max_cps > _LATENCY_THRESHOLD_CPS:
         signals.append("latency_anomaly")
