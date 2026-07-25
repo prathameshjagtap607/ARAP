@@ -2,7 +2,7 @@
 
 **PRD ref:** Section 16, Phase 2 (Weeks 9–13)
 **Owner:** Srinivas / Fidelitus Corp
-**Status:** In progress — M7 complete, M8 and M9 remaining
+**Status:** In progress — M7 complete, M8 complete, M9 remaining
 **Depends on:** TASK-001 (MVP loop must be working end to end)
 
 ## Objective
