@@ -1,7 +1,7 @@
 import concurrent.futures
 import logging
 import uuid
-from typing import Callable
+from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
@@ -139,8 +139,9 @@ def _generate_executive_summary(
     verdict: str,
 ) -> None:
     try:
-        from agents.evaluation.summary import generate_summary
         from src.models.hiring_reports import HiringReport
+
+        from agents.evaluation.summary import generate_summary
 
         result = generate_summary(job_title=job_title, rollup=rollup, verdict=verdict, candidate_name=candidate_name)
         report = db.query(HiringReport).filter_by(session_id=session_id).first()
