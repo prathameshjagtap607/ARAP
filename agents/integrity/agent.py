@@ -82,7 +82,10 @@ def run_integrity_checks(
             logger.exception("F03 resume_consistency check failed for session %s", session_id)
 
         # F04 — stub (always returns [])
-        all_flags.extend(_f04.check_behavioral_anomalies(session_id, db))
+        try:
+            all_flags.extend(_f04.check_behavioral_anomalies(session_id, db))
+        except Exception:
+            logger.exception("F04 behavioral_anomaly check failed for session %s", session_id)
 
         # Persist integrity_flags rows
         for flag in all_flags:
