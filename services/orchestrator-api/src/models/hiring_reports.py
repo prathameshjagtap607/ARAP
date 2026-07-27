@@ -55,6 +55,7 @@ class HiringReport(Base):
         ARRAY(Text), nullable=False, server_default=text("'{}'")
     )
     reviewer_override: Mapped[dict | None] = mapped_column(JSONB)
+    full_report: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
