@@ -1,0 +1,5 @@
+[lint]
+# B008: FastAPI requires Depends() in function argument defaults — intentional pattern
+# BLE001: Broad exception catches are intentional in agents (non-fatal failure mode)
+# S110: try-except-pass is intentional in agents and ingestion pipeline
+ignore = ["B008", "BLE001", "S110", "C408"]
