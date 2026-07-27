@@ -224,16 +224,16 @@ def test_org_historical_bar_insufficient_data():
     with patch.dict(sys.modules, _FAKE_ORM):
         from agents.report_generator.agent import _get_org_historical_bar
 
-    db = MagicMock()
-    # Simulate join returning only 2 reports
-    mock_q = MagicMock()
-    mock_q.join.return_value.filter.return_value.all.return_value = [
-        MagicMock(score_rollup={"overall": 3.5}),
-        MagicMock(score_rollup={"overall": 3.8}),
-    ]
-    db.query.return_value = mock_q
+        db = MagicMock()
+        mock_q = MagicMock()
+        mock_q.join.return_value.filter.return_value.all.return_value = [
+            MagicMock(score_rollup={"overall": 3.5}),
+            MagicMock(score_rollup={"overall": 3.8}),
+        ]
+        db.query.return_value = mock_q
 
-    result = _get_org_historical_bar(db, "engineering", _ORG_ID)
+        result = _get_org_historical_bar(db, "engineering", uuid.uuid4())
+
     assert result == "insufficient_data"
 
 

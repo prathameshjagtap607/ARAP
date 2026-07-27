@@ -23,15 +23,9 @@ _HIRE_BAR = 3.50
 def _get_org_historical_bar(db: Session, role_family: str | None, org_id) -> str | float:
     if not role_family:
         return "insufficient_data"
-    try:
-        from src.models.assessment_sessions import AssessmentSession
-        from src.models.hiring_reports import HiringReport
-        from src.models.job_assessments import JobAssessment
-    except (ImportError, ModuleNotFoundError):
-        from unittest.mock import MagicMock as _M
-        AssessmentSession = _M()
-        HiringReport = _M()
-        JobAssessment = _M()
+    from src.models.assessment_sessions import AssessmentSession
+    from src.models.hiring_reports import HiringReport
+    from src.models.job_assessments import JobAssessment
 
     rows = (
         db.query(HiringReport)
