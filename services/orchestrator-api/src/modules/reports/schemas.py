@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -21,24 +22,30 @@ class ReportResponse(BaseModel):
 
 class FullReportResponse(BaseModel):
     session_id: uuid.UUID
+    report_ready: bool
+    requires_human_review: bool
     verdict: str | None
     ai_confidence_score: float | None
     salary_band: str | None
-    requires_human_review: bool
     full_report: dict
+    created_at: datetime | None
 
     model_config = {"from_attributes": True}
 
 
 class ReviewerFeedbackRequest(BaseModel):
-    final_decision: str
-    comment: str | None = None
-    score_overrides: dict[str, float] = {}
+    final_decision: Literal["hire", "no_hire", "hold"]
+    comment: str
+    score_overrides: dict[str, float] | None = None
+
+
+class ReviewerFeedbackResponse(BaseModel):
+    reviewer_override: dict
 
 
 class ShareLinkRequest(BaseModel):
     client_id: uuid.UUID
-    expires_in_days: int = 7
+    expires_in_days: int
 
 
 class ShareLinkResponse(BaseModel):
