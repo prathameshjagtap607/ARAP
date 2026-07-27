@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useSession } from "@/context/SessionContext";
 import { getStatusBadge } from "@/lib/api/status";
 
