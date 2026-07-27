@@ -67,3 +67,7 @@ export function useSession() {
   if (!ctx) throw new Error("useSession must be used within SessionProvider");
   return ctx;
 }
+
+export function SessionProviderWrapper({ children }: { children: ReactNode }) {
+  return <SessionProvider>{children}</SessionProvider>;
+}

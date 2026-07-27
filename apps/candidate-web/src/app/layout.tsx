@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SessionProviderWrapper } from "@/context/SessionContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,7 +24,9 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        {children}
+        <SessionProviderWrapper>
+          {children}
+        </SessionProviderWrapper>
       </body>
     </html>
   );
