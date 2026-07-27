@@ -2,9 +2,10 @@
 
 **PRD ref:** Section 16, Phase 5 (Weeks 23–26)
 **Owner:** Srinivas / Fidelitus Corp
-**Status:** Not started
+**Status:** M10 Dashboards COMPLETE (10/12 tasks). M11-M12 DEFERRED to next session.
 **Depends on:** TASK-001, TASK-002 (needs real session/report data to
 analyze and dashboard)
+**Latest commit:** 2d47118 (M10 dashboards merged to main, 2026-07-27)
 
 ## Objective
 
@@ -62,3 +63,48 @@ this task covers what's left: M10 (remaining), M11 (full), M12 (full).
   agreement metric surfaced in Analytics; sourcing (pilot org volunteers vs.
   synthetic) not yet decided — flag as an open item rather than fabricating
   a number.
+
+---
+
+## COMPLETION SUMMARY (2026-07-27)
+
+### M10 Dashboards — COMPLETE (10/12 tasks)
+
+**Subagent-Driven Development session completed with:**
+- 4 shared components: SummaryCard, FilterBar, ChartCard + types/API helpers
+- 4 dashboard pages: HR (F01), Admin (F03), Reports (F04), Candidate status (F02)
+- All types, API integration, error handling, loading states
+- All 10 tasks approved in review
+- 1 fix round (Task 8: score band scale 0-100→0-5, added search filter)
+
+**Commits merged to main:**
+- 7f9090f: Types & API helpers
+- a9e4167: SummaryCard component + tests
+- 0c45dc2: FilterBar component + tests
+- 8639dc4: ChartCard component + Recharts
+- 0193bea: Dashboard layout & navigation
+- 503dd54: HR Dashboard page
+- 6115281: Admin Dashboard page
+- ac121b7: Reports Dashboard page
+- f1e8b10: Candidate types & helpers
+- 8e5b057: Candidate status page
+- 2d47118: Reports Dashboard fix (score band scale + search)
+
+**Pushed to GitHub:** 2026-07-27 (commit 2d47118 and earlier)
+
+### Deferred to next session
+
+**Task 11:** Visual testing & cross-browser verification (manual or lightweight)
+**Task 12:** Integration & type checking (lint + tsc verification)
+
+These are verification tasks with no code changes. Can be run fresh in next session.
+
+### Next steps
+
+1. Start next session with this task file (status updated above)
+2. Run Tasks 11-12 as lightweight verification or defer to after M11-M12
+3. Plan M11 Analytics & M12 Platform Admin (if continuing Phase 5)
+4. Or move to next major feature per roadmap
+
+**Design spec:** docs/superpowers/specs/2026-07-27-m10-dashboards-design.md
+**Implementation plan:** docs/superpowers/plans/2026-07-27-m10-dashboards.md
