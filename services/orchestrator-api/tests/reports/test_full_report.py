@@ -288,6 +288,7 @@ async def test_feedback_discrepancy_flag(async_client, report_seed, user_token, 
     assert override["final_decision"] == "no_hire"
     assert override["score_overrides"]["Communication"] == pytest.approx(2.5)
     assert "submitted_at" in override
+    assert "submitted_by" in override
 
 
 # ---------------------------------------------------------------------------

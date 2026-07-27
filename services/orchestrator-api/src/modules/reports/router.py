@@ -110,6 +110,6 @@ def submit_reviewer_feedback(
     db: Session = Depends(get_db),
 ):
     try:
-        return service.submit_reviewer_feedback(db, session_id, claims.org_id, body)
+        return service.submit_reviewer_feedback(db, session_id, claims.org_id, uuid.UUID(claims.sub), body)
     except LookupError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

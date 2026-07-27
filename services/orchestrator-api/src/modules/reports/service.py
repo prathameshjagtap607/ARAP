@@ -157,6 +157,7 @@ def submit_reviewer_feedback(
     db: Session,
     session_id: uuid.UUID,
     org_id: uuid.UUID,
+    user_id: uuid.UUID,
     body: ReviewerFeedbackRequest,
 ) -> ReviewerFeedbackResponse:
     session = db.query(AssessmentSession).filter_by(id=session_id, org_id=org_id).first()
@@ -182,6 +183,7 @@ def submit_reviewer_feedback(
         "comment": body.comment,
         "score_overrides": body.score_overrides,
         "submitted_at": datetime.now(UTC).isoformat(),
+        "submitted_by": str(user_id),
         "discrepancy_flag": discrepancy_flag,
     }
     report.reviewer_override = override
