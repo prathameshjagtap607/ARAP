@@ -17,3 +17,30 @@ class ReportResponse(BaseModel):
     created_at: datetime | None
 
     model_config = {"from_attributes": True}
+
+
+class FullReportResponse(BaseModel):
+    session_id: uuid.UUID
+    verdict: str | None
+    ai_confidence_score: float | None
+    salary_band: str | None
+    requires_human_review: bool
+    full_report: dict
+
+    model_config = {"from_attributes": True}
+
+
+class ReviewerFeedbackRequest(BaseModel):
+    final_decision: str
+    comment: str | None = None
+    score_overrides: dict[str, float] = {}
+
+
+class ShareLinkRequest(BaseModel):
+    client_id: uuid.UUID
+    expires_in_days: int = 7
+
+
+class ShareLinkResponse(BaseModel):
+    share_token: uuid.UUID
+    expires_at: datetime
