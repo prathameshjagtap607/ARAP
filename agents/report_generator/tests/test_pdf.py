@@ -15,8 +15,7 @@ from unittest.mock import MagicMock, patch
 # sys.modules stub for weasyprint — must happen before any import of pdf.py
 # ---------------------------------------------------------------------------
 _weasyprint_stub = types.ModuleType("weasyprint")
-_mock_html_cls = MagicMock()
-_weasyprint_stub.HTML = _mock_html_cls
+_weasyprint_stub.HTML = None  # overridden per-test via patch
 sys.modules.setdefault("weasyprint", _weasyprint_stub)
 
 # Now safe to import the production module
@@ -90,6 +89,7 @@ def test_render_pdf_no_transcript_by_default():
         html_string = call_args.kwargs.get("string", "") or (call_args.args[0] if call_args.args else "")
         # The Jinja2 {% if include_transcript %} block should NOT render
         assert "transcript-section" not in html_string
+        assert "Raw Transcript" not in html_string
 
     # PDF bytes should still be non-trivially sized
     assert len(result) > 1000
