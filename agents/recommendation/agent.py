@@ -6,7 +6,10 @@ from collections.abc import Callable
 import anthropic
 from sqlalchemy.orm import Session
 
-from agents.recommendation.prompts import RECOMMENDATION_SYSTEM_PROMPT, RECOMMENDATION_TOOL
+from agents.recommendation.prompts import (
+    RECOMMENDATION_SYSTEM_PROMPT,
+    RECOMMENDATION_TOOL,
+)
 
 logger = logging.getLogger(__name__)
 

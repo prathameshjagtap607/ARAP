@@ -2,8 +2,6 @@ import sys
 import uuid
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 # Mock ORM models before importing the module under test
 _FAKE_ORM = {
     "src": MagicMock(),

@@ -2,8 +2,6 @@ import sys
 import uuid
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 _SESSION_ID = uuid.uuid4()
 _ORG_ID = uuid.uuid4()
 

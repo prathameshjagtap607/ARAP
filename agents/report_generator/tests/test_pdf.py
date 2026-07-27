@@ -19,7 +19,7 @@ _weasyprint_stub.HTML = None  # overridden per-test via patch
 sys.modules.setdefault("weasyprint", _weasyprint_stub)
 
 # Now safe to import the production module
-from agents.report_generator.pdf import render_pdf  # noqa: E402
+from agents.report_generator.pdf import render_pdf
 
 # ---------------------------------------------------------------------------
 # Shared test fixture

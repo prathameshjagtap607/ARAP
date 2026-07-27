@@ -136,8 +136,8 @@ def generate_full_report(
             f"Overall score: {rollup.get('overall', 0):.2f} / 5.0",
             "Composite scores: " + ", ".join(f"{k}: {v:.2f}" for k, v in composite_scores.items()),
             f"Salary band: {report.salary_band}",
-            f"Integrity: risk={integrity_summary.get('overall_risk', 'low')}, "
-            f"flags={integrity_summary.get('flagged_count', 0)}",
+            (f"Integrity: risk={integrity_summary.get('overall_risk', 'low')}, "
+            f"flags={integrity_summary.get('flagged_count', 0)}"),
             f"Behavior: {behavior_text or 'Not available'}",
             f"Resume summary: {candidate_profile.summary if candidate_profile else 'Not available'}",
             f"Culture values: {', '.join(getattr(job, 'culture_values', []))}",

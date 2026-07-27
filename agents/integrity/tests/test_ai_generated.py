@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
-from agents.integrity.checks.ai_generated import FlagResult, check_ai_generated
+from agents.integrity.checks.ai_generated import check_ai_generated
 
 
 def _make_session(started_at=None):
