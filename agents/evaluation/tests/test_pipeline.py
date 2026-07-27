@@ -236,3 +236,38 @@ def test_run_integrity_checks_helper_swallows_exception():
     }):
         from agents.evaluation.pipeline import _run_integrity_checks
         _run_integrity_checks(db, sid)  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# Recommendation and report generator helper tests
+# ---------------------------------------------------------------------------
+
+
+def test_run_recommendation_is_nonfatal():
+    db = MagicMock()
+    sid = uuid.uuid4()
+
+    mock_recommendation_agent = MagicMock()
+    mock_recommendation_agent.synthesize_recommendation = MagicMock(side_effect=RuntimeError("boom"))
+
+    with patch.dict(sys.modules, {
+        'agents.recommendation': MagicMock(),
+        'agents.recommendation.agent': mock_recommendation_agent,
+    }):
+        from agents.evaluation.pipeline import _run_recommendation
+        _run_recommendation(db, sid)  # must not raise
+
+
+def test_run_report_generator_is_nonfatal():
+    db = MagicMock()
+    sid = uuid.uuid4()
+
+    mock_report_generator_agent = MagicMock()
+    mock_report_generator_agent.generate_full_report = MagicMock(side_effect=RuntimeError("boom"))
+
+    with patch.dict(sys.modules, {
+        'agents.report_generator': MagicMock(),
+        'agents.report_generator.agent': mock_report_generator_agent,
+    }):
+        from agents.evaluation.pipeline import _run_report_generator
+        _run_report_generator(db, sid)  # must not raise
