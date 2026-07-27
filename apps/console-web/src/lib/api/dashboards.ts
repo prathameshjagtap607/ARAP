@@ -152,18 +152,18 @@ export async function fetchReportsList(
     });
 
     const scoreBandDistribution: { band: string; count: number }[] = [
-      { band: "90-100", count: 0 },
-      { band: "80-89", count: 0 },
-      { band: "70-79", count: 0 },
-      { band: "60-69", count: 0 },
-      { band: "0-59", count: 0 },
+      { band: "4.5-5.0", count: 0 },
+      { band: "4.0-4.4", count: 0 },
+      { band: "3.5-3.9", count: 0 },
+      { band: "3.0-3.4", count: 0 },
+      { band: "<3.0", count: 0 },
     ];
 
     reports.forEach((r) => {
-      if (r.overallScore >= 90) scoreBandDistribution[0].count++;
-      else if (r.overallScore >= 80) scoreBandDistribution[1].count++;
-      else if (r.overallScore >= 70) scoreBandDistribution[2].count++;
-      else if (r.overallScore >= 60) scoreBandDistribution[3].count++;
+      if (r.overallScore >= 4.5) scoreBandDistribution[0].count++;
+      else if (r.overallScore >= 4.0) scoreBandDistribution[1].count++;
+      else if (r.overallScore >= 3.5) scoreBandDistribution[2].count++;
+      else if (r.overallScore >= 3.0) scoreBandDistribution[3].count++;
       else scoreBandDistribution[4].count++;
     });
 

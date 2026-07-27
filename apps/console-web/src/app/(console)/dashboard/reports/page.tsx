@@ -6,7 +6,7 @@ import FilterBar from '@/components/dashboard/FilterBar';
 import ChartCard from '@/components/dashboard/ChartCard';
 import { fetchReportsList } from '@/lib/api/dashboards';
 import type { Filter } from '@/lib/types/dashboard';
-import type { ReportRow, ReportsDashboardData } from '@/lib/types/dashboard';
+import type { ReportsDashboardData } from '@/lib/types/dashboard';
 
 const verdictBadgeMap: Record<string, { color: 'green' | 'blue' | 'amber' | 'orange' | 'red' }> = {
   strong_hire: { color: 'green' },
@@ -42,16 +42,20 @@ export default function ReportsDashboardPage() {
   // State for filters
   const [verdictFilter, setVerdictFilter] = useState<string[]>([]);
   const [scoreBandFilter, setScoreBandFilter] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
   // State for pagination
   const [currentPage, setCurrentPage] = useState(0);
 
-  // Abort controller for cleanup
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
-
   const filters: Filter[] = [
+    {
+      key: 'search',
+      label: 'Search',
+      type: 'search',
+      placeholder: 'Search by candidate name or job title',
+    },
     {
       key: 'verdict',
       label: 'Verdict',
@@ -69,11 +73,11 @@ export default function ReportsDashboardPage() {
       label: 'Score Band',
       type: 'multi-select',
       options: [
-        { label: '90-100', value: '90-100' },
-        { label: '80-89', value: '80-89' },
-        { label: '70-79', value: '70-79' },
-        { label: '60-69', value: '60-69' },
-        { label: '0-59', value: '0-59' },
+        { label: '4.5-5.0', value: '4.5-5.0' },
+        { label: '4.0-4.4', value: '4.0-4.4' },
+        { label: '3.5-3.9', value: '3.5-3.9' },
+        { label: '3.0-3.4', value: '3.0-3.4' },
+        { label: '<3.0', value: '<3.0' },
       ],
     },
     {
@@ -88,7 +92,6 @@ export default function ReportsDashboardPage() {
     if (!orgId) return;
 
     const controller = new AbortController();
-    setAbortController(controller);
 
     const loadReports = async () => {
       setLoading(true);
@@ -115,20 +118,29 @@ export default function ReportsDashboardPage() {
         );
 
         if (!controller.signal.aborted) {
-          // Filter by score band if selected
+          // Filter by score band and search query if provided
           let filteredReports = response.reports;
+
           if (scoreBandFilter.length > 0) {
-            filteredReports = response.reports.filter((report) => {
+            filteredReports = filteredReports.filter((report) => {
               const score = report.overallScore;
               return scoreBandFilter.some((band) => {
-                if (band === '90-100') return score >= 90;
-                if (band === '80-89') return score >= 80 && score < 90;
-                if (band === '70-79') return score >= 70 && score < 80;
-                if (band === '60-69') return score >= 60 && score < 70;
-                if (band === '0-59') return score < 60;
+                if (band === '4.5-5.0') return score >= 4.5 && score <= 5.0;
+                if (band === '4.0-4.4') return score >= 4.0 && score < 4.5;
+                if (band === '3.5-3.9') return score >= 3.5 && score < 4.0;
+                if (band === '3.0-3.4') return score >= 3.0 && score < 3.5;
+                if (band === '<3.0') return score < 3.0;
                 return false;
               });
             });
+          }
+
+          if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            filteredReports = filteredReports.filter((report) =>
+              report.candidateName.toLowerCase().includes(query) ||
+              report.jobTitle.toLowerCase().includes(query)
+            );
           }
 
           setData({
@@ -152,9 +164,10 @@ export default function ReportsDashboardPage() {
     return () => {
       controller.abort();
     };
-  }, [orgId, verdictFilter, scoreBandFilter, dateFrom, dateTo, currentPage]);
+  }, [orgId, verdictFilter, scoreBandFilter, searchQuery, dateFrom, dateTo, currentPage]);
 
   const handleFilterApply = (values: Record<string, any>) => {
+    setSearchQuery(values.search || '');
     setVerdictFilter(values.verdict || []);
     setScoreBandFilter(values.scoreBand || []);
     setDateFrom(values.dateRange_start || '');
@@ -163,6 +176,7 @@ export default function ReportsDashboardPage() {
   };
 
   const handleFilterReset = () => {
+    setSearchQuery('');
     setVerdictFilter([]);
     setScoreBandFilter([]);
     setDateFrom('');
