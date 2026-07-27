@@ -416,7 +416,7 @@ def test_hiring_reports_columns(engine):
         "behavior_profile_id", "integrity_summary", "salary_band", "verdict",
         "ai_confidence_score", "recommended_next_round", "training_needs",
         "suggested_hr_questions", "suggested_ceo_questions",
-        "reviewer_override", "created_at",
+        "reviewer_override", "full_report", "created_at",
     }
     assert cols == expected
 

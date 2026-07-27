@@ -21,6 +21,8 @@ dependencies = [
     "redis>=5.0",
     "anthropic>=0.28",
     "openai>=1.0",
+    "weasyprint>=62.0",
+    "jinja2>=3.1",
 ]
 
 [project.optional-dependencies]
@@ -36,7 +38,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-pythonpath = [".", "../.."]
+pythonpath = ["../..", "."]
 env = [
     "TEST_DATABASE_URL=postgresql://arap:arap@localhost:5434/arap_test",
     "DATABASE_URL=postgresql://arap:arap@localhost:5433/arap_dev",

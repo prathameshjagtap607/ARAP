@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hiring Report — {{ candidate_name }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 11pt; color: #222; margin: 40px; }
+    h1 { font-size: 18pt; color: #1a3c6e; border-bottom: 2px solid #1a3c6e; padding-bottom: 6px; }
+    h2 { font-size: 13pt; color: #1a3c6e; margin-top: 24px; }
+    h3 { font-size: 11pt; color: #444; margin-top: 16px; }
+    .meta { background: #f4f7fb; padding: 10px 16px; border-radius: 4px; margin-bottom: 20px; }
+    .meta p { margin: 4px 0; font-size: 10pt; }
+    .score-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    .score-table th { background: #1a3c6e; color: white; padding: 6px 10px; text-align: left; font-size: 10pt; }
+    .score-table td { padding: 6px 10px; border-bottom: 1px solid #ddd; font-size: 10pt; }
+    .verdict-box { background: #e8f0fe; border-left: 4px solid #1a3c6e; padding: 12px 16px; margin: 16px 0; }
+    .warning-box { background: #fff3cd; border-left: 4px solid #e6a817; padding: 10px 14px; margin: 12px 0; font-size: 10pt; }
+    ul { margin: 6px 0; padding-left: 20px; }
+    li { margin: 4px 0; }
+    .section { margin-bottom: 18px; }
+    .label { font-weight: bold; }
+    .footer { margin-top: 40px; font-size: 9pt; color: #888; border-top: 1px solid #ddd; padding-top: 8px; }
+  </style>
+</head>
+<body>
+
+<h1>Hiring Report</h1>
+
+<div class="meta">
+  <p><span class="label">Candidate:</span> {{ candidate_name }}</p>
+  <p><span class="label">Role:</span> {{ job_title }}</p>
+  <p><span class="label">Generated:</span> {{ report.meta.generated_at }}</p>
+  <p><span class="label">AI Confidence Score:</span> {{ report.ai_confidence_score }}</p>
+</div>
+
+{% if report.meta.requires_human_review %}
+<div class="warning-box">
+  &#x26A0; <strong>Mandatory Human Review Required</strong> &mdash; AI confidence score below threshold. {{ report.meta.confidence_rationale }}
+</div>
+{% endif %}
+
+<div class="verdict-box">
+  <h2 style="margin-top:0">Executive Summary</h2>
+  <p>{{ report.executive_summary }}</p>
+</div>
+
+<h2>Candidate Overview</h2>
+<div class="section"><p>{{ report.candidate_overview }}</p></div>
+
+<h2>Resume Summary</h2>
+<div class="section"><p>{{ report.resume_summary }}</p></div>
+
+<h2>Interview Summary</h2>
+<div class="section"><p>{{ report.interview_summary }}</p></div>
+
+<h2>Scores vs Benchmarks</h2>
+<table class="score-table">
+  <thead>
+    <tr><th>Area</th><th>Score (/5)</th><th>vs Job Bar</th><th>vs Org Bar</th></tr>
+  </thead>
+  <tbody>
+    {% for area, data in report.scores.items() %}
+    <tr>
+      <td>{{ area | title }}</td>
+      <td>{{ data.score }}</td>
+      <td>{{ data.vs_job_bar }}</td>
+      <td>{{ data.vs_org_bar }}</td>
+    </tr>
+    {% endfor %}
+    <tr style="font-weight:bold; background:#f4f7fb">
+      <td>Overall</td>
+      <td>{{ report.overall_rating }}</td>
+      <td>&mdash;</td>
+      <td>&mdash;</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Salary Recommendation</h2>
+<div class="section">
+  <p><span class="label">Band:</span> {{ report.salary_recommendation.band }}</p>
+  <p>{{ report.salary_recommendation.rationale }}</p>
+</div>
+
+<h2>Culture Fit</h2>
+<div class="section"><p>{{ report.culture_fit }}</p></div>
+
+<h2>Domain Knowledge</h2>
+<div class="section"><p>{{ report.domain_knowledge }}</p></div>
+
+<h2>Skill Gap Analysis</h2>
+<div class="section"><p>{{ report.skill_gap_analysis }}</p></div>
+
+<h2>Strengths</h2>
+<div class="section">
+  <ul>{% for s in report.strengths %}<li>{{ s }}</li>{% endfor %}</ul>
+</div>
+
+<h2>Weaknesses</h2>
+<div class="section">
+  <ul>{% for w in report.weaknesses %}<li>{{ w }}</li>{% endfor %}</ul>
+</div>
+
+<h2>Potential Risks</h2>
+<div class="section"><p>{{ report.potential_risks }}</p></div>
+
+<h2>Learning Curve Estimate</h2>
+<div class="section"><p>{{ report.learning_curve_estimate }}</p></div>
+
+<h2>Management Readiness</h2>
+<div class="section"><p>{{ report.management_readiness }}</p></div>
+
+<h2>Promotion Potential</h2>
+<div class="section"><p>{{ report.promotion_potential }}</p></div>
+
+<h2>Integrity Summary</h2>
+<div class="section"><p>{{ report.integrity_summary_prose }}</p></div>
+
+<h2>Recommended Next Round</h2>
+<div class="section"><p>{{ report.recommended_next_round }}</p></div>
+
+<h2>Training Needs</h2>
+<div class="section">
+  <ul>
+    {% for tn in report.training_needs %}
+    <li><strong>{{ tn.area }}</strong> ({{ tn.priority }}) &mdash; {{ tn.rationale }}</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<h2>Suggested HR-Round Questions</h2>
+<div class="section">
+  <ul>{% for q in report.suggested_hr_questions %}<li>{{ q }}</li>{% endfor %}</ul>
+</div>
+
+<h2>Suggested CEO-Round Questions</h2>
+<div class="section">
+  <ul>{% for q in report.suggested_ceo_questions %}<li>{{ q }}</li>{% endfor %}</ul>
+</div>
+
+<h2>Final Verdict</h2>
+<div class="verdict-box"><p>{{ report.final_verdict }}</p></div>
+
+{% if include_transcript %}
+<h2>Raw Transcript</h2>
+<div class="section" id="transcript-section">
+  <p><em>Transcript included per recruiter request.</em></p>
+  {% for item in transcript %}
+  <p><strong>Q{{ item.sequence_no }}:</strong> {{ item.question }}<br>
+     <strong>A:</strong> {{ item.answer }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="footer">
+  Generated by ARAP &mdash; AI Recruitment Assessment Platform. For internal HR use only.
+  AI confidence score: {{ report.ai_confidence_score }}. All hiring decisions require human review.
+</div>
+
+</body>
+</html>

@@ -124,6 +124,8 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
         _generate_executive_summary(db, session_id, job_title, candidate_name, rollup, verdict)
         _run_behavior_inference(db, session_id, job)
         _run_integrity_checks(db, session_id)
+        _run_recommendation(db, session_id)
+        _run_report_generator(db, session_id)
 
     except Exception:
         logger.exception("evaluation_pipeline failed for session %s", session_id)
@@ -187,3 +189,19 @@ def _run_integrity_checks(db: Session, session_id: uuid.UUID) -> None:
         run_integrity_checks(session_id=session_id, db_factory=lambda: db)
     except Exception:
         logger.exception("integrity checks failed for session %s", session_id)
+
+
+def _run_recommendation(db: Session, session_id: uuid.UUID) -> None:
+    try:
+        from agents.recommendation.agent import synthesize_recommendation
+        synthesize_recommendation(session_id=session_id, db_factory=lambda: db)
+    except Exception:
+        logger.exception("recommendation synthesis failed for session %s", session_id)
+
+
+def _run_report_generator(db: Session, session_id: uuid.UUID) -> None:
+    try:
+        from agents.report_generator.agent import generate_full_report
+        generate_full_report(session_id=session_id, db_factory=lambda: db)
+    except Exception:
+        logger.exception("report generation failed for session %s", session_id)
