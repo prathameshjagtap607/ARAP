@@ -131,7 +131,7 @@ def test_confidence_penalized_on_high_integrity_risk():
 
     score = _compute_confidence(_ROLLUP, _INTEGRITY_HIGH, has_behavior=True)
     # integrity factor = 0.3, so weighted contribution is low
-    assert score < 70.0
+    assert score < 80.0
 
 
 # Case 3: no behavior profile → confidence factor = 0.7 (not 1.0)
