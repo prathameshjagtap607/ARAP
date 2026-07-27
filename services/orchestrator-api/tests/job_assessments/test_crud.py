@@ -1,4 +1,5 @@
 import pytest
+
 from tests.job_assessments.conftest import JA_BODY
 
 
@@ -78,8 +79,8 @@ async def test_delete_assessment(async_client, seed, user_token, mock_jd_agent):
 
 @pytest.mark.asyncio
 async def test_delete_with_session_returns_409(async_client, seed, user_token, admin_token, mock_jd_agent, db):
-    from src.models.candidates import Candidate
     from src.models.assessment_sessions import AssessmentSession
+    from src.models.candidates import Candidate
 
     create_resp = await async_client.post(
         "/job-assessments", json=JA_BODY,

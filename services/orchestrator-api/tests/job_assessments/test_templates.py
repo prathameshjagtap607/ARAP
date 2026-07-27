@@ -1,4 +1,5 @@
 import pytest
+
 from tests.job_assessments.conftest import JA_BODY
 
 TEMPLATE_BODY = {**JA_BODY, "is_template": True, "role_family": "engineering"}

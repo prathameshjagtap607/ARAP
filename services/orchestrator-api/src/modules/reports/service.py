@@ -11,12 +11,12 @@ from src.models.job_assessments import JobAssessment
 from src.models.report_shares import ReportShare
 from src.modules.reports.schemas import (
     FullReportResponse,
+    ReportResponse,
     ReviewerFeedbackRequest,
     ReviewerFeedbackResponse,
-    ReportResponse,
+    SharedReportResponse,
     ShareLinkRequest,
     ShareLinkResponse,
-    SharedReportResponse,
 )
 
 
@@ -38,7 +38,7 @@ def _load_session_and_report(
 def get_full_report(
     db: Session, session_id: uuid.UUID, org_id: uuid.UUID
 ) -> FullReportResponse:
-    session, report = _load_session_and_report(db, session_id, org_id)
+    _session, report = _load_session_and_report(db, session_id, org_id)
     integrity_review = bool((report.integrity_summary or {}).get("human_review_required", False))
     confidence_review = bool((report.full_report or {}).get("meta", {}).get("requires_human_review", False))
     requires_human_review = integrity_review or confidence_review

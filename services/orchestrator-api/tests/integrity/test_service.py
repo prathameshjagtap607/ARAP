@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 import pytest
-
 from src.modules.integrity.service import get_integrity_summary
 
 

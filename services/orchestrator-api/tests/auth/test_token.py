@@ -6,7 +6,6 @@ from unittest.mock import patch
 import fakeredis
 import jwt
 import pytest
-
 from src.modules.auth.token import (
     NIL_UUID,
     create_access_token,

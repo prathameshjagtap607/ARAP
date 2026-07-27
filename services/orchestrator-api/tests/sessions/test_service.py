@@ -2,7 +2,6 @@ from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
-
 from src.modules.sessions import service
 
 
@@ -119,7 +118,7 @@ def test_save_answer_rejects_invited_session(db, seed):
 def test_submit_session_idempotent(db, seed):
     """submit_session called twice returns completed without error."""
     service.start_session(db, seed["session"].id, seed["org"].id)
-    r1 = service.submit_session(db, seed["session"].id, seed["org"].id)
+    service.submit_session(db, seed["session"].id, seed["org"].id)
     r2 = service.submit_session(db, seed["session"].id, seed["org"].id)
     assert r2.status in ("completed", "expired")
 
@@ -127,7 +126,9 @@ def test_submit_session_idempotent(db, seed):
 def test_submit_session_expired_no_answers(db, seed):
     """submit_session with no answers and past deadline → expired."""
     from datetime import timedelta
+
     from src.models.assessment_sessions import AssessmentSession
+
     # Create a fresh session that has already expired
     from src.models.question_sets import QuestionSet
     new_session = AssessmentSession(

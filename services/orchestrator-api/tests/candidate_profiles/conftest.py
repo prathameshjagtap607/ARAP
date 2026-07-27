@@ -5,18 +5,17 @@ from unittest.mock import patch
 import fakeredis
 import pytest
 import pytest_asyncio
+import src.models  # noqa: F401
 from httpx import ASGITransport, AsyncClient
 from passlib.context import CryptContext
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
-
 from src.models.base import Base
-import src.models  # noqa: F401
-from src.models.orgs import Org
-from src.models.users import User
+from src.models.candidate_profiles import CandidateProfile
 from src.models.candidates import Candidate
 from src.models.job_assessments import JobAssessment
-from src.models.candidate_profiles import CandidateProfile
+from src.models.orgs import Org
+from src.models.users import User
 from src.modules.auth.token import create_access_token
 
 TEST_DB_URL = os.environ.get(
@@ -183,8 +182,8 @@ def mock_cp_agent():
 
 @pytest_asyncio.fixture
 async def async_client(db, r):
-    from src.main import app
     from src.database import get_db, get_redis
+    from src.main import app
     app.dependency_overrides[get_db] = lambda: db
     app.dependency_overrides[get_redis] = lambda: r
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:

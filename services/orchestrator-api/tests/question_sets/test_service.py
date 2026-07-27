@@ -109,9 +109,8 @@ def test_generate_raises_value_error_when_no_candidate_profile(db, seed, mock_ag
 def test_generate_raises_runtime_when_agent_returns_none(db, seed, mock_embed):
     from src.modules.question_sets.service import generate_question_set
 
-    with patch("src.modules.question_sets.service.run_question_generation_agent", return_value=None):
-        with pytest.raises(RuntimeError, match="agent"):
-            generate_question_set(db, seed["session"].id, seed["org"].id)
+    with patch("src.modules.question_sets.service.run_question_generation_agent", return_value=None), pytest.raises(RuntimeError, match="agent"):
+        generate_question_set(db, seed["session"].id, seed["org"].id)
 
 
 def test_get_raises_lookup_when_not_generated(db, seed):
@@ -122,7 +121,10 @@ def test_get_raises_lookup_when_not_generated(db, seed):
 
 
 def test_get_returns_set_after_generate(db, seed, mock_agent, mock_embed):
-    from src.modules.question_sets.service import generate_question_set, get_question_set
+    from src.modules.question_sets.service import (
+        generate_question_set,
+        get_question_set,
+    )
 
     generate_question_set(db, seed["session"].id, seed["org"].id, target=2)
     result = get_question_set(db, seed["session"].id, seed["org"].id)

@@ -13,11 +13,9 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-
 from src.models.clients import Client
 from src.models.hiring_reports import HiringReport
 from src.models.report_shares import ReportShare
-
 
 # ---------------------------------------------------------------------------
 # Helpers

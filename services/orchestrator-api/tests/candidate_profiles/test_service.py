@@ -2,7 +2,6 @@ import uuid
 from unittest.mock import patch
 
 import pytest
-
 from src.models.candidate_profiles import CandidateProfile
 
 
@@ -64,9 +63,8 @@ def test_synthesize_profile_raises_runtime_when_agent_returns_none(db, seed):
     with patch(
         "src.modules.candidate_profiles.service.run_candidate_profile_agent",
         return_value=None,
-    ):
-        with pytest.raises(RuntimeError, match="agent"):
-            synthesize_profile(db, seed["org"].id, seed["candidate"].id, seed["job"].id)
+    ), pytest.raises(RuntimeError, match="agent"):
+        synthesize_profile(db, seed["org"].id, seed["candidate"].id, seed["job"].id)
 
 
 def test_get_profile_returns_row(db, seed, mock_cp_agent):

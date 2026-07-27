@@ -1,6 +1,7 @@
-import pytest
 import uuid
 from unittest.mock import MagicMock
+
+import pytest
 
 
 @pytest.fixture

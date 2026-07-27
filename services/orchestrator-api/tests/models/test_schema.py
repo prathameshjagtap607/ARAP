@@ -1,23 +1,18 @@
-import uuid
 import pytest
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
-
-from src.models.orgs import Org
-from src.models.users import User
-from src.models.job_assessments import JobAssessment
-from src.models.competency_library import CompetencyLibrary
-from src.models.candidates import Candidate
-from src.models.clients import Client
-from src.models.candidate_profiles import CandidateProfile
 from src.models.assessment_sessions import AssessmentSession
+from src.models.behavior_profiles import BehaviorProfile
+from src.models.candidate_profiles import CandidateProfile
+from src.models.candidates import Candidate
+from src.models.competency_library import CompetencyLibrary
+from src.models.hiring_reports import HiringReport
+from src.models.integrity_flags import IntegrityFlag
+from src.models.job_assessments import JobAssessment
+from src.models.orgs import Org
 from src.models.question_sets import QuestionSet
 from src.models.session_questions import SessionQuestion
-from src.models.behavior_profiles import BehaviorProfile
-from src.models.integrity_flags import IntegrityFlag
-from src.models.hiring_reports import HiringReport
-from src.models.report_shares import ReportShare
-
+from src.models.users import User
 
 # ── Org ──────────────────────────────────────────────────────────────────────
 
@@ -451,7 +446,6 @@ def test_report_shares_columns(engine):
 
 # ── PromptTemplate ────────────────────────────────────────────────────────────
 from src.models.prompt_templates import PromptTemplate
-from src.models.audit_logs import AuditLog
 
 
 def test_prompt_templates_columns(engine):

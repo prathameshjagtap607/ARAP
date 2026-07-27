@@ -1,7 +1,7 @@
 import uuid
+
 import pytest
 from sqlalchemy import inspect, text
-
 from src.models.orgs import Org
 from src.models.question_fingerprints import QuestionFingerprint
 

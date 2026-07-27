@@ -8,8 +8,9 @@ Base.metadata.create_all(). Therefore, this test verifies only that:
 The GRANT restriction is validated in test_rls.py after migration is run.
 """
 import uuid
-from src.models.orgs import Org
+
 from src.models.audit_logs import AuditLog
+from src.models.orgs import Org
 
 
 def test_audit_log_insert(db):

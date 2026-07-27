@@ -5,8 +5,9 @@ import pytest_asyncio
 @pytest_asyncio.fixture
 async def started_client(async_client, seed, candidate_token, db):
     """Client fixture with session already started."""
-    from src.models.assessment_sessions import AssessmentSession
     from datetime import UTC, datetime
+
+    from src.models.assessment_sessions import AssessmentSession
     s = db.query(AssessmentSession).filter_by(id=seed["session"].id).first()
     if s.status == "invited":
         s.status = "in_progress"
@@ -111,6 +112,7 @@ async def test_submit_endpoint(started_client, seed, candidate_token):
 async def test_patch_answer_question_from_different_session_rejected(started_client, seed, candidate_token, db):
     """PATCH with question belonging to a different session returns 404."""
     from datetime import UTC, datetime
+
     from src.models.assessment_sessions import AssessmentSession
     from src.models.question_sets import QuestionSet
     from src.models.session_questions import SessionQuestion
@@ -163,6 +165,7 @@ async def test_patch_answer_question_from_different_session_rejected(started_cli
 async def test_candidate_cannot_access_other_session(async_client, seed, db):
     """Candidate JWT for session A cannot access session B."""
     import uuid
+
     from src.modules.auth.token import create_access_token
     other_id = uuid.uuid4()
     token = create_access_token({

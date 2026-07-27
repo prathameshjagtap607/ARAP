@@ -9,8 +9,9 @@ NOTE: These tests connect as a non-superuser role (arap_app) because PostgreSQL
 superusers bypass RLS even with FORCE ROW LEVEL SECURITY. The module fixture
 creates this role and grants it minimal table permissions.
 """
-import uuid
 import os
+import uuid
+
 import pytest
 from sqlalchemy import create_engine, text
 
@@ -219,13 +220,12 @@ def test_audit_logs_update_denied(rls_engine):
             conn.rollback()
 
         # Verify UPDATE is denied for the app role
-        with pytest.raises(ProgrammingError, match="permission denied"):
-            with conn.begin():
-                _set_app_context(conn, org)
-                conn.execute(
-                    text("UPDATE audit_logs SET action = 'tampered' WHERE id = :id"),
-                    {"id": str(log_id)},
-                )
+        with pytest.raises(ProgrammingError, match="permission denied"), conn.begin():
+            _set_app_context(conn, org)
+            conn.execute(
+                text("UPDATE audit_logs SET action = 'tampered' WHERE id = :id"),
+                {"id": str(log_id)},
+            )
 
         # Clean up
         with conn.begin():

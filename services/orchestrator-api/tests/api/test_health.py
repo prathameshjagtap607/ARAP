@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 
 @pytest.mark.asyncio
@@ -19,8 +19,8 @@ async def test_health_returns_ok():
 
 @pytest.mark.asyncio
 async def test_health_version_matches_config():
-    from src.main import app
     from src.config import settings
+    from src.main import app
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"

@@ -1,10 +1,10 @@
 import os
+
 import pytest
+import src.models  # noqa: F401 — registers all models
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-
 from src.models.base import Base
-import src.models  # noqa: F401 — registers all models
 
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL",

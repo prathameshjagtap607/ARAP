@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 
 import pytest
 from fastapi import HTTPException
-
 from src.modules.auth.dependencies import (
     TokenClaims,
     get_claims,

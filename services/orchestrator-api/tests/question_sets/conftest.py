@@ -5,12 +5,11 @@ from unittest.mock import patch
 import fakeredis
 import pytest
 import pytest_asyncio
+import src.models  # noqa: F401
 from httpx import ASGITransport, AsyncClient
 from passlib.context import CryptContext
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
-
-import src.models  # noqa: F401
 from src.models.assessment_sessions import AssessmentSession
 from src.models.base import Base
 from src.models.candidate_profiles import CandidateProfile
@@ -187,8 +186,8 @@ def mock_embed():
 
 @pytest_asyncio.fixture
 async def async_client(db, r):
-    from src.main import app
     from src.database import get_db, get_redis
+    from src.main import app
     app.dependency_overrides[get_db] = lambda: db
     app.dependency_overrides[get_redis] = lambda: r
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:

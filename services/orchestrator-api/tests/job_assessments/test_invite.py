@@ -1,4 +1,5 @@
 import pytest
+
 from tests.job_assessments.conftest import JA_BODY
 
 INVITE_BODY = {

@@ -1,15 +1,13 @@
-import uuid
 from unittest.mock import MagicMock, patch
 
 import pytest
+import src.models  # noqa: F401
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-
 from src.models.base import Base
-import src.models  # noqa: F401
+from src.models.job_assessments import JobAssessment
 from src.models.orgs import Org
 from src.models.users import User
-from src.models.job_assessments import JobAssessment
 
 TEST_DB_URL = "postgresql://arap:arap@localhost:5434/arap_test"
 

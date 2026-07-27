@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, patch
 
-
 FAKE_QUESTIONS = [
     {
         "question": "Describe your experience with Python async programming.",

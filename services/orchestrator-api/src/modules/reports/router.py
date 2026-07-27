@@ -12,9 +12,9 @@ from src.modules.reports.schemas import (
     ReportResponse,
     ReviewerFeedbackRequest,
     ReviewerFeedbackResponse,
+    SharedReportResponse,
     ShareLinkRequest,
     ShareLinkResponse,
-    SharedReportResponse,
 )
 
 router = APIRouter(prefix="/reports", tags=["reports"])

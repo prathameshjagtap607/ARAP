@@ -6,7 +6,6 @@ import uuid
 
 import pytest
 from fastapi import HTTPException
-
 from src.modules.auth.dependencies import (
     TokenClaims,
     require_candidate_scope,

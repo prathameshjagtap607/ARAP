@@ -3,7 +3,6 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from passlib.context import CryptContext
-
 from src.modules.auth import service as svc
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -60,7 +59,7 @@ def test_verify_candidate_token_single_use(db, seed):
     raw = svc.request_candidate_token(
         db, seed["candidate"].email, seed["org"].id, seed["session_a"].id
     )
-    candidate, session = svc.verify_candidate_token(db, raw, seed["session_a"].id)
+    candidate, _session = svc.verify_candidate_token(db, raw, seed["session_a"].id)
     assert candidate.id == seed["candidate"].id
     # second use must fail
     with pytest.raises(ValueError, match="invalid or expired"):
@@ -68,7 +67,6 @@ def test_verify_candidate_token_single_use(db, seed):
 
 
 def test_verify_candidate_token_expired(db, seed):
-    from src.models.candidates import Candidate
     from src.modules.auth.token import hash_login_token
     raw = "sometoken"
     seed["candidate"].login_token_hash = hash_login_token(raw)
@@ -91,7 +89,7 @@ def test_verify_client_token_single_use(db, seed):
     raw = svc.request_client_token(
         db, seed["client"].email, seed["org"].id, seed["share"].id
     )
-    client, share = svc.verify_client_token(db, raw, seed["share"].id)
+    client, _share = svc.verify_client_token(db, raw, seed["share"].id)
     assert client.id == seed["client"].id
     with pytest.raises(ValueError, match="invalid or expired"):
         svc.verify_client_token(db, raw, seed["share"].id)

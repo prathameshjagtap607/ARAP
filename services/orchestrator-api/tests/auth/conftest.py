@@ -1,16 +1,15 @@
 import os
-from typing import Generator
+from collections.abc import Generator
 
 import fakeredis
 import pytest
 import pytest_asyncio
+import src.models  # noqa: F401 — registers all models
 from httpx import ASGITransport, AsyncClient
 from passlib.context import CryptContext
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
-
 from src.models.base import Base
-import src.models  # noqa: F401 — registers all models
 
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL",
@@ -49,14 +48,14 @@ def r():
 
 @pytest.fixture
 def seed(db: Session) -> dict:
-    from src.models.orgs import Org
-    from src.models.users import User
+    from src.models.assessment_sessions import AssessmentSession
     from src.models.candidates import Candidate
     from src.models.clients import Client
-    from src.models.job_assessments import JobAssessment
-    from src.models.assessment_sessions import AssessmentSession
     from src.models.hiring_reports import HiringReport
+    from src.models.job_assessments import JobAssessment
+    from src.models.orgs import Org
     from src.models.report_shares import ReportShare
+    from src.models.users import User
 
     org = Org(name="Test Org")
     db.add(org)
@@ -148,8 +147,8 @@ def seed(db: Session) -> dict:
 
 @pytest_asyncio.fixture
 async def async_client(db: Session, r):
-    from src.main import app
     from src.database import get_db, get_redis
+    from src.main import app
 
     app.dependency_overrides[get_db] = lambda: db
     app.dependency_overrides[get_redis] = lambda: r
