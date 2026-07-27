@@ -33,6 +33,17 @@ class FullReportResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SharedReportResponse(BaseModel):
+    session_id: uuid.UUID
+    verdict: str | None
+    executive_summary: str | None
+    recommended_next_round: str | None
+    full_report: dict
+    requires_human_review: bool
+
+    model_config = {"from_attributes": True}
+
+
 class ReviewerFeedbackRequest(BaseModel):
     final_decision: Literal["hire", "no_hire", "hold"]
     comment: str

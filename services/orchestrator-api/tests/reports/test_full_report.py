@@ -122,13 +122,11 @@ async def test_get_pdf_200(async_client, report_seed, user_token, db):
     _make_report(db, report_seed)
 
     fake_pdf = b"%PDF-fake-content"
-    with patch("src.modules.reports.service.get_pdf_bytes", return_value=fake_pdf) as mock_pdf:
-        # Patch at router level via service
-        with patch("agents.report_generator.pdf.render_pdf", return_value=fake_pdf):
-            resp = await async_client.get(
-                f"/reports/{report_seed['session'].id}/pdf",
-                headers={"Authorization": f"Bearer {user_token}"},
-            )
+    with patch("src.modules.reports.service.get_pdf_bytes", return_value=fake_pdf):
+        resp = await async_client.get(
+            f"/reports/{report_seed['session'].id}/pdf",
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
 
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/pdf"

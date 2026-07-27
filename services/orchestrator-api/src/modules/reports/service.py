@@ -16,6 +16,7 @@ from src.modules.reports.schemas import (
     ReportResponse,
     ShareLinkRequest,
     ShareLinkResponse,
+    SharedReportResponse,
 )
 
 
@@ -38,9 +39,9 @@ def get_full_report(
     db: Session, session_id: uuid.UUID, org_id: uuid.UUID
 ) -> FullReportResponse:
     session, report = _load_session_and_report(db, session_id, org_id)
-    requires_human_review = bool(
-        (report.integrity_summary or {}).get("human_review_required", False)
-    )
+    integrity_review = bool((report.integrity_summary or {}).get("human_review_required", False))
+    confidence_review = bool((report.full_report or {}).get("meta", {}).get("requires_human_review", False))
+    requires_human_review = integrity_review or confidence_review
     return FullReportResponse(
         session_id=session_id,
         report_ready=True,
@@ -57,7 +58,6 @@ def get_pdf_bytes(
     db: Session,
     session_id: uuid.UUID,
     org_id: uuid.UUID,
-    include_transcript: bool = False,
 ) -> bytes:
     from agents.report_generator.pdf import render_pdf
 
@@ -78,7 +78,7 @@ def get_pdf_bytes(
         report_data=report_data,
         candidate_name=candidate_name,
         job_title=job_title,
-        include_transcript=include_transcript,
+        include_transcript=False,
     )
 
 
@@ -118,7 +118,7 @@ def create_share_link(
     return ShareLinkResponse(share_token=share.id, expires_at=share.expires_at)
 
 
-def get_shared_report(db: Session, token: uuid.UUID) -> FullReportResponse:
+def get_shared_report(db: Session, token: uuid.UUID) -> SharedReportResponse:
     share = db.query(ReportShare).filter_by(id=token).first()
     if not share:
         raise PermissionError("share link not found")
@@ -140,16 +140,21 @@ def get_shared_report(db: Session, token: uuid.UUID) -> FullReportResponse:
         "human_review_required": raw_integrity.get("human_review_required"),
     }
 
-    requires_human_review = bool(raw_integrity.get("human_review_required", False))
-    return FullReportResponse(
+    integrity_review = bool(raw_integrity.get("human_review_required", False))
+    confidence_review = bool((report.full_report or {}).get("meta", {}).get("requires_human_review", False))
+    requires_human_review = integrity_review or confidence_review
+
+    scoped_report = {
+        k: v for k, v in full_report.items()
+        if k not in ("strengths", "weaknesses", "salary_recommendation", "ai_confidence_score", "_recommendation_context")
+    }
+    return SharedReportResponse(
         session_id=report.session_id,
-        report_ready=True,
-        requires_human_review=requires_human_review,
         verdict=report.verdict,
-        ai_confidence_score=float(report.ai_confidence_score) if report.ai_confidence_score is not None else None,
-        salary_band=report.salary_band,
-        full_report=full_report,
-        created_at=report.created_at,
+        executive_summary=(report.full_report or {}).get("executive_summary"),
+        recommended_next_round=report.recommended_next_round,
+        requires_human_review=requires_human_review,
+        full_report=scoped_report,
     )
 
 

@@ -132,7 +132,7 @@ def generate_full_report(
             f"Candidate: {candidate.name if candidate else 'Unknown'}",
             f"Role: {job.title if job else 'Unknown'}",
             f"Verdict: {report.verdict}",
-            f"Verdict reasoning: {getattr(report, 'verdict_reasoning', '')}",
+            f"Verdict reasoning: {(report.full_report or {}).get('_recommendation_context', {}).get('verdict_reasoning', '')}",
             f"Overall score: {rollup.get('overall', 0):.2f} / 5.0",
             "Composite scores: " + ", ".join(f"{k}: {v:.2f}" for k, v in composite_scores.items()),
             f"Salary band: {report.salary_band}",
@@ -211,7 +211,7 @@ def generate_full_report(
             "promotion_potential": narrative["promotion_potential"],
             "salary_recommendation": {
                 "band": report.salary_band,
-                "rationale": getattr(report, "salary_band_rationale", ""),
+                "rationale": (report.full_report or {}).get("_recommendation_context", {}).get("salary_band_rationale", ""),
             },
             "ai_confidence_score": confidence,
             "recommended_next_round": structured["recommended_next_round"],

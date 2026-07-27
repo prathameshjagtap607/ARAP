@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from src.modules.reports.schemas import (
     ReviewerFeedbackResponse,
     ShareLinkRequest,
     ShareLinkResponse,
+    SharedReportResponse,
 )
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 
 # --- Public endpoint (no auth) must come before parameterised routes ---
 
-@router.get("/shared/{token}", response_model=FullReportResponse)
+@router.get("/shared/{token}", response_model=SharedReportResponse)
 def get_shared_report(
     token: uuid.UUID,
     db: Session = Depends(get_db),
@@ -66,12 +67,11 @@ def get_full_report(
 @router.get("/{session_id}/pdf")
 def get_pdf_report(
     session_id: uuid.UUID,
-    include_transcript: bool = Query(default=False),
     claims: TokenClaims = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     try:
-        pdf_bytes = service.get_pdf_bytes(db, session_id, claims.org_id, include_transcript)
+        pdf_bytes = service.get_pdf_bytes(db, session_id, claims.org_id)
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except LookupError as e:

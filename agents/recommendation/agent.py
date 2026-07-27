@@ -116,6 +116,14 @@ def synthesize_recommendation(
         report.training_needs = [
             f"{tn['area']} ({tn['priority']})" for tn in result.get("training_needs", [])
         ]
+        report.full_report = {
+            **(report.full_report or {}),
+            "_recommendation_context": {
+                "verdict_reasoning": result.get("verdict_reasoning", ""),
+                "salary_band_rationale": result.get("salary_band_rationale", ""),
+                "training_needs": result.get("training_needs", []),
+            },
+        }
 
         db.commit()
         logger.info(
