@@ -81,7 +81,7 @@ export default function StatusPage() {
             )}
             {session.status === "in_progress" && (
               <p>
-                You're currently working on your assessment. Great progress!
+                You&apos;re currently working on your assessment. Great progress!
                 Continue answering the remaining questions at your own pace.
               </p>
             )}
@@ -104,7 +104,7 @@ export default function StatusPage() {
         {/* What's Next Section */}
         <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">
-            What's Next
+            What&apos;s Next
           </h2>
 
           {session.status === "completed" && (
@@ -167,13 +167,13 @@ export default function StatusPage() {
                 <p className="font-medium text-slate-900 mb-1">Get Started</p>
                 <p>
                   Review the assessment overview and accept the terms to begin.
-                  You'll have {session.duration_minutes} minutes to complete it.
+                  You&apos;ll have {session.duration_minutes} minutes to complete it.
                 </p>
               </div>
               <div>
                 <p className="font-medium text-slate-900 mb-1">Support</p>
                 <p>
-                  Make sure you're in a quiet environment with a stable internet
+                  Make sure you&apos;re in a quiet environment with a stable internet
                   connection before starting.
                 </p>
               </div>
