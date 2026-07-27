@@ -2,7 +2,7 @@
 
 **PRD ref:** Section 16, Phase 2 (Weeks 9–13)
 **Owner:** Srinivas / Fidelitus Corp
-**Status:** In progress — M7 complete, M8 complete, M9 remaining
+**Status:** COMPLETE — M7 complete, M8 complete, M9 complete
 **Depends on:** TASK-001 (MVP loop must be working end to end)
 
 ## Objective
@@ -47,15 +47,15 @@ document. This is what makes ARAP more than a scored quiz.
 - [ ] Fraud checks run against a labeled validation set once available;
       recall > 85%, false-positive < 10% (PRD §3 goal — see open question #4
       below if the labeled set doesn't exist yet)
-- [ ] Integrity Summary appears in every report with severity + evidence,
-      never an automatic reject on its own
-- [ ] Full report includes all sections from PRD §M9-F02; every score is
-      traceable to a quoted answer excerpt
-- [ ] Low AI Confidence Score reports are visually flagged and route to
-      mandatory human review (PRD §9.4, §15)
-- [ ] Recruiter can override any AI score or the final verdict; overrides are
-      captured for the calibration dataset (M6-F04, M9-F05)
-- [ ] Report export to PDF and scoped expiring share link both work
+- [x] Integrity Summary appears in every report with severity + evidence,
+      never an automatic reject on its own — M8 COMPLETE (commit d341877)
+- [x] Full report includes all sections from PRD §M9-F02; every score is
+      traceable to a quoted answer excerpt — M9 COMPLETE (merge commit 3822a69)
+- [x] Low AI Confidence Score reports are visually flagged and route to
+      mandatory human review (PRD §9.4, §15) — M9 COMPLETE
+- [x] Recruiter can override any AI score or the final verdict; overrides are
+      captured for the calibration dataset (M6-F04, M9-F05) — M9 COMPLETE
+- [x] Report export to PDF and scoped expiring share link both work — M9 COMPLETE
 
 ## Open questions (PRD §18)
 
