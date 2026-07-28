@@ -242,14 +242,14 @@ def list_sessions(db: Session, org_id: uuid.UUID) -> list:
             Candidate.email.label("candidate_email"),
             JobAssessment.title.label("job_title"),
             AssessmentSession.status,
-            AssessmentSession.created_at,
+            AssessmentSession.invited_at.label("created_at"),
             AssessmentSession.started_at,
             AssessmentSession.completed_at.label("submitted_at"),
         )
         .join(Candidate, AssessmentSession.candidate_id == Candidate.id)
         .join(JobAssessment, AssessmentSession.job_assessment_id == JobAssessment.id)
         .filter(AssessmentSession.org_id == org_id)
-        .order_by(AssessmentSession.created_at.desc())
+        .order_by(AssessmentSession.invited_at.desc())
         .all()
     )
 
