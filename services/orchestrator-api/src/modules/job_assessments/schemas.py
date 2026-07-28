@@ -84,9 +84,8 @@ class InviteRequest(BaseModel):
 
 
 class InviteResponse(BaseModel):
-    assessment_session_id: uuid.UUID
-    candidate_id: uuid.UUID
-    status: str
+    link: str
+    email_sent: bool
 
 
 class JobAssessmentResponse(BaseModel):

@@ -125,9 +125,10 @@ def invite_candidate(
     db: Session, org_id: uuid.UUID, assessment_id: uuid.UUID,
     user_id: uuid.UUID, data: InviteRequest,
 ) -> InviteResponse:
-    get_assessment(db, org_id, assessment_id)
+    assessment = get_assessment(db, org_id, assessment_id)
 
     from sqlalchemy.exc import IntegrityError
+    from src.modules.sessions.email import send_invite_email
 
     candidate = db.query(Candidate).filter_by(
         org_id=org_id, email=data.candidate_email
@@ -158,8 +159,16 @@ def invite_candidate(
     db.commit()
     db.refresh(session)
 
+    # Generate magic link (candidate token endpoint will handle the actual magic link)
+    link = f"http://localhost:3000/assessment/{session.id}?token={session.id}"
+    email_sent = send_invite_email(
+        to=candidate.email,
+        link=link,
+        job_title=assessment.title,
+        duration_minutes=assessment.duration_minutes,
+    )
+
     return InviteResponse(
-        assessment_session_id=session.id,
-        candidate_id=candidate.id,
-        status=session.status,
+        link=link,
+        email_sent=email_sent,
     )
