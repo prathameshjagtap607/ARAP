@@ -7,10 +7,12 @@ import { sendInvite } from '@/lib/api/assessments';
 interface InviteFormProps {
   sessionId: string;
   jobTitle: string;
+  durationMinutes?: number;
 }
 
-export default function InviteForm({ sessionId, jobTitle }: InviteFormProps) {
+export default function InviteForm({ sessionId, jobTitle, durationMinutes = 60 }: InviteFormProps) {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +27,11 @@ export default function InviteForm({ sessionId, jobTitle }: InviteFormProps) {
     e.preventDefault();
     setError(null);
 
+    if (!name.trim()) {
+      setError('Candidate name is required');
+      return;
+    }
+
     if (!email.trim()) {
       setError('Email is required');
       return;
@@ -38,9 +45,10 @@ export default function InviteForm({ sessionId, jobTitle }: InviteFormProps) {
     setLoading(true);
 
     try {
-      const result = await sendInvite(sessionId, email);
+      const result = await sendInvite(sessionId, name, email, durationMinutes * 60);
       setGeneratedLink(result.link);
       setSuccess(true);
+      setName('');
       setEmail('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send invite');
@@ -102,6 +110,20 @@ export default function InviteForm({ sessionId, jobTitle }: InviteFormProps) {
           <p className="text-sm font-medium text-red-900">{error}</p>
         </div>
       )}
+
+      <div>
+        <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
+          Candidate Name *
+        </label>
+        <input
+          id="name"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="John Doe"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline focus:outline-2 focus:outline-offset-2"
+        />
+      </div>
 
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
