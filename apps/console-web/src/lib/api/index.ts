@@ -1,4 +1,5 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const STORAGE_KEY = "arap_auth_token";
 
 let globalAccessToken: string | null = null;
 
@@ -8,6 +9,15 @@ export function setGlobalAccessToken(token: string | null) {
 
 export function getGlobalAccessToken(): string | null {
   return globalAccessToken;
+}
+
+function getTokenFromStorage(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export async function apiFetch<T>(
@@ -20,8 +30,8 @@ export async function apiFetch<T>(
     ...(rest.headers as Record<string, string>),
   };
 
-  // Use provided JWT or global token
-  const token = jwt || getGlobalAccessToken();
+  // Use provided JWT, global token, or read from localStorage
+  const token = jwt || getGlobalAccessToken() || getTokenFromStorage();
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE_URL}${path}`, { ...rest, headers });
