@@ -102,12 +102,6 @@ export default function AssessmentTable({
               </td>
               <td className="px-6 py-4 text-right space-x-2">
                 <Link
-                  href={`/assessments/${assessment.id}/edit`}
-                  className="inline text-sm font-medium text-blue-600 hover:text-blue-800"
-                >
-                  Edit
-                </Link>
-                <Link
                   href={`/assessments/${assessment.id}/invite`}
                   className="inline text-sm font-medium text-green-600 hover:text-green-800"
                 >
