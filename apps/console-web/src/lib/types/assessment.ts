@@ -1,9 +1,3 @@
-export interface Competency {
-  id: string;
-  name: string;
-  rubric: string;
-}
-
 export interface AssessmentFormData {
   jobTitle: string;
   jobRole: string;

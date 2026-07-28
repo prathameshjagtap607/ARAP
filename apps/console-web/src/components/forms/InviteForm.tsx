@@ -55,7 +55,7 @@ export default function InviteForm({ sessionId, jobTitle }: InviteFormProps) {
         <div className="rounded-lg border border-green-200 bg-green-50 px-6 py-4">
           <h3 className="text-sm font-semibold text-green-900 mb-2">Invite Sent!</h3>
           <p className="text-sm text-green-800 mb-4">
-            Assessment invite has been sent to {email}. They'll receive an email with the assessment link.
+            Assessment invite has been sent to {email}. They&apos;ll receive an email with the assessment link.
           </p>
           <div className="bg-white rounded p-3 mb-4">
             <p className="text-xs text-slate-600 mb-2">Direct link (copy if needed):</p>

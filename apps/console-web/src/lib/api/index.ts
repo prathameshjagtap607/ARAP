@@ -44,7 +44,7 @@ export async function apiFetch<T>(
         errorMessage = detail.detail;
       } else if (Array.isArray(detail.detail)) {
         errorMessage = detail.detail
-          .map(item => typeof item === 'string' ? item : JSON.stringify(item))
+          .map((item: unknown) => typeof item === 'string' ? item : JSON.stringify(item))
           .join(', ');
       } else if (typeof detail.detail === 'object') {
         errorMessage = Object.entries(detail.detail)

@@ -5,7 +5,8 @@ import { useParams } from 'next/navigation';
 import { getAssessment } from '@/lib/api/assessments';
 import { getCompetencies } from '@/lib/api/competencies';
 import AssessmentForm from '@/components/forms/AssessmentForm';
-import type { AssessmentResponse, Competency } from '@/lib/types/assessment';
+import type { AssessmentResponse } from '@/lib/types/assessment';
+import type { Competency } from '@/lib/types/competency';
 
 export default function EditAssessmentPage() {
   const { id } = useParams();

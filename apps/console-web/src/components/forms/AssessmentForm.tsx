@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import type { AssessmentFormData, Competency, CreateAssessmentRequest } from '@/lib/types/assessment';
+import type { AssessmentFormData, CreateAssessmentRequest } from '@/lib/types/assessment';
+import type { Competency } from '@/lib/types/competency';
 import { apiFetch } from '@/lib/api';
 
 interface AssessmentFormProps {

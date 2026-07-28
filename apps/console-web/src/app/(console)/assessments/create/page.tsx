@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getCompetencies } from '@/lib/api/competencies';
 import AssessmentForm from '@/components/forms/AssessmentForm';
-import type { Competency } from '@/lib/types/assessment';
+import type { Competency } from '@/lib/types/competency';
 
 export default function CreateAssessmentPage() {
   const [competencies, setCompetencies] = useState<Competency[]>([]);
