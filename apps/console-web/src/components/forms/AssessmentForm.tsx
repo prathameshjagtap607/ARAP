@@ -120,7 +120,7 @@ export default function AssessmentForm({
         });
       }
 
-      router.push('/dashboard/assessments');
+      router.push('/assessments');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save assessment';
       setSubmitError(message);
