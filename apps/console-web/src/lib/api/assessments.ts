@@ -39,10 +39,10 @@ export async function cloneAssessment(id: string): Promise<AssessmentResponse> {
 }
 
 export async function sendInvite(
-  sessionId: string,
+  assessmentId: string,
   email: string
 ): Promise<{ link: string; email_sent: boolean }> {
-  return apiFetch(`/sessions/${sessionId}/invite`, {
+  return apiFetch(`/job-assessments/${assessmentId}/invite`, {
     method: 'POST',
     body: JSON.stringify({ email }),
   });
