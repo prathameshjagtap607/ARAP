@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSessions, resendInvite } from '@/lib/api/sessions';
-import SessionTable from '@/components/tables/SessionTable';
-import type { SessionResponse } from '@/lib/types/session';
+import Link from 'next/link';
+import { getSessions, type SessionItem } from '@/lib/api/sessions';
 
 export default function CandidatesPage() {
-  const [sessions, setSessions] = useState<SessionResponse[]>([]);
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,13 +24,33 @@ export default function CandidatesPage() {
     load();
   }, []);
 
-  const handleResendInvite = async (sessionId: string) => {
-    await resendInvite(sessionId);
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const styles = {
+      invited: 'bg-blue-100 text-blue-800',
+      in_progress: 'bg-amber-100 text-amber-800',
+      completed: 'bg-green-100 text-green-800',
+      expired: 'bg-red-100 text-red-800',
+    };
+
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800'}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
   };
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Candidates & Sessions</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Candidates</h1>
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
@@ -41,10 +60,76 @@ export default function CandidatesPage() {
 
       {loading ? (
         <div className="text-center py-12">
-          <p className="text-slate-600">Loading sessions...</p>
+          <p className="text-slate-600">Loading candidates...</p>
+        </div>
+      ) : sessions.length === 0 ? (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-12 text-center">
+          <p className="text-slate-600">No assessment sessions yet</p>
+          <Link
+            href="/assessments/create"
+            className="mt-4 inline-block px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800"
+          >
+            Create First Assessment
+          </Link>
         </div>
       ) : (
-        <SessionTable sessions={sessions} onResendInvite={handleResendInvite} />
+        <div className="overflow-x-auto border border-slate-200 rounded-lg">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
+                  Candidate Email
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
+                  Assessment
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
+                  Invited
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
+                  Completed
+                </th>
+                <th className="px-6 py-3 text-right text-sm font-semibold text-slate-900">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map((session) => (
+                <tr key={session.id} className="border-b border-slate-200 hover:bg-slate-50">
+                  <td className="px-6 py-4 text-sm text-slate-900 font-medium">
+                    {session.candidate_email}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-600">
+                    {session.job_title}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    {getStatusBadge(session.status)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-600">
+                    {formatDate(session.created_at)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-600">
+                    {formatDate(session.submitted_at || '')}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    {session.status === 'completed' && (
+                      <Link
+                        href={`/candidates/${session.id}/results`}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                      >
+                        View Results
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
