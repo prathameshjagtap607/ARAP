@@ -52,7 +52,21 @@ export async function apiFetch<T>(
   const res = await fetch(`${BASE_URL}${path}`, { ...rest, headers });
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
-    throw new Error(detail?.detail ?? `HTTP ${res.status}`);
+    let errorMessage = `HTTP ${res.status}`;
+
+    if (detail?.detail) {
+      if (typeof detail.detail === 'string') {
+        errorMessage = detail.detail;
+      } else if (Array.isArray(detail.detail)) {
+        errorMessage = detail.detail.join(', ');
+      } else if (typeof detail.detail === 'object') {
+        errorMessage = Object.entries(detail.detail)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(', ');
+      }
+    }
+
+    throw new Error(errorMessage);
   }
 
   // Handle 204 No Content (common for DELETE operations)
