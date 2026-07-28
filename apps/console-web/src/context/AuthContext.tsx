@@ -43,13 +43,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (savedToken && savedUser) {
         const user = JSON.parse(savedUser) as ConsoleUser;
         setState({ user, accessToken: savedToken, loading: false });
-        console.log(`[AuthContext] Session restored from localStorage. User: ${user.id}, Token length: ${savedToken.length}`);
       } else {
-        console.log(`[AuthContext] No saved session in localStorage. savedToken: ${!!savedToken}, savedUser: ${!!savedUser}`);
         setState(prev => ({ ...prev, loading: false }));
       }
-    } catch (err) {
-      console.error(`[AuthContext] Error restoring session:`, err);
+    } catch {
       setState(prev => ({ ...prev, loading: false }));
     }
   }, []);
@@ -59,7 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Save to localStorage
     localStorage.setItem(STORAGE_KEY, accessToken);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-    console.log(`[AuthContext] Token saved to localStorage. User: ${user.id}, Token length: ${accessToken.length}`);
   }, []);
 
   const clearAuth = useCallback(() => {

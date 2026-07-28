@@ -12,20 +12,10 @@ export function getGlobalAccessToken(): string | null {
 }
 
 function getTokenFromStorage(): string | null {
-  if (typeof window === 'undefined') {
-    console.log(`[getTokenFromStorage] Not on client side (window undefined)`);
-    return null;
-  }
+  if (typeof window === 'undefined') return null;
   try {
-    const token = localStorage.getItem(STORAGE_KEY);
-    if (token) {
-      console.log(`[getTokenFromStorage] Found token in localStorage, length: ${token.length}`);
-    } else {
-      console.warn(`[getTokenFromStorage] No token in localStorage`);
-    }
-    return token;
-  } catch (err) {
-    console.error(`[getTokenFromStorage] Error accessing localStorage:`, err);
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
     return null;
   }
 }
@@ -42,12 +32,7 @@ export async function apiFetch<T>(
 
   // Use provided JWT, global token, or read from localStorage
   const token = jwt || getGlobalAccessToken() || getTokenFromStorage();
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-    console.log(`[apiFetch] Token found, sending request to ${path}`);
-  } else {
-    console.warn(`[apiFetch] No token found for ${path}!`);
-  }
+  if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE_URL}${path}`, { ...rest, headers });
   if (!res.ok) {
