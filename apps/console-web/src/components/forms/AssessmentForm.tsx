@@ -342,7 +342,7 @@ export default function AssessmentForm({
                 value={comp.id}
                 disabled={formData.competencies.some((c) => c.competencyId === comp.id)}
               >
-                {comp.name}
+                {typeof comp === 'object' && comp.name ? comp.name : String(comp)}
               </option>
             ))}
           </select>
