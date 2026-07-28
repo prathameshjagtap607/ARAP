@@ -1,13 +1,13 @@
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-function getTokenFromCookie(): string | null {
-  if (typeof document === 'undefined') return null;
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'access_token') return decodeURIComponent(value);
-  }
-  return null;
+let globalAccessToken: string | null = null;
+
+export function setGlobalAccessToken(token: string | null) {
+  globalAccessToken = token;
+}
+
+export function getGlobalAccessToken(): string | null {
+  return globalAccessToken;
 }
 
 export async function apiFetch<T>(
@@ -20,8 +20,8 @@ export async function apiFetch<T>(
     ...(rest.headers as Record<string, string>),
   };
 
-  // Use provided JWT or get from cookie
-  const token = jwt || getTokenFromCookie();
+  // Use provided JWT or global token
+  const token = jwt || getGlobalAccessToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE_URL}${path}`, { ...rest, headers });

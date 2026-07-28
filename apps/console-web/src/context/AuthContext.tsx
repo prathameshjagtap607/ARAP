@@ -29,6 +29,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setAuth = useCallback((user: ConsoleUser, accessToken: string) => {
     setState({ user, accessToken });
+    // Make token available to API client
+    import("@/lib/api").then(({ setGlobalAccessToken }) => {
+      setGlobalAccessToken(accessToken);
+    });
   }, []);
 
   const clearAuth = useCallback(() => {
