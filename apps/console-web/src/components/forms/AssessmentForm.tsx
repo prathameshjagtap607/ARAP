@@ -109,16 +109,15 @@ export default function AssessmentForm({
       };
 
       if (isEditing && assessmentId) {
-        await apiFetch(`/job-assessments/${assessmentId}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await apiFetch('/job-assessments', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
+        setSubmitError('Editing assessments is not yet supported');
+        setLoading(false);
+        return;
       }
+
+      await apiFetch('/job-assessments', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
 
       router.push('/assessments');
     } catch (err) {
