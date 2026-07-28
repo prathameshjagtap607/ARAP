@@ -31,21 +31,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading: true,
   });
 
-  // Restore session on mount
+  // Initialize with loading: false (no session restore on mount)
+  // Users will need to login fresh after page refresh
   useEffect(() => {
-    const restoreSession = async () => {
-      try {
-        const result = await refresh();
-        setState({ user: result.user, accessToken: result.accessToken, loading: false });
-        // Make token available to API client
-        import("@/lib/api").then(({ setGlobalAccessToken }) => {
-          setGlobalAccessToken(result.accessToken);
-        });
-      } catch {
-        setState({ user: null, accessToken: null, loading: false });
-      }
-    };
-    restoreSession();
+    setState(prev => ({ ...prev, loading: false }));
   }, []);
 
   const setAuth = useCallback((user: ConsoleUser, accessToken: string) => {
