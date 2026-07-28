@@ -37,3 +37,13 @@ export async function cloneAssessment(id: string): Promise<AssessmentResponse> {
     method: 'POST',
   });
 }
+
+export async function sendInvite(
+  sessionId: string,
+  email: string
+): Promise<{ link: string; email_sent: boolean }> {
+  return apiFetch(`/sessions/${sessionId}/invite`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
