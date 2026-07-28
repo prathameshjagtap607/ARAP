@@ -27,12 +27,10 @@ export interface CreateAssessmentRequest {
 
 export interface AssessmentResponse {
   id: string;
-  job_title: string;
-  job_role: string;
-  difficulty: string;
+  title: string;
+  difficulty_level: string;
   duration_minutes: number;
   competency_weightage: Record<string, number>;
   created_at: string;
-  updated_at: string;
-  is_template: boolean;
+  updated_at?: string;
 }

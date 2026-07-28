@@ -89,10 +89,10 @@ export default function AssessmentTable({
               className="border-b border-slate-200 hover:bg-slate-50"
             >
               <td className="px-6 py-4 text-sm text-slate-900 font-medium">
-                {assessment.job_title}
+                {assessment.title}
               </td>
               <td className="px-6 py-4 text-sm text-slate-600">
-                {assessment.difficulty}
+                {assessment.difficulty_level}
               </td>
               <td className="px-6 py-4 text-sm text-slate-600">
                 {assessment.duration_minutes} min
