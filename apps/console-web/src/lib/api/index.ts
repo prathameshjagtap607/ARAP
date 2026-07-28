@@ -58,10 +58,15 @@ export async function apiFetch<T>(
       if (typeof detail.detail === 'string') {
         errorMessage = detail.detail;
       } else if (Array.isArray(detail.detail)) {
-        errorMessage = detail.detail.join(', ');
+        errorMessage = detail.detail
+          .map(item => typeof item === 'string' ? item : JSON.stringify(item))
+          .join(', ');
       } else if (typeof detail.detail === 'object') {
         errorMessage = Object.entries(detail.detail)
-          .map(([key, value]) => `${key}: ${value}`)
+          .map(([key, value]) => {
+            const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+            return `${key}: ${valueStr}`;
+          })
           .join(', ');
       }
     }
