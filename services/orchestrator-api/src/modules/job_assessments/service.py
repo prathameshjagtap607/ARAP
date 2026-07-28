@@ -161,9 +161,7 @@ def invite_candidate(
 
     # Generate real magic-link token for candidate
     from src.modules.auth.token import generate_login_token, hash_login_token
-    from datetime import timedelta
-    from src.database import UTC
-    from datetime import datetime
+    from datetime import UTC, datetime, timedelta
 
     raw_token = generate_login_token()
     candidate.login_token_hash = hash_login_token(raw_token)
