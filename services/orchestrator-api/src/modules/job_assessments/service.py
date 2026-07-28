@@ -159,8 +159,20 @@ def invite_candidate(
     db.commit()
     db.refresh(session)
 
-    # Generate magic link (candidate token endpoint will handle the actual magic link)
-    link = f"http://localhost:3000/assessment/{session.id}?token={session.id}"
+    # Generate real magic-link token for candidate
+    from src.modules.auth.token import generate_login_token, hash_login_token
+    from datetime import timedelta
+    from src.database import UTC
+    from datetime import datetime
+
+    raw_token = generate_login_token()
+    candidate.login_token_hash = hash_login_token(raw_token)
+    candidate.login_token_expires_at = datetime.now(UTC) + timedelta(minutes=15)
+    db.add(candidate)
+    db.commit()
+
+    # Generate invite link with real magic-link token
+    link = f"http://localhost:3000/assessment/{session.id}?token={raw_token}"
     email_sent = send_invite_email(
         to=candidate.email,
         link=link,
