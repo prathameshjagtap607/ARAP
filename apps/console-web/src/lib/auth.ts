@@ -41,13 +41,33 @@ export async function login(
   return { user: claimsToUser(claims), accessToken: access_token };
 }
 
+function getRefreshTokenFromCookie(): string | null {
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'refresh_token') return decodeURIComponent(value);
+  }
+  return null;
+}
+
 export async function refresh(): Promise<{ user: ConsoleUser; accessToken: string }> {
+  const refreshToken = getRefreshTokenFromCookie();
+  if (!refreshToken) throw new Error("No refresh token found");
+
   const res = await fetch(`${API_BASE}/auth/refresh`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     credentials: "include",
+    body: JSON.stringify({ refresh_token: refreshToken }),
   });
   if (!res.ok) throw new Error("Refresh failed");
-  const { access_token } = (await res.json()) as { access_token: string };
+  const { access_token, refresh_token: newRefreshToken } = (await res.json()) as { access_token: string; refresh_token: string };
+
+  // Update refresh_token cookie with new token if provided
+  if (newRefreshToken) {
+    document.cookie = `refresh_token=${newRefreshToken}; path=/; SameSite=Lax`;
+  }
+
   const claims = decodeToken(access_token);
   return { user: claimsToUser(claims), accessToken: access_token };
 }
