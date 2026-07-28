@@ -24,7 +24,7 @@ export default function InvitePage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-slate-900">Send Assessment Invite</h1>
-      <InviteForm sessionId={id as string} jobTitle={assessment.job_title} />
+      <InviteForm sessionId={id as string} jobTitle={assessment.title} />
     </div>
   );
 }

@@ -32,11 +32,11 @@ export default function EditAssessmentPage() {
       <AssessmentForm
         competencies={competencies}
         initialData={{
-          jobTitle: assessment.job_title,
-          jobRole: assessment.job_role || '',
+          jobTitle: assessment.title,
+          jobRole: '',
           experienceMinYears: 0,
           experienceMaxYears: 10,
-          difficulty: assessment.difficulty as any,
+          difficulty: assessment.difficulty_level as any,
           durationMinutes: assessment.duration_minutes,
           competencies: Object.entries(assessment.competency_weightage).map(
             ([compId, weight]) => ({
