@@ -27,7 +27,8 @@ export default function CompetencyTable({
     }
   };
 
-  const truncateRubric = (text: string, maxLength: number = 80) => {
+  const truncateRubric = (text: string | null | undefined, maxLength: number = 80) => {
+    if (!text) return '—';
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
@@ -62,7 +63,7 @@ export default function CompetencyTable({
               className="border-b border-slate-200 hover:bg-slate-50"
             >
               <td className="px-6 py-4 text-sm text-slate-900 font-medium">
-                {competency.name}
+                {competency.name || '—'}
               </td>
               <td className="px-6 py-4 text-sm text-slate-600">
                 {truncateRubric(competency.rubric)}
