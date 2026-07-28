@@ -3,7 +3,6 @@ import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from agents.evaluation.pipeline import evaluation_pipeline
 from src.database import SessionLocal, get_db
 from src.modules.auth.dependencies import (
     TokenClaims,
@@ -100,6 +99,7 @@ def submit(
     db: Session = Depends(get_db),
 ):
     try:
+        from agents.evaluation.pipeline import evaluation_pipeline
         def _run_pipeline():
             background_tasks.add_task(evaluation_pipeline, session_id, SessionLocal)
 
