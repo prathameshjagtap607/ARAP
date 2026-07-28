@@ -36,7 +36,8 @@ export async function login(
   }
   const { access_token, refresh_token } = (await res.json()) as { access_token: string; refresh_token: string };
   const claims = decodeToken(access_token);
-  document.cookie = `refresh_token=${refresh_token}; path=/; SameSite=Lax`;
+  // Store refresh_token with proper encoding
+  document.cookie = `refresh_token=${encodeURIComponent(refresh_token)}; path=/; SameSite=Lax; max-age=604800`;
   document.cookie = `user_role=${claims.role}; path=/; SameSite=Lax`;
   return { user: claimsToUser(claims), accessToken: access_token };
 }
