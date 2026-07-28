@@ -162,12 +162,22 @@ def invite_candidate(
     # Generate real magic-link token for candidate
     from src.modules.auth.token import generate_login_token, hash_login_token
     from datetime import UTC, datetime, timedelta
+    import logging
 
-    raw_token = generate_login_token()
-    candidate.login_token_hash = hash_login_token(raw_token)
-    candidate.login_token_expires_at = datetime.now(UTC) + timedelta(minutes=15)
-    db.add(candidate)
-    db.commit()
+    logger = logging.getLogger(__name__)
+
+    try:
+        raw_token = generate_login_token()
+        candidate.login_token_hash = hash_login_token(raw_token)
+        candidate.login_token_expires_at = datetime.now(UTC) + timedelta(minutes=15)
+        db.merge(candidate)
+        db.commit()
+        db.refresh(candidate)
+        logger.info(f"Token generated for candidate {candidate.id}: hash={candidate.login_token_hash[:20]}...")
+    except Exception as e:
+        logger.error(f"Token generation failed: {e}")
+        db.rollback()
+        raw_token = ""
 
     # Generate invite link with real magic-link token
     link = f"http://localhost:3000/assessment/{session.id}?token={raw_token}"
