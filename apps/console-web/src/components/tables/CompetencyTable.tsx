@@ -66,7 +66,7 @@ export default function CompetencyTable({
                 {competency.name || '—'}
               </td>
               <td className="px-6 py-4 text-sm text-slate-600">
-                {truncateRubric(competency.rubric)}
+                {truncateRubric(competency.rubric_notes)}
               </td>
               <td className="px-6 py-4 text-right space-x-2">
                 <button

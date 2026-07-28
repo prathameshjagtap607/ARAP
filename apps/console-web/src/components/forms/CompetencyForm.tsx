@@ -13,7 +13,7 @@ interface CompetencyFormProps {
 export default function CompetencyForm({ competency, onSuccess }: CompetencyFormProps) {
   const router = useRouter();
   const [name, setName] = useState(competency?.name ?? '');
-  const [rubric, setRubric] = useState(competency?.rubric ?? '');
+  const [rubric, setRubric] = useState(competency?.rubric_notes ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +36,7 @@ export default function CompetencyForm({ competency, onSuccess }: CompetencyForm
     setLoading(true);
 
     try {
-      const data = { name: name.trim(), rubric: rubric.trim() };
+      const data = { name: name.trim(), rubric_notes: rubric.trim() };
 
       if (isEditing) {
         await updateCompetency(competency.id, data);
