@@ -162,22 +162,21 @@ def invite_candidate(
     # Generate real magic-link token for candidate
     from src.modules.auth.token import generate_login_token, hash_login_token
     from datetime import UTC, datetime, timedelta
-    import logging
+    from sqlalchemy import text
 
-    logger = logging.getLogger(__name__)
+    raw_token = generate_login_token()
+    token_hash = hash_login_token(raw_token)
+    expires_at = datetime.now(UTC) + timedelta(minutes=15)
 
-    try:
-        raw_token = generate_login_token()
-        candidate.login_token_hash = hash_login_token(raw_token)
-        candidate.login_token_expires_at = datetime.now(UTC) + timedelta(minutes=15)
-        db.merge(candidate)
-        db.commit()
-        db.refresh(candidate)
-        logger.info(f"Token generated for candidate {candidate.id}: hash={candidate.login_token_hash[:20]}...")
-    except Exception as e:
-        logger.error(f"Token generation failed: {e}")
-        db.rollback()
-        raw_token = ""
+    db.execute(
+        text("""
+            UPDATE candidates
+            SET login_token_hash = :hash, login_token_expires_at = :expires
+            WHERE id = :candidate_id
+        """),
+        {"hash": token_hash, "expires": expires_at, "candidate_id": str(candidate.id)}
+    )
+    db.commit()
 
     # Generate invite link with real magic-link token
     link = f"http://localhost:3000/assessment/{session.id}?token={raw_token}"
