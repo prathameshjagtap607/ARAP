@@ -18,11 +18,9 @@ export interface AssessmentFormData {
 }
 
 export interface CreateAssessmentRequest {
-  job_title: string;
-  job_role: string;
-  experience_min_years: number;
-  experience_max_years: number;
-  difficulty: string;
+  title: string;
+  description?: string;
+  difficulty_level: string;
   duration_minutes: number;
   competency_weightage: Record<string, number>;
 }

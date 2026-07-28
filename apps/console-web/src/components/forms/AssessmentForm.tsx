@@ -102,11 +102,8 @@ export default function AssessmentForm({
       });
 
       const payload: CreateAssessmentRequest = {
-        job_title: formData.jobTitle,
-        job_role: formData.jobRole,
-        experience_min_years: formData.experienceMinYears,
-        experience_max_years: formData.experienceMaxYears,
-        difficulty: formData.difficulty,
+        title: formData.jobTitle,
+        difficulty_level: formData.difficulty,
         duration_minutes: formData.durationMinutes,
         competency_weightage: competencyWeightage,
       };
