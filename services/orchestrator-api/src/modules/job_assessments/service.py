@@ -190,4 +190,5 @@ def invite_candidate(
     return InviteResponse(
         link=link,
         email_sent=email_sent,
+        session_id=str(session.id),
     )

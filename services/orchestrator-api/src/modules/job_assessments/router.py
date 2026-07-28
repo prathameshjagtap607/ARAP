@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from src.database import get_db
@@ -92,10 +92,25 @@ def clone_assessment(
 def invite_candidate(
     assessment_id: uuid.UUID,
     body: InviteRequest,
+    background_tasks: BackgroundTasks,
     claims: TokenClaims = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     try:
-        return service.invite_candidate(db, claims.org_id, assessment_id, uuid.UUID(claims.sub), body)
+        result = service.invite_candidate(db, claims.org_id, assessment_id, uuid.UUID(claims.sub), body)
+
+        # Generate questions in background (non-blocking)
+        def _generate_questions():
+            from src.modules.question_sets import service as qs_service
+            from src.database import SessionLocal
+            try:
+                qs_db = SessionLocal()
+                qs_service.generate_questions(qs_db, result.session_id)
+                qs_db.close()
+            except Exception:
+                pass  # Non-fatal: questions can be generated manually if needed
+
+        background_tasks.add_task(_generate_questions)
+        return result
     except LookupError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
