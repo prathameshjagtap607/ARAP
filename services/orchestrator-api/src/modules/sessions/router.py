@@ -17,11 +17,20 @@ from src.modules.sessions.schemas import (
     CalibrationRequest,
     CalibrationResponse,
     InviteResponse,
+    SessionListItem,
     SessionStateResponse,
     SubmitResponse,
 )
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
+
+
+@router.get("", response_model=list[SessionListItem])
+def list_sessions(
+    claims: TokenClaims = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    return service.list_sessions(db, claims.org_id)
 
 
 @router.post("/{session_id}/invite", response_model=InviteResponse)

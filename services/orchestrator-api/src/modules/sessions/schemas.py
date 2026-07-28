@@ -58,6 +58,18 @@ class SubmitResponse(BaseModel):
     completed_at: datetime | None
 
 
+class SessionListItem(BaseModel):
+    id: uuid.UUID
+    candidate_email: str
+    job_title: str
+    status: str
+    created_at: datetime
+    started_at: datetime | None
+    submitted_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
 class CalibrationRequest(BaseModel):
     override_score: int = Field(..., ge=1, le=5)
     comment: str

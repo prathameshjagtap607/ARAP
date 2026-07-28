@@ -231,3 +231,26 @@ def calibrate_answer(
 
     db.commit()
     return calibration
+
+
+def list_sessions(db: Session, org_id: uuid.UUID) -> list:
+    from src.modules.sessions.schemas import SessionListItem
+
+    sessions = (
+        db.query(
+            AssessmentSession.id,
+            Candidate.email.label("candidate_email"),
+            JobAssessment.title.label("job_title"),
+            AssessmentSession.status,
+            AssessmentSession.created_at,
+            AssessmentSession.started_at,
+            AssessmentSession.completed_at.label("submitted_at"),
+        )
+        .join(Candidate, AssessmentSession.candidate_id == Candidate.id)
+        .join(JobAssessment, AssessmentSession.job_assessment_id == JobAssessment.id)
+        .filter(AssessmentSession.org_id == org_id)
+        .order_by(AssessmentSession.created_at.desc())
+        .all()
+    )
+
+    return [SessionListItem(**dict(s._mapping)) for s in sessions]
