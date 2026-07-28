@@ -43,10 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (savedToken && savedUser) {
         const user = JSON.parse(savedUser) as ConsoleUser;
         setState({ user, accessToken: savedToken, loading: false });
-        // Make token available to API client
-        import("@/lib/api").then(({ setGlobalAccessToken }) => {
-          setGlobalAccessToken(savedToken);
-        });
       } else {
         setState(prev => ({ ...prev, loading: false }));
       }
@@ -60,10 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Save to localStorage
     localStorage.setItem(STORAGE_KEY, accessToken);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-    // Make token available to API client
-    import("@/lib/api").then(({ setGlobalAccessToken }) => {
-      setGlobalAccessToken(accessToken);
-    });
   }, []);
 
   const clearAuth = useCallback(() => {
