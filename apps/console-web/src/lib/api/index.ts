@@ -29,5 +29,9 @@ export async function apiFetch<T>(
     const detail = await res.json().catch(() => ({}));
     throw new Error(detail?.detail ?? `HTTP ${res.status}`);
   }
+
+  // Handle 204 No Content (common for DELETE operations)
+  if (res.status === 204) return undefined as unknown as T;
+
   return res.json() as Promise<T>;
 }
