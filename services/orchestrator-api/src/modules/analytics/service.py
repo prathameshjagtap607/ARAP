@@ -161,3 +161,159 @@ def get_funnel(
         totals = make_row("All", "All", ti, co, hi)
 
     return FunnelResponse(rows=rows, totals=totals)
+
+
+def get_question_analytics(
+    db: Session,
+    org_id: uuid.UUID,
+    job_assessment_id: uuid.UUID | None,
+    from_date: datetime,
+    to_date: datetime,
+) -> QuestionAnalyticsResponse:
+    sql = text("""
+        SELECT
+            sq.category,
+            sq.difficulty,
+            COUNT(*) AS question_count,
+            AVG(CASE sq.difficulty
+                WHEN 'easy'   THEN 1
+                WHEN 'medium' THEN 2
+                WHEN 'hard'   THEN 3
+                WHEN 'expert' THEN 4
+            END) AS avg_difficulty_num,
+            AVG((r.score_rollup->>'overall')::numeric) AS avg_verdict_score
+        FROM session_questions sq
+        JOIN question_sets qs ON qs.id = sq.question_set_id
+        JOIN assessment_sessions s ON s.id = qs.session_id
+        LEFT JOIN hiring_reports r ON r.session_id = s.id
+        WHERE sq.org_id = :org_id
+          AND (:job_assessment_id IS NULL OR s.job_assessment_id = :job_assessment_id)
+          AND s.completed_at BETWEEN :from_date AND :to_date
+        GROUP BY sq.category, sq.difficulty
+        ORDER BY sq.category, sq.difficulty
+    """)
+
+    rows = db.execute(sql, {
+        "org_id": org_id,
+        "job_assessment_id": job_assessment_id,
+        "from_date": from_date,
+        "to_date": to_date,
+    }).mappings().all()
+
+    return QuestionAnalyticsResponse(
+        rows=[
+            QuestionCategoryRow(
+                category=r["category"],
+                difficulty=r["difficulty"],
+                question_count=int(r["question_count"]),
+                avg_difficulty_num=float(r["avg_difficulty_num"]),
+                avg_verdict_score=float(r["avg_verdict_score"]) if r["avg_verdict_score"] is not None else None,
+            )
+            for r in rows
+        ]
+    )
+
+
+def get_benchmark(
+    db: Session,
+    org_id: uuid.UUID,
+    session_id: uuid.UUID,
+) -> BenchmarkResponse:
+    check = text("""
+        SELECT job_assessment_id FROM assessment_sessions
+        WHERE id = :session_id AND org_id = :org_id AND status = 'completed'
+    """)
+    row = db.execute(check, {"session_id": session_id, "org_id": org_id}).mappings().first()
+    if not row:
+        raise LookupError("session not found or not completed")
+
+    sql = text("""
+        WITH scores AS (
+            SELECT
+                s.id AS session_id,
+                (r.score_rollup->>'overall')::numeric AS overall_score
+            FROM assessment_sessions s
+            JOIN hiring_reports r ON r.session_id = s.id
+            WHERE s.org_id = :org_id
+              AND s.job_assessment_id = :job_assessment_id
+              AND s.status = 'completed'
+        ),
+        agg AS (
+            SELECT
+                COUNT(*) AS peer_count,
+                PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY overall_score) AS p25,
+                PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY overall_score) AS p50,
+                PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY overall_score) AS p75
+            FROM scores
+        ),
+        ranked AS (
+            SELECT
+                sc.session_id,
+                sc.overall_score,
+                PERCENT_RANK() OVER (ORDER BY sc.overall_score) AS percentile,
+                agg.peer_count,
+                agg.p25,
+                agg.p50,
+                agg.p75
+            FROM scores sc, agg
+        )
+        SELECT * FROM ranked WHERE session_id = :session_id
+    """)
+
+    result = db.execute(sql, {
+        "org_id": org_id,
+        "job_assessment_id": row["job_assessment_id"],
+        "session_id": session_id,
+    }).mappings().first()
+
+    if not result:
+        raise LookupError("benchmark data not available for this session")
+
+    return BenchmarkResponse(
+        session_id=session_id,
+        overall_score=float(result["overall_score"]),
+        percentile=float(result["percentile"]),
+        p25=float(result["p25"]),
+        p50=float(result["p50"]),
+        p75=float(result["p75"]),
+        peer_count=int(result["peer_count"]),
+    )
+
+
+def get_skill_trends(
+    db: Session,
+    org_id: uuid.UUID,
+    dept: str | None,
+    role: str | None,
+    from_date: datetime,
+    to_date: datetime,
+) -> SkillTrendsResponse:
+    sql = text("""
+        SELECT week_start, competency, avg_score, sample_count
+        FROM skill_trend_snapshots
+        WHERE org_id = :org_id
+          AND (:dept IS NULL OR department = :dept)
+          AND (:role IS NULL OR role_family = :role)
+          AND week_start BETWEEN :from_date AND :to_date
+        ORDER BY week_start, competency
+    """)
+
+    rows = db.execute(sql, {
+        "org_id": org_id,
+        "dept": dept,
+        "role": role,
+        "from_date": from_date,
+        "to_date": to_date,
+    }).mappings().all()
+
+    data = [
+        SkillTrendPoint(
+            week_start=r["week_start"],
+            competency=r["competency"],
+            avg_score=float(r["avg_score"]),
+            sample_count=int(r["sample_count"]),
+        )
+        for r in rows
+    ]
+
+    return SkillTrendsResponse(data=data, has_data=len(data) > 0)
