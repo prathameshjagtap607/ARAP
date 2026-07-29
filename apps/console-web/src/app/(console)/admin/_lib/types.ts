@@ -1,33 +1,3 @@
-export const PROMPT_LIBRARY_VERSION = "0.2.0";
-
-export const AGENT_NAMES = [
-  "question_generator",
-  "report_writer",
-  "scorer",
-] as const;
-
-export type AgentName = (typeof AGENT_NAMES)[number];
-
-export interface PromptVersion {
-  id: string;
-  org_id: string | null;
-  agent_name: AgentName | string;
-  version: string;
-  template_body: string;
-  is_active: boolean;
-  created_at: string;
-}
-
-export interface ModelRoutingConfig {
-  agent_name: AgentName | string;
-  provider: string;
-  model_id: string;
-  fallback_provider: string | null;
-  fallback_model_id: string | null;
-  updated_by: string | null;
-  updated_at: string;
-}
-
 export interface TenantDetail {
   id: string;
   name: string;
@@ -38,6 +8,26 @@ export interface TenantDetail {
   created_at: string;
   user_count: number;
   session_count: number;
+}
+
+export interface PromptVersion {
+  id: string;
+  org_id: string | null;
+  agent_name: string;
+  version: string;
+  template_body: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ModelRoutingConfig {
+  agent_name: string;
+  provider: string;
+  model_id: string;
+  fallback_provider: string | null;
+  fallback_model_id: string | null;
+  updated_by: string | null;
+  updated_at: string;
 }
 
 export interface HealthOverview {

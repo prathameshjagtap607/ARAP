@@ -10,6 +10,7 @@ from src.middleware.error_handler import (
     unhandled_exception_handler,
 )
 from src.middleware.rate_limit import RateLimitMiddleware
+from src.modules.admin.router import router as admin_router
 from src.modules.analytics.router import router as analytics_router
 from src.modules.auth.router import router as auth_router
 from src.modules.candidate_profiles.router import router as candidate_profiles_router
@@ -50,3 +51,4 @@ app.include_router(sessions_router)
 app.include_router(reports_router)
 app.include_router(integrity_router)
 app.include_router(analytics_router)
+app.include_router(admin_router)

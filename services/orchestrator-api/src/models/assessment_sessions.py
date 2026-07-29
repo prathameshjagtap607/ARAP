@@ -30,3 +30,6 @@ class AssessmentSession(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     time_budget_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
+    prompt_template_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("prompt_templates.id"), nullable=True
+    )

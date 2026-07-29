@@ -9,6 +9,7 @@ from .competency_library import CompetencyLibrary
 from .hiring_reports import HiringReport
 from .integrity_flags import IntegrityFlag
 from .job_assessments import JobAssessment
+from .model_routing_configs import ModelRoutingConfig
 from .orgs import Org
 from .prompt_templates import PromptTemplate
 from .question_fingerprints import QuestionFingerprint
@@ -30,6 +31,7 @@ __all__ = [
     "HiringReport",
     "IntegrityFlag",
     "JobAssessment",
+    "ModelRoutingConfig",
     "Org",
     "PromptTemplate",
     "QuestionFingerprint",

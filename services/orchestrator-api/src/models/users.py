@@ -19,7 +19,7 @@ class User(Base):
     __tablename__ = "users"
     __table_args__ = (
         UniqueConstraint("org_id", "email", name="uq_users_org_email"),
-        CheckConstraint("role IN ('user', 'admin')", name="ck_users_role"),
+        CheckConstraint("role IN ('user', 'admin', 'super_admin')", name="ck_users_role"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(

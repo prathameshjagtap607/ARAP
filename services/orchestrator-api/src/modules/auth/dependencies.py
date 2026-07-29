@@ -42,6 +42,15 @@ def require_admin(claims: TokenClaims = Depends(get_claims)) -> TokenClaims:
     return claims
 
 
+def require_super_admin(claims: TokenClaims = Depends(get_claims)) -> TokenClaims:
+    if claims.role != "super_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super admin access required",
+        )
+    return claims
+
+
 class RequireCandidateScope:
     def __call__(
         self,
