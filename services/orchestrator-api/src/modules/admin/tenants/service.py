@@ -77,6 +77,8 @@ def update_tenant(db: Session, org_id: uuid.UUID, payload: TenantUpdate) -> Tena
 
 
 def suspend_tenant(db: Session, org_id: uuid.UUID) -> TenantDetail:
+    # NOTE: sets is_active=false as a display flag only. Auth enforcement
+    # (blocking login/API for suspended orgs) is deferred to M13.
     db.execute(
         text("UPDATE orgs SET is_active = false, suspended_at = :now WHERE id = :org_id"),
         {"now": datetime.now(timezone.utc), "org_id": org_id},

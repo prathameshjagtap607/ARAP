@@ -22,7 +22,7 @@ def test_orgs_table_exists(engine):
 
 def test_orgs_columns(engine):
     cols = {c["name"] for c in inspect(engine).get_columns("orgs")}
-    assert cols == {"id", "name", "plan_tier", "created_at"}
+    assert cols == {"id", "name", "plan_tier", "created_at", "workspace_limit", "is_active", "suspended_at"}
 
 
 def test_org_insert_and_defaults(db):

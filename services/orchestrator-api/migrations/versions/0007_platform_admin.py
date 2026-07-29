@@ -67,14 +67,24 @@ def upgrade() -> None:
           ('scorer',             'anthropic', 'claude-haiku-4-5-20251001')
     """))
 
+    # 6. Partial unique index: at most one active prompt per (agent_name, org_id)
+    op.execute(sa.text("""
+        CREATE UNIQUE INDEX uq_prompt_active_per_agent
+        ON prompt_templates (agent_name, COALESCE(org_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        WHERE is_active = true
+    """))
+
 
 def downgrade() -> None:
+    op.execute(sa.text("DROP INDEX IF EXISTS uq_prompt_active_per_agent"))
     op.drop_table("model_routing_configs")
     op.drop_constraint("fk_assessment_sessions_prompt_template_id", "assessment_sessions", type_="foreignkey")
     op.drop_column("assessment_sessions", "prompt_template_id")
     op.drop_column("orgs", "suspended_at")
     op.drop_column("orgs", "is_active")
     op.drop_column("orgs", "workspace_limit")
+    # Demote any super_admin users before restoring the old constraint
+    op.execute(sa.text("UPDATE users SET role = 'admin' WHERE role = 'super_admin'"))
     op.drop_constraint("ck_users_role", "users", type_="check")
     op.create_check_constraint(
         "ck_users_role", "users", "role IN ('user', 'admin')"
