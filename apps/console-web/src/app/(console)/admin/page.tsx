@@ -29,7 +29,7 @@ export default function AdminPage() {
     }
   }, [user, loading, router]);
 
-  if (loading || user?.role !== "super_admin") return null;
+  if (loading) return null;
 
   function handleTabChange(tab: Tab) {
     setActiveTab(tab);
