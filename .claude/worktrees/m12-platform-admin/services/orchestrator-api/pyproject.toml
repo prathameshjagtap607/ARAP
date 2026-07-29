@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orchestrator-api"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "pgvector>=0.3",
+    "psycopg2-binary>=2.9",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
+    "pydantic-settings>=2.2",
+    "pydantic[email]>=2.0",
+    "PyJWT>=2.8",
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0.1,<5.0",
+    "redis>=5.0",
+    "anthropic>=0.28",
+    "openai>=1.0",
+    "weasyprint>=62.0",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-env>=1.1",
+    "httpx>=0.27",
+    "anyio[asyncio]>=4.0",
+    "pytest-asyncio>=0.23",
+    "fakeredis>=2.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["../..", "."]
+env = [
+    "TEST_DATABASE_URL=postgresql://arap:arap@localhost:5434/arap_test",
+    "DATABASE_URL=postgresql://arap:arap@localhost:5433/arap_dev",
+    "SECRET_KEY=test-secret-key-not-for-production",
+    "JWT_SECRET_KEY=test-jwt-secret-key-not-for-production",
+    "ANTHROPIC_API_KEY=test-anthropic-key-not-real",
+    "OPENAI_API_KEY=test-openai-key-not-real",
+]
