@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/admin")) {
     const role = request.cookies.get("user_role")?.value ?? "user";
-    if (role !== "admin") {
+    if (role !== "admin" && role !== "super_admin") {
       const dashUrl = request.nextUrl.clone();
       dashUrl.pathname = "/";
       return NextResponse.redirect(dashUrl);
