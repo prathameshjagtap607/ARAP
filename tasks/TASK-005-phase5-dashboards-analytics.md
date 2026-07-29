@@ -116,3 +116,37 @@ These require separate design specs and implementation plans. Ready to start whe
 
 **Design spec:** docs/superpowers/specs/2026-07-27-m10-dashboards-design.md
 **Implementation plan:** docs/superpowers/plans/2026-07-27-m10-dashboards.md
+
+---
+
+## STATUS UPDATE (2026-07-29)
+
+**Out-of-band work found on main (not part of this task, done 2026-07-28):**
+Invite flow was reworked across 5 commits (`9ac3935`→`dd03921`): real magic-link
+token generation (bcrypt-hashed, 15-min expiry), raw-SQL token update (ORM
+`db.merge()` was unreliable — root cause not diagnosed, worked around), and
+automatic question-set generation fired as a background task right after invite.
+
+**Manually verified by user (2026-07-28):** invite link sends, candidate can
+open the exam. Questions are NOT generated — `ANTHROPIC_API_KEY` /
+`OPENAI_API_KEY` in `services/orchestrator-api/.env` are placeholders, not
+real keys. This is expected (agent fails non-fatally by design) and is
+**deliberately deferred until all sessions are complete**, then real keys
+will be added for one full end-to-end test pass.
+
+**DISC-style questions — discussed, decision: NOT doing it.**
+Client asked whether questions could be DISC-style (personality/trait
+forced-choice) instead of the current competency-based interview questions.
+Determined feasible only as an **additive parallel mode** (new category +
+answer format + separate scoring/report path) — replacing the existing
+competency-based generation would break scoring, reports, dashboards, and
+calibration across 6+ already-completed sessions. **Client decided to leave
+the existing system as-is. No DISC work started or planned.**
+
+### Next session should:
+1. Continue M11 Analytics + M12 Platform Admin (still not started — this
+   task's actual scope) — OR follow whatever the user directs next.
+2. When ready to fully test invite→exam→questions end-to-end: add real
+   `ANTHROPIC_API_KEY` + `OPENAI_API_KEY` to `services/orchestrator-api/.env`,
+   restart uvicorn, send a fresh invite (old sessions won't retry).
+3. DISC-style questions: parked, not in scope unless client explicitly asks again.
