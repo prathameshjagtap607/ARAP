@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { ConsoleUser } from "@/types/auth";
 import { decodeToken } from "@/lib/auth";
+import { setGlobalAccessToken } from "@/lib/api/index";
 
 interface AuthState {
   user: ConsoleUser | null;
@@ -41,8 +42,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const savedUser = localStorage.getItem(USER_STORAGE_KEY);
 
       if (savedToken && savedUser) {
-        const user = JSON.parse(savedUser) as ConsoleUser;
-        setState({ user, accessToken: savedToken, loading: false });
+        try {
+          const decoded = decodeToken(savedToken);
+          const isExpired = decoded.exp && decoded.exp * 1000 < Date.now();
+          if (isExpired) throw new Error("expired");
+          const user = JSON.parse(savedUser) as ConsoleUser;
+          setGlobalAccessToken(savedToken);
+          setState({ user, accessToken: savedToken, loading: false });
+        } catch {
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(USER_STORAGE_KEY);
+          setState(prev => ({ ...prev, loading: false }));
+        }
       } else {
         setState(prev => ({ ...prev, loading: false }));
       }
@@ -53,14 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const setAuth = useCallback((user: ConsoleUser, accessToken: string) => {
     setState({ user, accessToken, loading: false });
-    // Save to localStorage
+    setGlobalAccessToken(accessToken);
     localStorage.setItem(STORAGE_KEY, accessToken);
     localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
   }, []);
 
   const clearAuth = useCallback(() => {
     setState({ user: null, accessToken: null, loading: false });
-    // Clear from localStorage
+    setGlobalAccessToken(null);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(USER_STORAGE_KEY);
   }, []);

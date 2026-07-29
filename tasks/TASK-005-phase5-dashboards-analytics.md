@@ -119,7 +119,45 @@ These require separate design specs and implementation plans. Ready to start whe
 
 ---
 
-## STATUS UPDATE (2026-07-29)
+## STATUS UPDATE (2026-07-29) — SESSION 2
+
+### M11 Analytics — COMPLETE ✅
+
+All 5 analytics features built, reviewed, merged to main (commit `a2e288a`),
+and manually verified in browser. Branch `feat/m11-analytics` deleted.
+
+**What was built:**
+- F01 Score Trends — `/analytics/score-trends` (LineChart, granularity, per-competency toggle)
+- F02 Hiring Funnel — `/analytics/funnel` (horizontal BarChart, conversion KPIs)
+- F03 Question Analytics — `/analytics/questions` (PieChart + BarChart)
+- F04 Candidate Benchmarking — `/analytics/benchmarks/{session_id}` (PERCENT_RANK percentile)
+- F05 Skill Trends stub — `/analytics/skill-trends` (shows "no data yet" — correct by design)
+- Redis caching on all endpoints (TTL 300s, SCAN+DEL invalidation)
+- Alembic migration 0006: `skill_trend_snapshots` table
+- 16 new tests; 227 total passing, 3 pre-existing invite failures (unrelated)
+
+**Auth fix (same session):** `AuthContext` now calls `setGlobalAccessToken()`
+on login/restore/logout, and clears expired tokens on page load. Fixes
+"Not authenticated" errors on analytics tabs after page refresh.
+
+**Manual verification result:**
+- Hiring Funnel: shows real data (7 invited, 1 completed) ✅
+- Score Trends / Question Analytics / Benchmarking: empty — needs real API keys
+  to run evaluation pipeline (deliberately deferred)
+- Skill Trends: "no data yet" stub ✅
+
+**Deferred (M1 follow-up):** filter UI controls (dept/role/date range) for
+HiringFunnel, QuestionAnalytics, SkillTrends — backend params already wired.
+
+### Exit criteria update (M11)
+- [x] Score trends, hiring funnel, question/difficulty analytics load from session data
+- [x] Candidate benchmarking endpoint wired with org-scoped percentile
+- [x] Expensive aggregates cached; dashboard load < 2s on second request
+- [x] F05 renders "no data yet" state gracefully
+
+---
+
+## STATUS UPDATE (2026-07-29) — SESSION 1
 
 **Out-of-band work found on main (not part of this task, done 2026-07-28):**
 Invite flow was reworked across 5 commits (`9ac3935`→`dd03921`): real magic-link
@@ -144,8 +182,11 @@ calibration across 6+ already-completed sessions. **Client decided to leave
 the existing system as-is. No DISC work started or planned.**
 
 ### Next session should:
-1. Continue M11 Analytics + M12 Platform Admin (still not started — this
-   task's actual scope) — OR follow whatever the user directs next.
+1. **Start M12 Platform Administration** (the remaining open scope in TASK-005):
+   - M12-F01: Tenant/workspace management
+   - M12-F02: Prompt library management with versioning + rollback
+   - M12-F03: Model routing configuration per agent
+   - M12-F04: System health / incident monitoring dashboard
 2. When ready to fully test invite→exam→questions end-to-end: add real
    `ANTHROPIC_API_KEY` + `OPENAI_API_KEY` to `services/orchestrator-api/.env`,
    restart uvicorn, send a fresh invite (old sessions won't retry).
