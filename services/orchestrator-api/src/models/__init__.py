@@ -15,6 +15,7 @@ from .question_fingerprints import QuestionFingerprint
 from .question_sets import QuestionSet
 from .report_shares import ReportShare
 from .session_questions import SessionQuestion
+from .skill_trend_snapshots import SkillTrendSnapshot
 from .users import User
 
 __all__ = [
@@ -35,5 +36,6 @@ __all__ = [
     "QuestionSet",
     "ReportShare",
     "SessionQuestion",
+    "SkillTrendSnapshot",
     "User",
 ]
