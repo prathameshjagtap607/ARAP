@@ -17,6 +17,7 @@ const navItems: NavItem[] = [
   { label: "Candidates", href: "/candidates", roles: ["admin", "user", "super_admin"] },
   { label: "Reports", href: "/reports", roles: ["admin", "user", "super_admin"] },
   { label: "Analytics", href: "/analytics", roles: ["admin", "user", "super_admin"] },
+  { label: "Admin", href: "/dashboard/admin", roles: ["admin"] },
   { label: "Admin", href: "/admin", roles: ["super_admin"] },
 ];
 
