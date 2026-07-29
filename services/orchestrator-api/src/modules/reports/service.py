@@ -3,6 +3,9 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+from src.database import get_redis
+from src.modules.analytics.cache import invalidate_org_analytics
+
 from src.models.assessment_sessions import AssessmentSession
 from src.models.candidates import Candidate
 from src.models.clients import Client
@@ -202,6 +205,10 @@ def submit_reviewer_feedback(
         report.score_rollup = rollup
 
     db.commit()
+    try:
+        invalidate_org_analytics(get_redis(), org_id)
+    except Exception:
+        pass  # cache invalidation is best-effort
     return ReviewerFeedbackResponse(reviewer_override=override)
 
 
