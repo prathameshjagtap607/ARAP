@@ -10,7 +10,11 @@ from .base import Base
 class SkillTrendSnapshot(Base):
     __tablename__ = "skill_trend_snapshots"
     __table_args__ = (
-        Index("ix_skill_trend_snapshots_org_week", "org_id", "week_start"),
+        Index(
+            "ix_skill_trend_snapshots_org_week",
+            "org_id",
+            text("week_start DESC"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
