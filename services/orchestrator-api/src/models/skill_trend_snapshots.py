@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, func, text
+from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, Numeric, String, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -9,6 +9,9 @@ from .base import Base
 
 class SkillTrendSnapshot(Base):
     __tablename__ = "skill_trend_snapshots"
+    __table_args__ = (
+        Index("ix_skill_trend_snapshots_org_week", "org_id", "week_start"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True, server_default=text("gen_random_uuid()")
