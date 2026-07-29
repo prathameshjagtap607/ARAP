@@ -101,8 +101,8 @@ def invite_candidate(
 
         # Generate questions in background (non-blocking)
         def _generate_questions():
-            from src.modules.question_sets import service as qs_service
             from src.database import SessionLocal
+            from src.modules.question_sets import service as qs_service
             try:
                 qs_db = SessionLocal()
                 qs_service.generate_questions(qs_db, result.session_id)

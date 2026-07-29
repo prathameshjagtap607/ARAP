@@ -128,6 +128,7 @@ def invite_candidate(
     assessment = get_assessment(db, org_id, assessment_id)
 
     from sqlalchemy.exc import IntegrityError
+
     from src.modules.sessions.email import send_invite_email
 
     candidate = db.query(Candidate).filter_by(
@@ -160,9 +161,11 @@ def invite_candidate(
     db.refresh(session)
 
     # Generate real magic-link token for candidate
-    from src.modules.auth.token import generate_login_token, hash_login_token
     from datetime import UTC, datetime, timedelta
+
     from sqlalchemy import text
+
+    from src.modules.auth.token import generate_login_token, hash_login_token
 
     raw_token = generate_login_token()
     token_hash = hash_login_token(raw_token)

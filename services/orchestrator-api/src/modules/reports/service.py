@@ -4,14 +4,13 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from src.database import get_redis
-from src.modules.analytics.cache import invalidate_org_analytics
-
 from src.models.assessment_sessions import AssessmentSession
 from src.models.candidates import Candidate
 from src.models.clients import Client
 from src.models.hiring_reports import HiringReport
 from src.models.job_assessments import JobAssessment
 from src.models.report_shares import ReportShare
+from src.modules.analytics.cache import invalidate_org_analytics
 from src.modules.reports.schemas import (
     FullReportResponse,
     ReportResponse,

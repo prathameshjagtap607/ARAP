@@ -10,13 +10,13 @@ from src.middleware.error_handler import (
     unhandled_exception_handler,
 )
 from src.middleware.rate_limit import RateLimitMiddleware
+from src.modules.analytics.router import router as analytics_router
 from src.modules.auth.router import router as auth_router
 from src.modules.candidate_profiles.router import router as candidate_profiles_router
 from src.modules.competency_library.router import router as competency_library_router
 from src.modules.integrity.router import router as integrity_router
 from src.modules.job_assessments.router import router as job_assessments_router
 from src.modules.question_sets.router import router as question_sets_router
-from src.modules.analytics.router import router as analytics_router
 from src.modules.reports.router import router as reports_router
 from src.modules.sessions.router import router as sessions_router
 
