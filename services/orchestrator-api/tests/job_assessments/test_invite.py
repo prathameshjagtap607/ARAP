@@ -24,9 +24,9 @@ async def test_invite_creates_assessment_session(async_client, seed, user_token,
     )
     assert resp.status_code == 201
     body = resp.json()
-    assert "assessment_session_id" in body
-    assert "candidate_id" in body
-    assert body["status"] == "invited"
+    assert "session_id" in body
+    assert "link" in body
+    assert "email_sent" in body
 
 
 @pytest.mark.asyncio
@@ -45,7 +45,7 @@ async def test_invite_upserts_candidate_by_email(async_client, seed, user_token,
         json={**INVITE_BODY, "candidate_email": "bob@candidate.com"},
         headers={"Authorization": f"Bearer {user_token}"},
     )
-    cand_id_1 = resp1.json()["candidate_id"]
+    assert resp1.status_code == 201
 
     # Second invite same email — reuses candidate
     resp2 = await async_client.post(
@@ -53,10 +53,9 @@ async def test_invite_upserts_candidate_by_email(async_client, seed, user_token,
         json={**INVITE_BODY, "candidate_email": "bob@candidate.com"},
         headers={"Authorization": f"Bearer {user_token}"},
     )
-    cand_id_2 = resp2.json()["candidate_id"]
+    assert resp2.status_code == 201
 
-    assert cand_id_1 == cand_id_2
-
+    # Only one candidate row should exist for this email
     count = db.query(Candidate).filter_by(
         org_id=seed["org"].id, email="bob@candidate.com"
     ).count()
@@ -82,7 +81,7 @@ async def test_invite_creates_distinct_sessions(async_client, seed, user_token, 
         headers={"Authorization": f"Bearer {user_token}"},
     )
 
-    assert resp1.json()["assessment_session_id"] != resp2.json()["assessment_session_id"]
+    assert resp1.json()["session_id"] != resp2.json()["session_id"]
 
 
 @pytest.mark.asyncio
