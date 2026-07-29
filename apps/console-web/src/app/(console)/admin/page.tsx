@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import TenantsTab from "./_components/TenantsTab";
 import PromptsTab from "./_components/PromptsTab";
 import RoutingTab from "./_components/RoutingTab";
@@ -16,8 +18,18 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function AdminPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("tenants");
   const [mounted, setMounted] = useState<Set<Tab>>(new Set<Tab>(["tenants"]));
+
+  useEffect(() => {
+    if (!loading && user?.role !== "super_admin") {
+      router.replace("/");
+    }
+  }, [user, loading, router]);
+
+  if (loading || user?.role !== "super_admin") return null;
 
   function handleTabChange(tab: Tab) {
     setActiveTab(tab);

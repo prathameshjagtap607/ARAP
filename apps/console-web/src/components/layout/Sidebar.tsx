@@ -12,12 +12,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/", roles: ["admin", "user"] },
-  { label: "Job Assessments", href: "/assessments", roles: ["admin", "user"] },
-  { label: "Candidates", href: "/candidates", roles: ["admin", "user"] },
-  { label: "Reports", href: "/reports", roles: ["admin", "user"] },
-  { label: "Analytics", href: "/analytics", roles: ["admin", "user"] },
-  { label: "Admin", href: "/admin", roles: ["admin"] },
+  { label: "Dashboard", href: "/", roles: ["admin", "user", "super_admin"] },
+  { label: "Job Assessments", href: "/assessments", roles: ["admin", "user", "super_admin"] },
+  { label: "Candidates", href: "/candidates", roles: ["admin", "user", "super_admin"] },
+  { label: "Reports", href: "/reports", roles: ["admin", "user", "super_admin"] },
+  { label: "Analytics", href: "/analytics", roles: ["admin", "user", "super_admin"] },
+  { label: "Admin", href: "/admin", roles: ["admin", "super_admin"] },
 ];
 
 export function Sidebar() {
