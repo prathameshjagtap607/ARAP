@@ -13,6 +13,8 @@ from src.models.report_shares import ReportShare
 from src.modules.analytics.cache import invalidate_org_analytics
 from src.modules.reports.schemas import (
     FullReportResponse,
+    ReportListItem,
+    ReportListResponse,
     ReportResponse,
     ReviewerFeedbackRequest,
     ReviewerFeedbackResponse,
@@ -209,6 +211,55 @@ def submit_reviewer_feedback(
     except Exception:
         pass  # cache invalidation is best-effort
     return ReviewerFeedbackResponse(reviewer_override=override)
+
+
+def list_reports(
+    db: Session,
+    org_id: uuid.UUID,
+    verdict: str | None = None,
+    status: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> ReportListResponse:
+    query = (
+        db.query(HiringReport, Candidate.name, JobAssessment.title)
+        .join(AssessmentSession, HiringReport.session_id == AssessmentSession.id)
+        .join(Candidate, AssessmentSession.candidate_id == Candidate.id)
+        .join(JobAssessment, AssessmentSession.job_assessment_id == JobAssessment.id)
+        .filter(HiringReport.org_id == org_id)
+    )
+    if verdict:
+        query = query.filter(HiringReport.verdict == verdict)
+    if status == "awaiting_review":
+        query = query.filter(HiringReport.reviewer_override.is_(None))
+    if date_from:
+        query = query.filter(HiringReport.created_at >= date_from)
+    if date_to:
+        query = query.filter(HiringReport.created_at <= date_to)
+
+    total_count = query.count()
+    rows = (
+        query.order_by(HiringReport.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+        .all()
+    )
+
+    items = [
+        ReportListItem(
+            id=report.id,
+            session_id=report.session_id,
+            candidate_name=candidate_name,
+            job_title=job_title,
+            verdict=report.verdict,
+            overall_score=(report.score_rollup or {}).get("overall"),
+            created_at=report.created_at,
+        )
+        for report, candidate_name, job_title in rows
+    ]
+    return ReportListResponse(items=items, total_count=total_count)
 
 
 def get_report(db: Session, session_id: uuid.UUID, org_id: uuid.UUID) -> ReportResponse:

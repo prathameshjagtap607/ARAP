@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
 from agents.candidate_profile.agent import run_candidate_profile_agent
+from src.models.assessment_sessions import AssessmentSession
 from src.models.candidate_profiles import CandidateProfile
 from src.models.job_assessments import JobAssessment
 
@@ -66,6 +67,13 @@ def synthesize_profile(
 
     flag_modified(profile, "skill_matrix")
     flag_modified(profile, "experience_matrix")
+
+    db.query(AssessmentSession).filter_by(
+        candidate_id=candidate_id,
+        job_assessment_id=job_assessment_id,
+        org_id=org_id,
+        candidate_profile_id=None,
+    ).update({"candidate_profile_id": profile.id})
 
     db.commit()
     db.refresh(profile)

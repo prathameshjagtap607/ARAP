@@ -62,3 +62,20 @@ class ShareLinkRequest(BaseModel):
 class ShareLinkResponse(BaseModel):
     share_token: uuid.UUID
     expires_at: datetime
+
+
+class ReportListItem(BaseModel):
+    id: uuid.UUID
+    session_id: uuid.UUID
+    candidate_name: str
+    job_title: str
+    verdict: str | None
+    overall_score: float | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ReportListResponse(BaseModel):
+    items: list[ReportListItem]
+    total_count: int

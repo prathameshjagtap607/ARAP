@@ -20,6 +20,7 @@ from src.modules.job_assessments.router import router as job_assessments_router
 from src.modules.question_sets.router import router as question_sets_router
 from src.modules.reports.router import router as reports_router
 from src.modules.sessions.router import router as sessions_router
+from src.modules.users.router import router as users_router
 
 app = FastAPI(
     title="ARAP Orchestrator API",
@@ -52,3 +53,4 @@ app.include_router(reports_router)
 app.include_router(integrity_router)
 app.include_router(analytics_router)
 app.include_router(admin_router)
+app.include_router(users_router)

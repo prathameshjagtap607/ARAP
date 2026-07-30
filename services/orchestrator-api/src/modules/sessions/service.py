@@ -239,6 +239,8 @@ def list_sessions(db: Session, org_id: uuid.UUID) -> list:
     sessions = (
         db.query(
             AssessmentSession.id,
+            AssessmentSession.candidate_id,
+            AssessmentSession.job_assessment_id,
             Candidate.email.label("candidate_email"),
             JobAssessment.title.label("job_title"),
             AssessmentSession.status,

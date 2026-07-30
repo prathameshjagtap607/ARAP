@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -9,6 +9,7 @@ from src.modules.auth.dependencies import TokenClaims, require_user
 from src.modules.reports import service
 from src.modules.reports.schemas import (
     FullReportResponse,
+    ReportListResponse,
     ReportResponse,
     ReviewerFeedbackRequest,
     ReviewerFeedbackResponse,
@@ -18,6 +19,22 @@ from src.modules.reports.schemas import (
 )
 
 router = APIRouter(prefix="/reports", tags=["reports"])
+
+
+@router.get("", response_model=ReportListResponse)
+def list_reports(
+    verdict: str | None = None,
+    status: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    claims: TokenClaims = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    return service.list_reports(
+        db, claims.org_id, verdict, status, date_from, date_to, limit, offset
+    )
 
 
 # --- Public endpoint (no auth) must come before parameterised routes ---

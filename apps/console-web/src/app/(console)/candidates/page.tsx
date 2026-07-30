@@ -2,12 +2,39 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getSessions, type SessionItem } from '@/lib/api/sessions';
+import { getSessions, sendSessionInvite, type SessionItem } from '@/lib/api/sessions';
 
 export default function CandidatesPage() {
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [inviteState, setInviteState] = useState<
+    Record<string, { status: 'sending' | 'sent' | 'error'; message: string }>
+  >({});
+
+  async function handleSendInvite(sessionId: string) {
+    setInviteState((prev) => ({ ...prev, [sessionId]: { status: 'sending', message: '' } }));
+    try {
+      const result = await sendSessionInvite(sessionId);
+      setInviteState((prev) => ({
+        ...prev,
+        [sessionId]: {
+          status: 'sent',
+          message: result.email_sent
+            ? 'Invite email sent.'
+            : 'Link generated, but no email provider is configured.',
+        },
+      }));
+    } catch (err) {
+      setInviteState((prev) => ({
+        ...prev,
+        [sessionId]: {
+          status: 'error',
+          message: err instanceof Error ? err.message : 'Failed to send invite',
+        },
+      }));
+    }
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -98,7 +125,9 @@ export default function CandidatesPage() {
               </tr>
             </thead>
             <tbody>
-              {sessions.map((session) => (
+              {sessions.map((session) => {
+                const invite = inviteState[session.id];
+                return (
                 <tr key={session.id} className="border-b border-slate-200 hover:bg-slate-50">
                   <td className="px-6 py-4 text-sm text-slate-900 font-medium">
                     {session.candidate_email}
@@ -115,7 +144,7 @@ export default function CandidatesPage() {
                   <td className="px-6 py-4 text-sm text-slate-600">
                     {formatDate(session.submitted_at || '')}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right space-x-3">
                     {session.status === 'completed' && (
                       <Link
                         href={`/candidates/${session.id}/results`}
@@ -124,9 +153,34 @@ export default function CandidatesPage() {
                         View Results
                       </Link>
                     )}
+                    <Link
+                      href={`/candidates/${session.id}/upload-resume?candidateId=${session.candidate_id}&jobAssessmentId=${session.job_assessment_id}`}
+                      className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                    >
+                      Upload Resume
+                    </Link>
+                    {session.status === 'invited' && (
+                      <button
+                        onClick={() => handleSendInvite(session.id)}
+                        disabled={invite?.status === 'sending'}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                      >
+                        {invite?.status === 'sending' ? 'Sending…' : 'Send Invite'}
+                      </button>
+                    )}
+                    {invite && (
+                      <p
+                        className={`text-xs mt-1 ${
+                          invite.status === 'error' ? 'text-red-600' : 'text-slate-500'
+                        }`}
+                      >
+                        {invite.message}
+                      </p>
+                    )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

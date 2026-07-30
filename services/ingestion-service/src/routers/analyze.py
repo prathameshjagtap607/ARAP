@@ -24,6 +24,7 @@ class AnalyzeRequest(BaseModel):
     candidate_id: uuid.UUID
     job_assessment_id: uuid.UUID
     org_id: uuid.UUID
+    s3_key: str | None = None
 
 
 class CandidateProfileResponse(BaseModel):
@@ -216,6 +217,11 @@ def analyze(body: AnalyzeRequest, background_tasks: BackgroundTasks, db: Session
     job = db.query(JobAssessment).filter_by(id=body.job_assessment_id, org_id=body.org_id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job assessment not found")
+
+    if body.s3_key:
+        candidate.resume_file_url = body.s3_key
+        db.commit()
+        db.refresh(candidate)
 
     if not candidate.resume_file_url:
         raise HTTPException(

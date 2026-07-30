@@ -98,6 +98,25 @@ def test_analyze_no_resume_url(client, db, seed, mock_agent, mock_embed):
     assert "resume" in response.json()["detail"].lower()
 
 
+def test_analyze_links_uploaded_s3_key_to_candidate(client, db, seed, mock_agent, mock_embed):
+    cand = seed["candidate"]
+    cand.resume_file_url = None
+    db.commit()
+
+    with patch("src.routers.analyze.download_file", return_value=b"John Doe Python Developer with 5 years experience at TechCorp building scalable microservices"), \
+         patch("src.routers.analyze.extract_text", return_value="John Doe Python Developer with 5 years experience at TechCorp building scalable microservices"):
+        response = client.post("/analyze", json={
+            "candidate_id": str(cand.id),
+            "job_assessment_id": str(seed["job"].id),
+            "org_id": str(seed["org"].id),
+            "s3_key": "resumes/uploaded/new-resume.pdf",
+        })
+
+    assert response.status_code == 200
+    db.refresh(cand)
+    assert cand.resume_file_url == "resumes/uploaded/new-resume.pdf"
+
+
 def test_get_analyze_returns_profile(client, db, seed, mock_agent, mock_embed):
     cand = seed["candidate"]
     job = seed["job"]

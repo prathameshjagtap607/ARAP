@@ -125,11 +125,15 @@ def invite_candidate(
     db: Session, org_id: uuid.UUID, assessment_id: uuid.UUID,
     user_id: uuid.UUID, data: InviteRequest,
 ) -> InviteResponse:
-    assessment = get_assessment(db, org_id, assessment_id)
+    """Register a candidate + session for this job assessment.
+
+    Does NOT send the test-link email — per PRD §8, the email is only sent
+    once a resume has been ingested and the question set is locked
+    (see sessions.service.invite_candidate / POST /sessions/{id}/invite).
+    """
+    get_assessment(db, org_id, assessment_id)
 
     from sqlalchemy.exc import IntegrityError
-
-    from src.modules.sessions.email import send_invite_email
 
     candidate = db.query(Candidate).filter_by(
         org_id=org_id, email=data.candidate_email
@@ -175,38 +179,9 @@ def invite_candidate(
     db.commit()
     db.refresh(session)
 
-    # Generate real magic-link token for candidate
-    from datetime import UTC, datetime, timedelta
-
-    from sqlalchemy import text
-
-    from src.modules.auth.token import generate_login_token, hash_login_token
-
-    raw_token = generate_login_token()
-    token_hash = hash_login_token(raw_token)
-    expires_at = datetime.now(UTC) + timedelta(minutes=15)
-
-    db.execute(
-        text("""
-            UPDATE candidates
-            SET login_token_hash = :hash, login_token_expires_at = :expires
-            WHERE id = :candidate_id
-        """),
-        {"hash": token_hash, "expires": expires_at, "candidate_id": str(candidate.id)}
-    )
-    db.commit()
-
-    # Generate invite link with real magic-link token
-    link = f"http://localhost:3000/assessment/{session.id}?token={raw_token}"
-    email_sent = send_invite_email(
-        to=candidate.email,
-        link=link,
-        job_title=assessment.title,
-        duration_minutes=assessment.duration_minutes,
-    )
-
     return InviteResponse(
-        link=link,
-        email_sent=email_sent,
+        link="",
+        email_sent=False,
         session_id=str(session.id),
+        candidate_id=str(candidate.id),
     )

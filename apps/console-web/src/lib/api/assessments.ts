@@ -38,12 +38,19 @@ export async function cloneAssessment(id: string): Promise<AssessmentResponse> {
   });
 }
 
+export interface SendInviteResult {
+  link: string;
+  email_sent: boolean;
+  session_id: string;
+  candidate_id: string;
+}
+
 export async function sendInvite(
   assessmentId: string,
   candidateName: string,
   candidateEmail: string,
   timeBudgetSeconds: number
-): Promise<{ link: string; email_sent: boolean }> {
+): Promise<SendInviteResult> {
   return apiFetch(`/job-assessments/${assessmentId}/invite`, {
     method: 'POST',
     body: JSON.stringify({

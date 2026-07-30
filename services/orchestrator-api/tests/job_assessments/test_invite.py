@@ -27,6 +27,88 @@ async def test_invite_creates_assessment_session(async_client, seed, user_token,
     assert "session_id" in body
     assert "link" in body
     assert "email_sent" in body
+    assert "candidate_id" in body
+
+
+@pytest.mark.asyncio
+async def test_invite_does_not_email_until_questions_are_locked(
+    async_client, seed, user_token, mock_jd_agent
+):
+    create_resp = await async_client.post(
+        "/job-assessments", json=JA_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    ja_id = create_resp.json()["id"]
+
+    resp = await async_client.post(
+        f"/job-assessments/{ja_id}/invite",
+        json=INVITE_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["email_sent"] is False
+
+
+@pytest.mark.asyncio
+async def test_sessions_invite_blocked_until_questions_locked(
+    async_client, seed, user_token, mock_jd_agent
+):
+    create_resp = await async_client.post(
+        "/job-assessments", json=JA_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    ja_id = create_resp.json()["id"]
+
+    resp = await async_client.post(
+        f"/job-assessments/{ja_id}/invite",
+        json=INVITE_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    session_id = resp.json()["session_id"]
+
+    send_resp = await async_client.post(
+        f"/sessions/{session_id}/invite",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert send_resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_sessions_invite_emails_once_questions_are_locked(
+    async_client, seed, user_token, mock_jd_agent, db
+):
+    from datetime import UTC, datetime
+
+    from src.models.question_sets import QuestionSet
+
+    create_resp = await async_client.post(
+        "/job-assessments", json=JA_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    ja_id = create_resp.json()["id"]
+
+    resp = await async_client.post(
+        f"/job-assessments/{ja_id}/invite",
+        json=INVITE_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    session_id = resp.json()["session_id"]
+
+    qset = QuestionSet(
+        session_id=session_id,
+        org_id=str(seed["org"].id),
+        generation_prompt_version="v1",
+        locked_at=datetime.now(UTC),
+    )
+    db.add(qset)
+    db.commit()
+
+    send_resp = await async_client.post(
+        f"/sessions/{session_id}/invite",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert send_resp.status_code == 200
+    assert send_resp.json()["email_sent"] is True
 
 
 @pytest.mark.asyncio

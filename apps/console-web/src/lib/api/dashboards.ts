@@ -27,27 +27,29 @@ export async function fetchHRDashboardCounts(
   abortSignal?: AbortSignal
 ): Promise<Omit<HRDashboardData, "recentSessions" | "completionTrend">> {
   try {
-    const [activeAssessments, inProgressSessions, awaitingReviewReports] =
-      await Promise.all([
-        apiFetch<{ count: number }>(
-          `/assessments?org_id=${orgId}&active=true`,
-          { signal: abortSignal }
-        ).then((r) => r.count),
-        apiFetch<{ items: { candidate_id: string }[] }>(
-          `/sessions?org_id=${orgId}&status=in_progress&limit=1000`,
-          { signal: abortSignal }
-        ).then((r) => new Set(r.items?.map((s) => s.candidate_id) || []).size),
-        apiFetch<{ count: number }>(
-          `/reports?org_id=${orgId}&status=awaiting_review`,
-          { signal: abortSignal }
-        ).then((r) => r.count),
-      ]);
+    const [assessments, sessions, awaitingReviewReports] = await Promise.all([
+      apiFetch<{ is_template: boolean }[]>(`/job-assessments`, { signal: abortSignal }),
+      apiFetch<{ candidate_email: string; status: string }[]>(`/sessions`, {
+        signal: abortSignal,
+      }),
+      apiFetch<{ total_count: number }>(
+        `/reports?status=awaiting_review`,
+        { signal: abortSignal }
+      ),
+    ]);
+
+    const activeAssessments = (assessments || []).filter((a) => !a.is_template).length;
+    const inProgressCandidates = new Set(
+      (sessions || [])
+        .filter((s) => s.status === "in_progress")
+        .map((s) => s.candidate_email)
+    ).size;
 
     return {
-      activeAssessments: activeAssessments || 0,
-      candidatesInProgress: inProgressSessions || 0,
-      awaitingReview: awaitingReviewReports || 0,
-      pendingDecisions: 0, // Computed from reports if needed
+      activeAssessments,
+      candidatesInProgress: inProgressCandidates,
+      awaitingReview: awaitingReviewReports.total_count || 0,
+      pendingDecisions: 0,
     };
   } catch (error) {
     console.error("[fetchHRDashboardCounts] Error:", error);
@@ -70,17 +72,19 @@ export async function fetchRecentSessions(
   abortSignal?: AbortSignal
 ): Promise<DashboardSession[]> {
   try {
-    const statusParam = status ? `&status=${status}` : "";
-    const response = await apiFetch<{ items: Record<string, unknown>[] }>(
-      `/sessions?org_id=${orgId}${statusParam}&limit=${limit}`,
-      { signal: abortSignal }
+    const sessions = await apiFetch<Record<string, unknown>[]>(`/sessions`, {
+      signal: abortSignal,
+    });
+
+    const filtered = (sessions || []).filter(
+      (session) => !status || session.status === status
     );
 
-    return (response.items || []).map((session) => {
+    return filtered.slice(0, limit).map((session) => {
       const camelSession = toCamelCase(session);
       return {
         id: String(camelSession.id),
-        candidateName: String(camelSession.candidateName || ""),
+        candidateName: String(camelSession.candidateEmail || ""),
         jobTitle: String(camelSession.jobTitle || ""),
         status: (camelSession.status as DashboardSession["status"]) || "invited",
         startedAt: camelSession.startedAt ? String(camelSession.startedAt) : null,
@@ -105,7 +109,6 @@ export async function fetchReportsList(
 ): Promise<ReportsDashboardData> {
   try {
     const queryParams = new URLSearchParams({
-      org_id: orgId,
       limit: String(limit),
       offset: String(offset),
     });
@@ -196,58 +199,54 @@ export async function fetchAdminDashboard(
   abortSignal?: AbortSignal
 ): Promise<AdminDashboardData> {
   try {
-    const [usersResponse, competenciesResponse, templatesResponse] =
-      await Promise.all([
-        apiFetch<{ items: Record<string, unknown>[]; total_count: number }>(
-          `/users?org_id=${orgId}`,
-          { signal: abortSignal }
-        ),
-        apiFetch<{ items: Record<string, unknown>[]; total_count: number }>(
-          `/competency-library?org_id=${orgId}`,
-          { signal: abortSignal }
-        ),
-        apiFetch<{ items: Record<string, unknown>[]; total_count: number }>(
-          `/role-templates?org_id=${orgId}`,
-          { signal: abortSignal }
-        ),
-      ]);
+    const [usersResponse, competenciesResponse, jobAssessments] = await Promise.all([
+      apiFetch<{ items: Record<string, unknown>[]; total_count: number }>(`/users`, {
+        signal: abortSignal,
+      }),
+      apiFetch<Record<string, unknown>[]>(`/competency-library`, { signal: abortSignal }),
+      apiFetch<Record<string, unknown>[]>(`/job-assessments`, { signal: abortSignal }),
+    ]);
 
     const users = (usersResponse.items || []).map((user) => {
       const camelUser = toCamelCase(user);
       return {
         id: String(camelUser.id),
-        name: String(camelUser.name || ""),
+        name: String(camelUser.email || ""),
         email: String(camelUser.email || ""),
         role: (camelUser.role as "admin" | "user") || "user",
         createdAt: String(camelUser.createdAt || ""),
       };
     });
 
-    const competencies = (competenciesResponse.items || []).map((comp) => {
+    const competencies = (competenciesResponse || []).map((comp) => {
       const camelComp = toCamelCase(comp);
       return {
         id: String(camelComp.id),
         name: String(camelComp.name || ""),
-        category: String(camelComp.category || ""),
+        category: "General",
         createdAt: String(camelComp.createdAt || ""),
-        entryCount: Number(camelComp.entryCount || 0),
+        entryCount: 1,
       };
     });
 
-    const templates = (templatesResponse.items || []).map((tpl) => {
+    const templateRows = (jobAssessments || []).filter(
+      (job) => job.is_template === true
+    );
+    const templates = templateRows.map((tpl) => {
       const camelTpl = toCamelCase(tpl);
+      const weightage = (camelTpl.competencyWeightage as Record<string, unknown>) || {};
       return {
         id: String(camelTpl.id),
-        name: String(camelTpl.name || ""),
-        competencyCount: Number(camelTpl.competencyCount || 0),
+        name: String(camelTpl.title || ""),
+        competencyCount: Object.keys(weightage).length,
         createdAt: String(camelTpl.createdAt || ""),
       };
     });
 
     return {
       totalUsers: usersResponse.total_count || users.length,
-      competencyCount: competenciesResponse.total_count || competencies.length,
-      templateCount: templatesResponse.total_count || templates.length,
+      competencyCount: competencies.length,
+      templateCount: templates.length,
       users,
       competencies,
       templates,

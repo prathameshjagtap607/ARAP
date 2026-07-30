@@ -87,6 +87,7 @@ class InviteResponse(BaseModel):
     link: str
     email_sent: bool
     session_id: str
+    candidate_id: str
 
 
 class JobAssessmentResponse(BaseModel):

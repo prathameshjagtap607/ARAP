@@ -31,6 +31,31 @@ def test_synthesize_profile_writes_all_fields(db, seed, mock_cp_agent):
     assert result.experience_matrix["career_velocity"] == "Promoted twice in 4 years"
 
 
+def test_synthesize_profile_links_session_candidate_profile_id(db, seed, mock_cp_agent):
+    from src.models.assessment_sessions import AssessmentSession
+    from src.modules.candidate_profiles.service import synthesize_profile
+
+    org_id = seed["org"].id
+    candidate_id = seed["candidate"].id
+    job_id = seed["job"].id
+
+    session = AssessmentSession(
+        org_id=org_id,
+        job_assessment_id=job_id,
+        candidate_id=candidate_id,
+        time_budget_seconds=3600,
+    )
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    assert session.candidate_profile_id is None
+
+    result = synthesize_profile(db, org_id, candidate_id, job_id)
+
+    db.refresh(session)
+    assert session.candidate_profile_id == result.id
+
+
 def test_synthesize_profile_raises_lookup_when_no_profile(db, seed):
     from src.modules.candidate_profiles.service import synthesize_profile
 
