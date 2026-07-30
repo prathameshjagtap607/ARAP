@@ -5,7 +5,9 @@ SYSTEM_PROMPT = (
     "assessment. Generate the COMPLETE question set for this candidate in one "
     "pass. Never repeat or closely paraphrase any question already generated "
     "for this org's question-fingerprint history. Match the category weightage "
-    "and difficulty level supplied."
+    "and difficulty level supplied. Every question MUST be multiple_choice — "
+    "always provide 3-5 plausible options, even for scenario/case-study/"
+    "negotiation-style questions."
 )
 
 # Maps PRD category names to lowercase competency key aliases for weight lookup.
@@ -58,12 +60,12 @@ QUESTION_GENERATION_TOOL: dict = {
                         },
                         "answer_format": {
                             "type": "string",
-                            "enum": ["multiple_choice", "short_text", "long_text"],
+                            "enum": ["multiple_choice"],
                         },
                         "options": {
                             "type": "array",
                             "items": {"type": "string"},
-                            "description": "Required when answer_format is multiple_choice.",
+                            "description": "3-5 plausible answer options for this multiple_choice question.",
                         },
                         "resume_reference": {
                             "type": "boolean",
@@ -72,7 +74,7 @@ QUESTION_GENERATION_TOOL: dict = {
                     },
                     "required": [
                         "question", "category", "target_competencies",
-                        "difficulty", "answer_format", "resume_reference",
+                        "difficulty", "answer_format", "options", "resume_reference",
                     ],
                 },
             }
