@@ -2,7 +2,11 @@ import redis as redis_lib
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from src.modules.admin.health.schemas import FraudFlagStats, HealthOverview, IncidentEntry
+from src.modules.admin.health.schemas import (
+    FraudFlagStats,
+    HealthOverview,
+    IncidentEntry,
+)
 
 
 def get_health_overview(db: Session, redis: redis_lib.Redis) -> HealthOverview:

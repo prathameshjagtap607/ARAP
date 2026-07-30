@@ -6,7 +6,6 @@ import pytest
 import src.models  # noqa: F401
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
-
 from src.models.assessment_sessions import AssessmentSession
 from src.models.base import Base
 from src.models.candidates import Candidate

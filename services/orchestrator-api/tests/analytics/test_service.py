@@ -1,7 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from src.models.question_sets import QuestionSet
 from src.models.session_questions import SessionQuestion
 from src.modules.analytics.service import (

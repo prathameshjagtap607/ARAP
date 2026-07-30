@@ -9,7 +9,6 @@ from httpx import ASGITransport, AsyncClient
 from passlib.context import CryptContext
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
-
 from src.models.base import Base
 from src.models.orgs import Org
 from src.models.users import User
