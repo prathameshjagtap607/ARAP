@@ -32,6 +32,18 @@ def list_sessions(
     return service.list_sessions(db, claims.org_id)
 
 
+@router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_session(
+    session_id: uuid.UUID,
+    claims: TokenClaims = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    try:
+        service.delete_session(db, session_id, claims.org_id)
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 @router.post("/{session_id}/invite", response_model=InviteResponse)
 def invite(
     session_id: uuid.UUID,

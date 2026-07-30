@@ -41,3 +41,7 @@ export async function sendSessionInvite(
 ): Promise<SendSessionInviteResult> {
   return apiFetch(`/sessions/${sessionId}/invite`, { method: 'POST' });
 }
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  await apiFetch(`/sessions/${sessionId}`, { method: 'DELETE' });
+}

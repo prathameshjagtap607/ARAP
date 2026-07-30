@@ -1,5 +1,5 @@
 import { apiFetch } from "../index";
-import { sendSessionInvite } from "../sessions";
+import { sendSessionInvite, deleteSession } from "../sessions";
 
 jest.mock("../index", () => ({
   apiFetch: jest.fn(),
@@ -18,6 +18,20 @@ describe("sendSessionInvite", () => {
     expect(result.email_sent).toBe(true);
     expect(mockedApiFetch).toHaveBeenCalledWith("/sessions/session-1/invite", {
       method: "POST",
+    });
+  });
+});
+
+describe("deleteSession", () => {
+  beforeEach(() => mockedApiFetch.mockReset());
+
+  it("DELETEs /sessions/{id}", async () => {
+    mockedApiFetch.mockResolvedValue(undefined);
+
+    await deleteSession("session-1");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/sessions/session-1", {
+      method: "DELETE",
     });
   });
 });

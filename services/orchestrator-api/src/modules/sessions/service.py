@@ -31,6 +31,40 @@ def _get_session_or_404(db: Session, session_id: uuid.UUID, org_id: uuid.UUID) -
     return s
 
 
+def delete_session(db: Session, session_id: uuid.UUID, org_id: uuid.UUID) -> None:
+    from src.models.answer_corpus import AnswerCorpus
+    from src.models.behavior_profiles import BehaviorProfile
+    from src.models.hiring_reports import HiringReport
+    from src.models.integrity_flags import IntegrityFlag
+    from src.models.report_shares import ReportShare
+
+    session = _get_session_or_404(db, session_id, org_id)
+
+    report_ids = [
+        r.id for r in db.query(HiringReport.id).filter_by(session_id=session_id).all()
+    ]
+    if report_ids:
+        db.query(ReportShare).filter(
+            ReportShare.hiring_report_id.in_(report_ids)
+        ).delete(synchronize_session="fetch")
+
+    db.query(HiringReport).filter_by(session_id=session_id).delete(synchronize_session="fetch")
+    db.query(IntegrityFlag).filter_by(session_id=session_id).delete(synchronize_session="fetch")
+    db.query(AnswerCorpus).filter_by(session_id=session_id).delete(synchronize_session="fetch")
+    db.query(BehaviorProfile).filter_by(session_id=session_id).delete(synchronize_session="fetch")
+    db.flush()
+
+    qset = db.query(QuestionSet).filter_by(session_id=session_id).first()
+    if qset:
+        db.query(SessionQuestion).filter_by(question_set_id=qset.id).delete(synchronize_session="fetch")
+        db.flush()
+        db.query(QuestionSet).filter_by(id=qset.id).delete(synchronize_session="fetch")
+        db.flush()
+
+    db.delete(session)
+    db.commit()
+
+
 def _seconds_remaining(session: AssessmentSession) -> int | None:
     if session.started_at is None:
         return None
