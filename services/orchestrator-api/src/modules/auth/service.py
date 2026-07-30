@@ -10,6 +10,7 @@ from src.models.assessment_sessions import AssessmentSession
 from src.models.audit_logs import AuditLog
 from src.models.candidates import Candidate
 from src.models.clients import Client
+from src.models.orgs import Org
 from src.models.report_shares import ReportShare
 from src.models.users import User
 from src.modules.auth.token import NIL_UUID, generate_login_token, hash_login_token
@@ -62,6 +63,9 @@ def _try_write_audit(
 
 
 def login_user(db: Session, email: str, password: str, org_id: uuid.UUID) -> User:
+    org = db.query(Org).filter_by(id=org_id).first()
+    if org and not org.is_active:
+        raise PermissionError("organization is inactive")
     user = db.query(User).filter_by(org_id=org_id, email=email).first()
     if not user or not pwd_context.verify(password, user.password_hash):
         _try_write_audit(

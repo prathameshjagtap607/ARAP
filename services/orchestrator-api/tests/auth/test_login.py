@@ -46,6 +46,18 @@ async def test_login_unknown_email_returns_401(async_client, seed):
 
 
 @pytest.mark.asyncio
+async def test_login_rejected_for_inactive_org(async_client, seed, db):
+    seed["org"].is_active = False
+    db.commit()
+    resp = await async_client.post("/auth/login", json={
+        "email": "admin@test.com",
+        "password": "adminpass",
+        "org_id": str(seed["org"].id),
+    })
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_login_audit_row_written(async_client, seed, db):
     from src.models.audit_logs import AuditLog
     await async_client.post("/auth/login", json={

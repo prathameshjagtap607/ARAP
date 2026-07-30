@@ -150,11 +150,26 @@ def invite_candidate(
                 org_id=org_id, email=data.candidate_email
             ).first()
 
+    from sqlalchemy import text as _text
+
+    active_template = db.execute(
+        _text("""
+            SELECT id FROM prompt_templates
+            WHERE agent_name = 'question_generator'
+              AND is_active = true
+              AND (org_id = :org_id OR org_id IS NULL)
+            ORDER BY org_id NULLS LAST
+            LIMIT 1
+        """),
+        {"org_id": org_id},
+    ).scalar()
+
     session = AssessmentSession(
         org_id=org_id,
         job_assessment_id=assessment_id,
         candidate_id=candidate.id,
         time_budget_seconds=data.time_budget_seconds,
+        prompt_template_id=active_template,
     )
     db.add(session)
     db.commit()

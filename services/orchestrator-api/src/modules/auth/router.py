@@ -30,6 +30,8 @@ def login(
 ):
     try:
         user = service.login_user(db, body.email, body.password, body.org_id)
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
     payload = {"sub": str(user.id), "role": user.role, "org_id": str(user.org_id)}

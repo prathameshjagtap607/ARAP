@@ -30,6 +30,39 @@ async def test_invite_creates_assessment_session(async_client, seed, user_token,
 
 
 @pytest.mark.asyncio
+async def test_invite_sets_prompt_template_id_from_active_template(
+    async_client, seed, user_token, mock_jd_agent, db
+):
+    from sqlalchemy import text
+    from src.models.assessment_sessions import AssessmentSession
+
+    template_id = db.execute(
+        text("""
+            INSERT INTO prompt_templates (org_id, agent_name, version, template_body, is_active)
+            VALUES (:org_id, 'question_generator', 'v1', 'body', true)
+            RETURNING id
+        """),
+        {"org_id": str(seed["org"].id)},
+    ).scalar()
+    db.commit()
+
+    create_resp = await async_client.post(
+        "/job-assessments", json=JA_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    ja_id = create_resp.json()["id"]
+
+    resp = await async_client.post(
+        f"/job-assessments/{ja_id}/invite",
+        json=INVITE_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    session_id = resp.json()["session_id"]
+    session = db.query(AssessmentSession).filter_by(id=session_id).first()
+    assert str(session.prompt_template_id) == str(template_id)
+
+
+@pytest.mark.asyncio
 async def test_invite_upserts_candidate_by_email(async_client, seed, user_token, mock_jd_agent, db):
     from src.models.candidates import Candidate
 
