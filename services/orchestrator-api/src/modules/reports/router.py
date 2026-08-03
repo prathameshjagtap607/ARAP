@@ -93,6 +93,8 @@ def get_pdf_report(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except LookupError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
     headers = {"Content-Disposition": f'attachment; filename="report-{session_id}.pdf"'}
     return StreamingResponse(

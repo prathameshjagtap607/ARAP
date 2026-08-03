@@ -1,24 +1,11 @@
 """
 Tests for agents.report_generator.pdf.render_pdf.
 
-WeasyPrint requires native GTK/Pango libraries that are not available in all
-CI/dev environments (notably Windows without GTK). We therefore inject a
-sys.modules stub for 'weasyprint' before the production module is imported so
-that the import itself does not fail, and each test controls the return value
-via unittest.mock.patch.
+xhtml2pdf is pure Python (no native GTK/Pango dependency like WeasyPrint),
+so these run a real render rather than mocking the PDF engine.
 """
-import sys
-import types
 from unittest.mock import MagicMock, patch
 
-# ---------------------------------------------------------------------------
-# sys.modules stub for weasyprint — must happen before any import of pdf.py
-# ---------------------------------------------------------------------------
-_weasyprint_stub = types.ModuleType("weasyprint")
-_weasyprint_stub.HTML = None  # overridden per-test via patch
-sys.modules.setdefault("weasyprint", _weasyprint_stub)
-
-# Now safe to import the production module
 from agents.report_generator.pdf import render_pdf
 
 # ---------------------------------------------------------------------------
@@ -52,44 +39,65 @@ _SAMPLE_REPORT = {
     "final_verdict": "Hire — Strong technical profile supports a hire recommendation.",
 }
 
-_FAKE_PDF = b"%PDF-1.4 fake pdf content for testing" + b"x" * 1000
-
 
 # ---------------------------------------------------------------------------
-# Case 1: render_pdf returns bytes starting with PDF magic bytes
+# Case 1: render_pdf returns real PDF bytes
 # ---------------------------------------------------------------------------
 def test_render_pdf_returns_pdf_bytes():
-    mock_inst = MagicMock()
-    mock_inst.write_pdf.return_value = _FAKE_PDF
-
-    with patch("agents.report_generator.pdf.HTML", return_value=mock_inst):
-        result = render_pdf(_SAMPLE_REPORT, candidate_name="Alice", job_title="Senior Engineer")
+    result = render_pdf(_SAMPLE_REPORT, candidate_name="Alice", job_title="Senior Engineer")
 
     assert isinstance(result, bytes)
     assert result[:4] == b"%PDF"
+    assert len(result) > 1000
 
 
 # ---------------------------------------------------------------------------
 # Case 2: transcript section absent when include_transcript=False
 # ---------------------------------------------------------------------------
 def test_render_pdf_no_transcript_by_default():
-    mock_inst = MagicMock()
-    mock_inst.write_pdf.return_value = _FAKE_PDF
+    mock_result = MagicMock()
+    mock_result.err = 0
 
-    with patch("agents.report_generator.pdf.HTML", return_value=mock_inst) as mock_html_cls:
-        result = render_pdf(
+    with patch("agents.report_generator.pdf.pisa.CreatePDF", return_value=mock_result) as mock_create:
+        render_pdf(
             _SAMPLE_REPORT,
             candidate_name="Alice",
             job_title="Senior Engineer",
             include_transcript=False,
         )
 
-        # Inspect the HTML string passed to the HTML() constructor
-        call_args = mock_html_cls.call_args
-        html_string = call_args.kwargs.get("string", "") or (call_args.args[0] if call_args.args else "")
+        html_string = mock_create.call_args.args[0]
         # The Jinja2 {% if include_transcript %} block should NOT render
         assert "transcript-section" not in html_string
         assert "Raw Transcript" not in html_string
 
-    # PDF bytes should still be non-trivially sized
-    assert len(result) > 1000
+
+# ---------------------------------------------------------------------------
+# Case 3: transcript section present when include_transcript=True
+# ---------------------------------------------------------------------------
+def test_render_pdf_includes_transcript_when_requested():
+    result = render_pdf(
+        _SAMPLE_REPORT,
+        candidate_name="Alice",
+        job_title="Senior Engineer",
+        include_transcript=True,
+        transcript=[{"sequence_no": 1, "question": "Describe your approach.", "answer": "I planned first."}],
+    )
+
+    assert isinstance(result, bytes)
+    assert result[:4] == b"%PDF"
+
+
+# ---------------------------------------------------------------------------
+# Case 4: pisa reporting an error raises instead of returning bad bytes
+# ---------------------------------------------------------------------------
+def test_render_pdf_raises_on_pisa_error():
+    mock_result = MagicMock()
+    mock_result.err = 1
+
+    with patch("agents.report_generator.pdf.pisa.CreatePDF", return_value=mock_result):
+        try:
+            render_pdf(_SAMPLE_REPORT, candidate_name="Alice", job_title="Senior Engineer")
+            raise AssertionError("expected RuntimeError")
+        except RuntimeError:
+            pass

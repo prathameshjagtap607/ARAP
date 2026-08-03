@@ -1,7 +1,8 @@
+import io
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
-from weasyprint import HTML
+from xhtml2pdf import pisa
 
 _TEMPLATE_DIR = Path(__file__).parent / "templates"
 
@@ -22,4 +23,8 @@ def render_pdf(
         include_transcript=include_transcript,
         transcript=transcript or [],
     )
-    return HTML(string=html_content).write_pdf()
+    buffer = io.BytesIO()
+    result = pisa.CreatePDF(html_content, dest=buffer)
+    if result.err:
+        raise RuntimeError(f"PDF generation failed with {result.err} error(s)")
+    return buffer.getvalue()

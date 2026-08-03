@@ -78,6 +78,9 @@ def get_pdf_bytes(
     report_data.setdefault("ai_confidence_score", float(report.ai_confidence_score) if report.ai_confidence_score is not None else None)
     report_data.setdefault("executive_summary", report.executive_summary)
 
+    if "meta" not in report_data or not report_data.get("executive_summary"):
+        raise ValueError("Full report is not ready yet — narrative sections have not been generated")
+
     return render_pdf(
         report_data=report_data,
         candidate_name=candidate_name,
