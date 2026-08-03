@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import SummaryCard from '@/components/dashboard/SummaryCard';
-import { fetchAdminDashboard, createUser } from '@/lib/api/dashboards';
+import { fetchAdminDashboard } from '@/lib/api/dashboards';
 import type { AdminDashboardData } from '@/lib/types/dashboard';
 
 export default function AdminDashboardPage() {
@@ -21,14 +21,6 @@ export default function AdminDashboardPage() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // State for create-user form
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-  const [newRole, setNewRole] = useState<'user' | 'admin'>('user');
-  const [newPassword, setNewPassword] = useState('');
-  const [createLoading, setCreateLoading] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   // Abort controller for cleanup
   const [abortController, setAbortController] = useState<AbortController | null>(null);
@@ -84,31 +76,6 @@ export default function AdminDashboardPage() {
     return role === 'admin' ? 'green' : 'blue';
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCreateError(null);
-    setCreateLoading(true);
-    try {
-      const created = await createUser({ email: newEmail, role: newRole, password: newPassword });
-      setData((prev) => ({
-        ...prev,
-        totalUsers: prev.totalUsers + 1,
-        users: [
-          { id: created.id, name: created.email, email: created.email, role: created.role as 'admin' | 'user', createdAt: created.createdAt },
-          ...prev.users,
-        ],
-      }));
-      setNewEmail('');
-      setNewRole('user');
-      setNewPassword('');
-      setShowCreateForm(false);
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to create user');
-    } finally {
-      setCreateLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Page Title */}
@@ -145,67 +112,9 @@ export default function AdminDashboardPage() {
 
       {/* Users Table */}
       <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+        <div className="px-6 py-4 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-900">Users</h2>
-          <button
-            onClick={() => setShowCreateForm((prev) => !prev)}
-            className="px-3 py-1.5 text-sm font-medium rounded border border-slate-300 text-slate-700 hover:bg-slate-50"
-          >
-            {showCreateForm ? 'Cancel' : '+ Create User'}
-          </button>
         </div>
-
-        {showCreateForm && (
-          <form
-            onSubmit={handleCreateUser}
-            className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-3 items-end"
-          >
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-600">Email</label>
-              <input
-                type="email"
-                required
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="px-3 py-2 text-sm border border-slate-300 rounded"
-                placeholder="name@company.com"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-600">Role</label>
-              <select
-                value={newRole}
-                onChange={(e) => setNewRole(e.target.value as 'user' | 'admin')}
-                className="px-3 py-2 text-sm border border-slate-300 rounded"
-              >
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-600">Temporary Password</label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="px-3 py-2 text-sm border border-slate-300 rounded"
-                placeholder="min 8 characters"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={createLoading}
-              className="px-4 py-2 text-sm font-medium rounded bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
-            >
-              {createLoading ? 'Creating…' : 'Create'}
-            </button>
-            {createError && (
-              <p className="text-sm text-red-600 w-full">{createError}</p>
-            )}
-          </form>
-        )}
 
         {loading ? (
           <div className="px-6 py-12 text-center">
