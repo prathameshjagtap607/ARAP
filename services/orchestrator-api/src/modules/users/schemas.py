@@ -22,3 +22,7 @@ class UserCreateRequest(BaseModel):
     email: EmailStr
     role: str = Field(pattern="^(user|admin)$")
     password: str = Field(min_length=8)
+
+
+class UserUpdateRequest(BaseModel):
+    role: str = Field(pattern="^(user|admin)$")

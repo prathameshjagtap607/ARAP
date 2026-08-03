@@ -7,6 +7,7 @@ import CompetencyForm from "@/components/forms/CompetencyForm";
 import { getCompetencies, deleteCompetency } from "@/lib/api/competencies";
 import { apiFetch } from "@/lib/api";
 import { createUser } from "@/lib/api/dashboards";
+import { useAuth } from "@/context/AuthContext";
 import type { Competency } from '@/lib/types/competency';
 
 interface WorkspaceUser {
@@ -24,6 +25,7 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function AdminPage() {
+  const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('users');
   const [competencies, setCompetencies] = useState<Competency[]>([]);
   const [selectedCompetency, setSelectedCompetency] = useState<Competency | null>(null);
@@ -40,6 +42,10 @@ export default function AdminPage() {
   const [newPassword, setNewPassword] = useState('');
   const [createUserLoading, setCreateUserLoading] = useState(false);
   const [createUserError, setCreateUserError] = useState<string | null>(null);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingRole, setEditingRole] = useState<'user' | 'admin'>('user');
+  const [userActionError, setUserActionError] = useState<string | null>(null);
+  const [userActionLoadingId, setUserActionLoadingId] = useState<string | null>(null);
 
   const loadUsers = async () => {
     setUsersLoading(true);
@@ -71,6 +77,47 @@ export default function AdminPage() {
       setCreateUserError(err instanceof Error ? err.message : 'Failed to create user');
     } finally {
       setCreateUserLoading(false);
+    }
+  };
+
+  const startEditUser = (u: WorkspaceUser) => {
+    setUserActionError(null);
+    setEditingUserId(u.id);
+    setEditingRole(u.role === 'admin' ? 'admin' : 'user');
+  };
+
+  const cancelEditUser = () => {
+    setEditingUserId(null);
+  };
+
+  const saveEditUser = async (userId: string) => {
+    setUserActionError(null);
+    setUserActionLoadingId(userId);
+    try {
+      const updated = await apiFetch<{ id: string; email: string; role: string; created_at: string }>(
+        `/users/${userId}`,
+        { method: 'PATCH', body: JSON.stringify({ role: editingRole }) }
+      );
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: updated.role } : u)));
+      setEditingUserId(null);
+    } catch (err) {
+      setUserActionError(err instanceof Error ? err.message : 'Failed to update user');
+    } finally {
+      setUserActionLoadingId(null);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Delete this user? This cannot be undone.')) return;
+    setUserActionError(null);
+    setUserActionLoadingId(userId);
+    try {
+      await apiFetch(`/users/${userId}`, { method: 'DELETE' });
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+    } catch (err) {
+      setUserActionError(err instanceof Error ? err.message : 'Failed to delete user');
+    } finally {
+      setUserActionLoadingId(null);
     }
   };
 
@@ -231,6 +278,12 @@ export default function AdminPage() {
           </form>
         )}
 
+        {userActionError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+            <p className="text-sm font-medium text-red-900">{userActionError}</p>
+          </div>
+        )}
+
         {usersLoading ? (
           <div className="text-center py-8">
             <p className="text-slate-600">Loading users...</p>
@@ -247,30 +300,90 @@ export default function AdminPage() {
                   <th className="px-6 py-3 text-left font-semibold text-slate-900">Email</th>
                   <th className="px-6 py-3 text-left font-semibold text-slate-900">Role</th>
                   <th className="px-6 py-3 text-left font-semibold text-slate-900">Joined</th>
+                  <th className="px-6 py-3 text-left font-semibold text-slate-900">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
-                  <tr key={u.id} className="border-b border-slate-200 hover:bg-slate-50">
-                    <td className="px-6 py-4 text-slate-900 font-medium">{u.email}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          u.role === 'admin' ? 'bg-green-100 text-green-900' : 'bg-blue-100 text-blue-900'
-                        }`}
-                      >
-                        {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-700">
-                      {new Date(u.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </td>
-                  </tr>
-                ))}
+                {users.map((u) => {
+                  const isSelf = currentUser?.id === u.id;
+                  const isSuperAdmin = u.role === 'super_admin';
+                  const isEditing = editingUserId === u.id;
+                  const isBusy = userActionLoadingId === u.id;
+
+                  return (
+                    <tr key={u.id} className="border-b border-slate-200 hover:bg-slate-50">
+                      <td className="px-6 py-4 text-slate-900 font-medium">{u.email}</td>
+                      <td className="px-6 py-4">
+                        {isEditing ? (
+                          <select
+                            value={editingRole}
+                            onChange={(e) => setEditingRole(e.target.value as 'user' | 'admin')}
+                            className="px-2 py-1 text-sm border border-slate-300 rounded"
+                          >
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        ) : (
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                              u.role === 'admin' ? 'bg-green-100 text-green-900' : 'bg-blue-100 text-blue-900'
+                            }`}
+                          >
+                            {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-slate-700">
+                        {new Date(u.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </td>
+                      <td className="px-6 py-4">
+                        {isSuperAdmin ? (
+                          <span className="text-xs text-slate-400">—</span>
+                        ) : isEditing ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => saveEditUser(u.id)}
+                              disabled={isBusy}
+                              className="text-xs text-white bg-slate-900 rounded px-2 py-1 hover:bg-slate-800 disabled:opacity-50"
+                            >
+                              {isBusy ? 'Saving…' : 'Save'}
+                            </button>
+                            <button
+                              onClick={cancelEditUser}
+                              disabled={isBusy}
+                              className="text-xs text-slate-600 border border-slate-200 rounded px-2 py-1 hover:border-slate-400"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => startEditUser(u)}
+                              disabled={isSelf || isBusy}
+                              title={isSelf ? "You can't edit your own role" : undefined}
+                              className="text-xs text-slate-600 hover:text-slate-900 border border-slate-200 rounded px-2 py-1 hover:border-slate-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u.id)}
+                              disabled={isSelf || isBusy}
+                              title={isSelf ? "You can't delete your own account" : undefined}
+                              className="text-xs text-red-600 hover:text-red-800 border border-red-200 rounded px-2 py-1 hover:border-red-400 disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              {isBusy ? 'Deleting…' : 'Delete'}
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
