@@ -7,7 +7,12 @@ SYSTEM_PROMPT = (
     "for this org's question-fingerprint history. Match the category weightage "
     "and difficulty level supplied. Every question MUST be multiple_choice — "
     "always provide 3-5 plausible options, even for scenario/case-study/"
-    "negotiation-style questions."
+    "negotiation-style questions. "
+    "IMPORTANT: the input's overall job difficulty_level (junior/mid/senior/"
+    "executive) is a DIFFERENT field from each question's own 'difficulty' "
+    "value. Each question's 'difficulty' MUST be exactly one of: easy, medium, "
+    "hard, expert — never reuse the job difficulty_level word (e.g. never "
+    "output 'mid'; use 'medium' instead)."
 )
 
 # Maps PRD category names to lowercase competency key aliases for weight lookup.
