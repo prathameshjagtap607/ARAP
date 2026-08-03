@@ -194,6 +194,27 @@ export async function fetchReportsList(
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 /**
+ * Create a new workspace user (Admin only).
+ */
+export async function createUser(input: {
+  email: string;
+  role: "user" | "admin";
+  password: string;
+}): Promise<{ id: string; email: string; role: string; createdAt: string }> {
+  const response = await apiFetch<Record<string, unknown>>(`/users`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const camel = toCamelCase(response);
+  return {
+    id: String(camel.id),
+    email: String(camel.email),
+    role: String(camel.role),
+    createdAt: String(camel.createdAt),
+  };
+}
+
+/**
  * Download a candidate's hiring report as a PDF and trigger a browser save.
  */
 export async function downloadReportPdf(sessionId: string): Promise<void> {
