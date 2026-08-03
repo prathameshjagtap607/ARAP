@@ -21,6 +21,11 @@ from src.modules.question_sets.schemas import QuestionItem, QuestionSetResponse
 
 _SIMILARITY_THRESHOLD = 0.92
 _DEFAULT_TARGET = 10
+_OPTION_LETTERS = "ABCDEFGH"
+
+
+def _options_list_to_dict(options: list[str]) -> dict[str, str]:
+    return {_OPTION_LETTERS[i]: opt for i, opt in enumerate(options)}
 
 
 def _derive_category_counts(competency_weightage: dict, target: int) -> dict[str, int]:
@@ -233,6 +238,12 @@ def generate_question_set(
     fingerprints: list[QuestionFingerprint] = []
 
     for seq, (q, emb) in enumerate(accepted, start=1):
+        options_dict = (
+            _options_list_to_dict(q.get("options", []))
+            if q["answer_format"] == "multiple_choice"
+            else None
+        )
+
         question_obj = {
             "question": q["question"],
             "category": q["category"],
@@ -240,8 +251,8 @@ def generate_question_set(
             "difficulty": q["difficulty"],
             "answer_format": q["answer_format"],
         }
-        if q["answer_format"] == "multiple_choice":
-            question_obj["options"] = q.get("options", [])
+        if options_dict is not None:
+            question_obj["options"] = options_dict
 
         sq = SessionQuestion(
             org_id=org_id,
@@ -252,7 +263,7 @@ def generate_question_set(
             target_competencies=q.get("target_competencies", []),
             difficulty=q["difficulty"],
             answer_format=q["answer_format"],
-            options=q.get("options") if q["answer_format"] == "multiple_choice" else None,
+            options=options_dict,
         )
         session_questions.append(sq)
         fingerprints.append(QuestionFingerprint(
@@ -303,7 +314,7 @@ def _build_response(qs: QuestionSet, sqs: list[SessionQuestion]) -> QuestionSetR
             target_competencies=list(sq.target_competencies),
             difficulty=sq.difficulty,
             answer_format=sq.answer_format,
-            options=list(sq.options) if sq.options else None,
+            options=list(sq.options.values()) if sq.options else None,
         )
         for sq in sorted(sqs, key=lambda x: x.sequence_no)
     ]
