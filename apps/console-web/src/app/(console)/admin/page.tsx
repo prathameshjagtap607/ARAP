@@ -16,7 +16,15 @@ interface WorkspaceUser {
   created_at: string;
 }
 
+type Tab = 'users' | 'competencies';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'users', label: 'Users' },
+  { id: 'competencies', label: 'Competencies' },
+];
+
 export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState<Tab>('users');
   const [competencies, setCompetencies] = useState<Competency[]>([]);
   const [selectedCompetency, setSelectedCompetency] = useState<Competency | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -141,7 +149,26 @@ export default function AdminPage() {
         <SummaryCard label="Active Orgs" value="—" />
       </div>
 
-      <div className="space-y-4">
+      {/* Tab bar */}
+      <div className="border-b border-slate-200">
+        <nav className="-mb-px flex gap-6">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-slate-800 text-slate-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      <div className={`space-y-4 ${activeTab === 'users' ? '' : 'hidden'}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-800">Users</h2>
           <button
@@ -250,7 +277,7 @@ export default function AdminPage() {
         )}
       </div>
 
-      <div className="space-y-4">
+      <div className={`space-y-4 ${activeTab === 'competencies' ? '' : 'hidden'}`}>
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-800">Competencies</h2>
           <button
