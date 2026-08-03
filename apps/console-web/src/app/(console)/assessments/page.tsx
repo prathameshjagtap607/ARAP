@@ -27,13 +27,23 @@ export default function AssessmentsPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    await deleteAssessment(id);
-    setAssessments((prev) => prev.filter((a) => a.id !== id));
+    setError(null);
+    try {
+      await deleteAssessment(id);
+      setAssessments((prev) => prev.filter((a) => a.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete assessment');
+    }
   };
 
   const handleClone = async (id: string) => {
-    const cloned = await cloneAssessment(id);
-    setAssessments((prev) => [cloned, ...prev]);
+    setError(null);
+    try {
+      const cloned = await cloneAssessment(id);
+      setAssessments((prev) => [cloned, ...prev]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to clone assessment');
+    }
   };
 
   return (
