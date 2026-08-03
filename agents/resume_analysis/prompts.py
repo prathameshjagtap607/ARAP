@@ -57,7 +57,7 @@ RESUME_EXTRACTION_TOOL = {
                     "properties": {
                         "degree": {"type": "string"},
                         "field": {"type": "string"},
-                        "institution": {"type": "string"},
+                        "institution": {"type": ["string", "null"]},
                         "year": {"type": ["integer", "null"]},
                     },
                     "required": ["degree", "field", "institution", "year"],
@@ -132,5 +132,6 @@ RESUME_EXTRACTION_TOOL = {
             "certifications", "achievements", "leadership_indicators",
             "career_timeline", "domain_keywords", "field_confidence",
         ],
+        "additionalProperties": False,
     },
 }
