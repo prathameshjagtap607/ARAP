@@ -12,15 +12,42 @@ export interface SessionItem {
   submitted_at: string | null;
 }
 
+export interface CompositeScore {
+  score: number;
+  vs_job_bar: string;
+  vs_org_bar: string;
+}
+
+export interface FullReportBody {
+  executive_summary?: string;
+  candidate_overview?: string;
+  resume_summary?: string;
+  interview_summary?: string;
+  scores?: Record<string, CompositeScore>;
+  overall_rating?: number;
+  culture_fit?: string;
+  domain_knowledge?: string;
+  skill_gap_analysis?: string;
+  strengths?: string[];
+  weaknesses?: string[];
+  potential_risks?: string;
+  learning_curve_estimate?: string;
+  management_readiness?: string;
+  promotion_potential?: string;
+  recommended_next_round?: string;
+  final_verdict?: string;
+  integrity_summary_prose?: string;
+}
+
 export interface SessionReport {
-  id: string;
-  overall_score: number;
-  verdict: string;
-  ai_confidence_score: number;
-  executive_summary: string;
-  strengths: string[];
-  risk_flags: string[];
-  competency_scores: Record<string, number>;
+  session_id: string;
+  report_ready: boolean;
+  requires_human_review: boolean;
+  verdict: string | null;
+  ai_confidence_score: number | null;
+  salary_band: string | null;
+  full_report: FullReportBody;
+  created_at: string | null;
 }
 
 export async function getSessions(): Promise<SessionItem[]> {
