@@ -28,7 +28,7 @@ RESUME_EXTRACTION_TOOL = {
                     "properties": {
                         "name": {"type": "string"},
                         "tech": {"type": "array", "items": {"type": "string"}},
-                        "description": {"type": "string"},
+                        "description": {"type": ["string", "null"]},
                     },
                     "required": ["name", "tech", "description"],
                 },
@@ -56,7 +56,7 @@ RESUME_EXTRACTION_TOOL = {
                     "type": "object",
                     "properties": {
                         "degree": {"type": "string"},
-                        "field": {"type": "string"},
+                        "field": {"type": ["string", "null"]},
                         "institution": {"type": ["string", "null"]},
                         "year": {"type": ["integer", "null"]},
                     },
@@ -69,7 +69,7 @@ RESUME_EXTRACTION_TOOL = {
                     "type": "object",
                     "properties": {
                         "name": {"type": "string"},
-                        "issuer": {"type": "string"},
+                        "issuer": {"type": ["string", "null"]},
                         "year": {"type": ["integer", "null"]},
                     },
                     "required": ["name", "issuer", "year"],
