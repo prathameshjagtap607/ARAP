@@ -34,6 +34,11 @@ def _api_keys() -> list[str]:
     fallback = getattr(settings, "GROQ_API_KEY_FALLBACK", "")
     if fallback:
         keys.append(fallback)
+    extra = getattr(settings, "GROQ_API_KEY_FALLBACKS", "")
+    for key in extra.split(","):
+        key = key.strip()
+        if key and key not in keys:
+            keys.append(key)
     return keys
 
 
@@ -53,9 +58,11 @@ def call_tool(
     models occasionally invent parameter names on a forced tool call, and a retry
     (optionally with a stronger schema reminder) resolves most of these non-fatally.
 
-    On a rate-limit error, immediately fails over to GROQ_API_KEY_FALLBACK (a
-    second Groq account's key) if configured — retrying won't help a quota
-    error, so it switches keys rather than burning attempts.
+    On a rate-limit error, immediately fails over to the next configured key
+    (GROQ_API_KEY_FALLBACK, then any comma-separated keys in
+    GROQ_API_KEY_FALLBACKS, in order) — retrying won't help a quota error, so
+    it switches keys rather than burning attempts. Any number of fallback
+    keys can be added via GROQ_API_KEY_FALLBACKS without further code changes.
     """
     fn_name = tool["name"]
     openai_tool = _to_openai_tool(tool)

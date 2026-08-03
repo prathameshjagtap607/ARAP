@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     GROQ_API_KEY: str
     GROQ_API_KEY_FALLBACK: str = ""
+    GROQ_API_KEY_FALLBACKS: str = ""
     S3_ENDPOINT_URL: str = "http://localhost:9000"
     S3_ACCESS_KEY: str = "arap"
     S3_SECRET_KEY: str = "arap_secret"
