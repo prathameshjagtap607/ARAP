@@ -134,6 +134,7 @@ export async function fetchReportsList(
       const camelReport = toCamelCase(report);
       return {
         id: String(camelReport.id),
+        sessionId: String(camelReport.sessionId),
         candidateName: String(camelReport.candidateName || ""),
         jobTitle: String(camelReport.jobTitle || ""),
         verdict: (camelReport.verdict as ReportRow["verdict"]) || "consider",

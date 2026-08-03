@@ -350,11 +350,11 @@ export default function ReportsDashboardPage() {
                       </td>
                       <td className="px-6 py-4">
                         <button
-                          onClick={() => handleDownload(report.id)}
-                          disabled={downloadingId === report.id}
+                          onClick={() => handleDownload(report.sessionId)}
+                          disabled={downloadingId === report.sessionId}
                           className="text-xs text-slate-600 hover:text-slate-900 border border-slate-200 rounded px-2 py-1 hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {downloadingId === report.id ? 'Downloading…' : 'Download'}
+                          {downloadingId === report.sessionId ? 'Downloading…' : 'Download'}
                         </button>
                       </td>
                     </tr>

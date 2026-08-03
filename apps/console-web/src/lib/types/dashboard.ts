@@ -55,6 +55,7 @@ export interface HRDashboardData {
 // Reports Dashboard filter result
 export interface ReportRow {
   id: string;
+  sessionId: string;
   candidateName: string;
   jobTitle: string;
   verdict: "strong_hire" | "hire" | "consider" | "borderline" | "reject";
