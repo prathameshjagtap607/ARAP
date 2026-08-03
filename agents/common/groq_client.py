@@ -29,6 +29,14 @@ def _to_openai_tool(anthropic_tool: dict) -> dict:
     }
 
 
+def _api_keys() -> list[str]:
+    keys = [settings.GROQ_API_KEY]
+    fallback = getattr(settings, "GROQ_API_KEY_FALLBACK", "")
+    if fallback:
+        keys.append(fallback)
+    return keys
+
+
 def call_tool(
     system: str,
     tool: dict,
@@ -44,33 +52,47 @@ def call_tool(
     Retries on schema-validation / malformed-JSON failures — Groq's smaller/faster
     models occasionally invent parameter names on a forced tool call, and a retry
     (optionally with a stronger schema reminder) resolves most of these non-fatally.
+
+    On a rate-limit error, immediately fails over to GROQ_API_KEY_FALLBACK (a
+    second Groq account's key) if configured — retrying won't help a quota
+    error, so it switches keys rather than burning attempts.
     """
-    client = Groq(api_key=settings.GROQ_API_KEY)
     fn_name = tool["name"]
     openai_tool = _to_openai_tool(tool)
+    keys = _api_keys()
 
     last_error: Exception | None = None
-    for attempt in range(1, _MAX_ATTEMPTS + 1):
-        active_system = system if attempt == 1 else system + _RETRY_NUDGE
-        try:
-            response = client.chat.completions.create(
-                model=model,
-                max_tokens=max_tokens,
-                messages=[
-                    {"role": "system", "content": active_system},
-                    {"role": "user", "content": user_content},
-                ],
-                tools=[openai_tool],
-                tool_choice={"type": "function", "function": {"name": fn_name}},
-            )
-            message = response.choices[0].message
-            tool_call = message.tool_calls[0]
-            return json.loads(tool_call.function.arguments)
-        except (groq.BadRequestError, json.JSONDecodeError, IndexError, AttributeError) as e:
-            last_error = e
-            logger.warning(
-                "call_tool: attempt %d/%d failed for tool '%s': %s",
-                attempt, _MAX_ATTEMPTS, fn_name, e,
-            )
+    for key_index, api_key in enumerate(keys):
+        client = Groq(api_key=api_key)
+        for attempt in range(1, _MAX_ATTEMPTS + 1):
+            active_system = system if attempt == 1 else system + _RETRY_NUDGE
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    max_tokens=max_tokens,
+                    messages=[
+                        {"role": "system", "content": active_system},
+                        {"role": "user", "content": user_content},
+                    ],
+                    tools=[openai_tool],
+                    tool_choice={"type": "function", "function": {"name": fn_name}},
+                )
+                message = response.choices[0].message
+                tool_call = message.tool_calls[0]
+                return json.loads(tool_call.function.arguments)
+            except groq.RateLimitError as e:
+                last_error = e
+                logger.warning(
+                    "call_tool: key %d/%d rate-limited for tool '%s' — %s",
+                    key_index + 1, len(keys), fn_name,
+                    "failing over to next key" if key_index + 1 < len(keys) else "no more keys",
+                )
+                break
+            except (groq.BadRequestError, json.JSONDecodeError, IndexError, AttributeError) as e:
+                last_error = e
+                logger.warning(
+                    "call_tool: attempt %d/%d failed for tool '%s': %s",
+                    attempt, _MAX_ATTEMPTS, fn_name, e,
+                )
 
     raise last_error

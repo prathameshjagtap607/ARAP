@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str
     OPENAI_API_KEY: str
     GROQ_API_KEY: str
+    GROQ_API_KEY_FALLBACK: str = ""
     INGESTION_SERVICE_URL: str = "http://localhost:8001"
 
     CANDIDATE_PORTAL_URL: str = "http://localhost:3000"

@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str
     OPENAI_API_KEY: str
     GROQ_API_KEY: str
+    GROQ_API_KEY_FALLBACK: str = ""
     S3_ENDPOINT_URL: str = "http://localhost:9000"
     S3_ACCESS_KEY: str = "arap"
     S3_SECRET_KEY: str = "arap_secret"
