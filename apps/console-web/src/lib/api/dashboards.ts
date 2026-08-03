@@ -1,4 +1,4 @@
-import { apiFetch } from "./index";
+import { apiFetch, getAuthToken } from "./index";
 import type {
   DashboardSession,
   HRDashboardData,
@@ -189,6 +189,32 @@ export async function fetchReportsList(
       pageSize: limit,
     };
   }
+}
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+/**
+ * Download a candidate's hiring report as a PDF and trigger a browser save.
+ */
+export async function downloadReportPdf(sessionId: string): Promise<void> {
+  const token = getAuthToken();
+  const res = await fetch(`${BASE_URL}/reports/${sessionId}/pdf`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to download report (HTTP ${res.status})`);
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `report-${sessionId}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }
 
 /**

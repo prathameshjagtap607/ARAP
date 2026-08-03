@@ -20,6 +20,10 @@ function getTokenFromStorage(): string | null {
   }
 }
 
+export function getAuthToken(): string | null {
+  return getGlobalAccessToken() || getTokenFromStorage();
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit & { jwt?: string } = {}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import FilterBar from '@/components/dashboard/FilterBar';
 import ChartCard from '@/components/dashboard/ChartCard';
-import { fetchReportsList } from '@/lib/api/dashboards';
+import { fetchReportsList, downloadReportPdf } from '@/lib/api/dashboards';
 import type { Filter } from '@/lib/types/dashboard';
 import type { ReportsDashboardData } from '@/lib/types/dashboard';
 
@@ -38,6 +38,7 @@ export default function ReportsDashboardPage() {
     pageSize: 20,
   });
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // State for filters
   const [verdictFilter, setVerdictFilter] = useState<string[]>([]);
@@ -201,6 +202,17 @@ export default function ReportsDashboardPage() {
     return score.toFixed(2);
   };
 
+  const handleDownload = async (reportId: string) => {
+    setDownloadingId(reportId);
+    try {
+      await downloadReportPdf(reportId);
+    } catch (error) {
+      console.error('Failed to download report:', error);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   const totalPages = Math.ceil(data.totalCount / data.pageSize);
   const canPrevious = currentPage > 0;
   const canNext = currentPage < totalPages - 1;
@@ -296,13 +308,16 @@ export default function ReportsDashboardPage() {
                     <th className="px-6 py-3 text-left font-semibold text-slate-900">
                       Created
                     </th>
+                    <th className="px-6 py-3 text-left font-semibold text-slate-900">
+                      Report
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.reports.map((report) => (
                     <tr
                       key={report.id}
-                      className="border-b border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
+                      className="border-b border-slate-200 hover:bg-slate-50 transition-colors"
                     >
                       <td className="px-6 py-4 text-slate-900 font-medium">
                         {report.candidateName}
@@ -332,6 +347,15 @@ export default function ReportsDashboardPage() {
                       </td>
                       <td className="px-6 py-4 text-slate-700">
                         {formatDate(report.createdAt)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => handleDownload(report.id)}
+                          disabled={downloadingId === report.id}
+                          className="text-xs text-slate-600 hover:text-slate-900 border border-slate-200 rounded px-2 py-1 hover:border-slate-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {downloadingId === report.id ? 'Downloading…' : 'Download'}
+                        </button>
                       </td>
                     </tr>
                   ))}
