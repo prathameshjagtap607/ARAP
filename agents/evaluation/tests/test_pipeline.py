@@ -82,7 +82,7 @@ def test_score_answer_llm_failure_returns_error():
 
 import uuid
 
-from agents.evaluation.pipeline import evaluation_pipeline
+from agents.evaluation.pipeline import _resolve_answer_text, evaluation_pipeline
 
 
 def _make_session_question(comp: str = "problem_solving", answer: str = "My answer") -> MagicMock:
@@ -94,7 +94,33 @@ def _make_session_question(comp: str = "problem_solving", answer: str = "My answ
     q.difficulty = "medium"
     q.answer_text = answer
     q.evaluation = None
+    q.answer_format = "long_text"
+    q.options = None
     return q
+
+
+def test_resolve_answer_text_maps_multiple_choice_letter_to_option_text():
+    q = MagicMock()
+    q.answer_format = "multiple_choice"
+    q.options = {"A": "Use indexing", "B": "Use caching"}
+    q.answer_text = "B"
+    assert _resolve_answer_text(q) == "Use caching"
+
+
+def test_resolve_answer_text_passthrough_for_non_multiple_choice():
+    q = MagicMock()
+    q.answer_format = "long_text"
+    q.options = None
+    q.answer_text = "A detailed free-text answer."
+    assert _resolve_answer_text(q) == "A detailed free-text answer."
+
+
+def test_resolve_answer_text_passthrough_when_letter_not_in_options():
+    q = MagicMock()
+    q.answer_format = "multiple_choice"
+    q.options = {"A": "Use indexing"}
+    q.answer_text = "Z"
+    assert _resolve_answer_text(q) == "Z"
 
 
 def test_evaluation_pipeline_scores_and_writes_report():

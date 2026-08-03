@@ -12,6 +12,17 @@ from agents.scoring.rubric import derive_verdict
 logger = logging.getLogger(__name__)
 
 
+def _resolve_answer_text(q) -> str | None:
+    """For multiple_choice questions, the stored answer_text is just the
+    selected option's letter key (e.g. "B") — resolve it to the actual
+    option text so the scoring model has something meaningful to evaluate.
+    Other answer formats have no options and pass through unchanged.
+    """
+    if q.answer_format == "multiple_choice" and q.options and q.answer_text in q.options:
+        return q.options[q.answer_text]
+    return q.answer_text
+
+
 def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]) -> None:
     """
     Runs after submit_session completes. Owns its own DB session (not request-scoped).
@@ -58,7 +69,7 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
                 question_text=q.question.get("text", ""),
                 category=q.category,
                 target_competencies=list(q.target_competencies),
-                answer_text=q.answer_text,
+                answer_text=_resolve_answer_text(q),
                 difficulty=q.difficulty,
                 job_title=job_title,
             )
