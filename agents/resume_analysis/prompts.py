@@ -41,7 +41,7 @@ RESUME_EXTRACTION_TOOL = {
                     "properties": {
                         "company": {"type": "string"},
                         "title": {"type": "string"},
-                        "start": {"type": "string"},
+                        "start": {"type": ["string", "null"]},
                         "end": {"type": ["string", "null"]},
                         "team_size": {"type": ["integer", "null"]},
                         "scope": {"type": ["string", "null"]},
