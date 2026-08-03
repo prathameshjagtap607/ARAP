@@ -28,7 +28,10 @@ def send_invite_email(
     )
 
     if settings.SENDGRID_API_KEY:
-        return _send_via_sendgrid(to, body_html, job_title)
+        if _send_via_sendgrid(to, body_html, job_title):
+            return True
+        logger.warning("sendgrid send failed — falling back to SMTP for %s", to)
+
     if settings.SMTP_HOST:
         return _send_via_smtp(to, body_html, job_title)
 

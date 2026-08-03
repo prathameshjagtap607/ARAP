@@ -39,3 +39,26 @@ def test_send_invite_email_smtp(monkeypatch):
             )
     assert result is True
     mock_smtp.__enter__.return_value.sendmail.assert_called_once()
+
+
+def test_send_invite_email_falls_back_to_smtp_when_sendgrid_fails():
+    """When SendGrid is configured but fails, falls back to SMTP instead of giving up."""
+    with patch("src.modules.sessions.email.settings") as mock_settings:
+        mock_settings.SENDGRID_API_KEY = "sg-fake-key"
+        mock_settings.SMTP_HOST = "smtp.example.com"
+        mock_settings.SMTP_PORT = 587
+        mock_settings.SMTP_USER = "user"
+        mock_settings.SMTP_PASSWORD = "pass"
+        mock_settings.SMTP_FROM = "noreply@arap.dev"
+
+        with patch("src.modules.sessions.email._send_via_sendgrid", return_value=False), \
+             patch("src.modules.sessions.email._send_via_smtp", return_value=True) as mock_smtp_send:
+            result = send_invite_email(
+                to="alice@example.com",
+                link="http://localhost:3000/assessment/abc?token=tok",
+                job_title="Engineer",
+                duration_minutes=60,
+            )
+
+    assert result is True
+    mock_smtp_send.assert_called_once()
