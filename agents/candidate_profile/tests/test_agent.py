@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 _FAKE_RESULT = {
     "summary": "Jane is a senior backend engineer with 8 years of Python experience.",
@@ -20,19 +20,6 @@ _FAKE_RESULT = {
     "strengths": ["Deep Python expertise", "Cross-functional leadership"],
     "risk_flags": ["No direct people-management despite Manager title at Acme Corp"],
 }
-
-
-def _make_mock_client(result: dict = _FAKE_RESULT):
-    tool_block = MagicMock()
-    tool_block.type = "tool_use"
-    tool_block.input = result
-
-    message = MagicMock()
-    message.content = [tool_block]
-
-    client = MagicMock()
-    client.messages.create.return_value = message
-    return client
 
 
 _EXTRACTION = {
@@ -72,7 +59,7 @@ _JOB_PROFILE = {
 def test_agent_returns_structured_output():
     from agents.candidate_profile.agent import run_candidate_profile_agent
 
-    with patch("agents.candidate_profile.agent.anthropic.Anthropic", return_value=_make_mock_client()):
+    with patch("agents.candidate_profile.agent.call_tool", return_value=_FAKE_RESULT):
         result = run_candidate_profile_agent(_EXTRACTION, _JOB_PROFILE)
 
     assert result is not None
@@ -91,10 +78,7 @@ def test_agent_returns_structured_output():
 def test_agent_returns_none_on_api_error():
     from agents.candidate_profile.agent import run_candidate_profile_agent
 
-    failing_client = MagicMock()
-    failing_client.messages.create.side_effect = Exception("API down")
-
-    with patch("agents.candidate_profile.agent.anthropic.Anthropic", return_value=failing_client):
+    with patch("agents.candidate_profile.agent.call_tool", side_effect=Exception("API down")):
         result = run_candidate_profile_agent(_EXTRACTION, _JOB_PROFILE)
 
     assert result is None

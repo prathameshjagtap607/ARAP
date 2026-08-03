@@ -2,9 +2,9 @@ import logging
 import uuid
 from collections.abc import Callable
 
-import anthropic
 from sqlalchemy.orm import Session
 
+from agents.common.groq_client import call_tool
 from agents.behavior_analysis.prompts import (
     EXTRACT_SYSTEM_PROMPT,
     EXTRACT_TOOL,
@@ -19,33 +19,13 @@ _MAX_TOKENS = 4096
 
 
 def _extract_signals(transcript: str) -> dict:
-    client = anthropic.Anthropic()
-    response = client.messages.create(
-        model=_MODEL,
-        max_tokens=_MAX_TOKENS,
-        system=EXTRACT_SYSTEM_PROMPT,
-        tools=[EXTRACT_TOOL],
-        tool_choice={"type": "tool", "name": "extract_behavioral_signals"},
-        messages=[{"role": "user", "content": transcript}],
-    )
-    tool_block = next(b for b in response.content if b.type == "tool_use")
-    return dict(tool_block.input)
+    return call_tool(EXTRACT_SYSTEM_PROMPT, EXTRACT_TOOL, transcript, max_tokens=_MAX_TOKENS)
 
 
 def _synthesize_profile(signals: dict, org_working_style: str | None) -> dict:
-    client = anthropic.Anthropic()
     tool = build_synthesize_tool(org_working_style)
     signals_text = "\n".join(f"{k}: {v}" for k, v in signals.items())
-    response = client.messages.create(
-        model=_MODEL,
-        max_tokens=_MAX_TOKENS,
-        system=SYNTHESIZE_SYSTEM_PROMPT,
-        tools=[tool],
-        tool_choice={"type": "tool", "name": "synthesize_behavior_profile"},
-        messages=[{"role": "user", "content": signals_text}],
-    )
-    tool_block = next(b for b in response.content if b.type == "tool_use")
-    return dict(tool_block.input)
+    return call_tool(SYNTHESIZE_SYSTEM_PROMPT, tool, signals_text, max_tokens=_MAX_TOKENS)
 
 
 def infer_behavior(

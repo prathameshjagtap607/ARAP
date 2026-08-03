@@ -50,8 +50,7 @@ def test_score_answer_calls_llm_and_returns_scores():
             "improvement": "Could be more concise",
         }
     ]
-    with patch("agents.evaluation.agent.anthropic.Anthropic") as MockClient:
-        MockClient.return_value.messages.create.return_value = _fake_tool_response(fake_scores)
+    with patch("agents.evaluation.agent.call_tool", return_value={"competency_scores": fake_scores}):
         result = score_answer(
             question_text="Describe your debugging process.",
             category="Technical",
@@ -65,8 +64,7 @@ def test_score_answer_calls_llm_and_returns_scores():
 
 
 def test_score_answer_llm_failure_returns_error():
-    with patch("agents.evaluation.agent.anthropic.Anthropic") as MockClient:
-        MockClient.return_value.messages.create.side_effect = RuntimeError("API error")
+    with patch("agents.evaluation.agent.call_tool", side_effect=RuntimeError("API error")):
         result = score_answer(
             question_text="Q",
             category="Technical",
@@ -177,14 +175,7 @@ def test_generate_summary_calls_llm_and_returns_dict():
         "recommended_next_round": "Technical Panel",
         "training_needs": ["Communication clarity"],
     }
-    block = MagicMock()
-    block.type = "tool_use"
-    block.input = fake_output
-    response = MagicMock()
-    response.content = [block]
-
-    with patch("agents.evaluation.summary.anthropic.Anthropic") as MockClient:
-        MockClient.return_value.messages.create.return_value = response
+    with patch("agents.evaluation.summary.call_tool", return_value=dict(fake_output)):
         result = generate_summary("Senior Engineer", rollup, "hire", candidate_name="Alice")
 
     assert result["executive_summary"] == "Candidate shows strong technical skills."
@@ -192,8 +183,7 @@ def test_generate_summary_calls_llm_and_returns_dict():
 
 
 def test_generate_summary_returns_none_on_failure():
-    with patch("agents.evaluation.summary.anthropic.Anthropic") as MockClient:
-        MockClient.return_value.messages.create.side_effect = RuntimeError("fail")
+    with patch("agents.evaluation.summary.call_tool", side_effect=RuntimeError("fail")):
         result = generate_summary("Engineer", {}, "reject")
     assert result is None
 

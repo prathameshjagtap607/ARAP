@@ -53,15 +53,6 @@ _FAKE_PROFILE = {
 }
 
 
-def _make_tool_response(tool_name: str, payload: dict):
-    block = MagicMock()
-    block.type = "tool_use"
-    block.input = payload
-    response = MagicMock()
-    response.content = [block]
-    return response
-
-
 def _make_db(session_obj, qset_obj, questions):
     db = MagicMock()
     profiles_stored = []
@@ -113,22 +104,18 @@ def test_infer_behavior_happy_path():
     db, profiles_stored = _make_db(session_obj, qset_obj, questions)
 
     call_count = [0]
-    def fake_create(**kwargs):
+    def fake_call_tool(*args, **kwargs):
         call_count[0] += 1
         if call_count[0] == 1:
-            return _make_tool_response("extract_behavioral_signals", _FAKE_SIGNALS)
-        return _make_tool_response("synthesize_behavior_profile", _FAKE_PROFILE)
+            return dict(_FAKE_SIGNALS)
+        return dict(_FAKE_PROFILE)
 
     def mock_behavior_profile_class(**kwargs):
         # Create an object that stores the kwargs as attributes
         obj = SimpleNamespace(**kwargs)
         return obj
 
-    with patch("agents.behavior_analysis.agent.anthropic.Anthropic") as mock_anthropic:
-        mock_client = MagicMock()
-        mock_client.messages.create.side_effect = fake_create
-        mock_anthropic.return_value = mock_client
-
+    with patch("agents.behavior_analysis.agent.call_tool", side_effect=fake_call_tool):
         with patch("agents.behavior_analysis.agent.Session"), patch("src.models.behavior_profiles.BehaviorProfile", side_effect=mock_behavior_profile_class):
             infer_behavior(
                 session_id=_SESSION_ID,
@@ -158,9 +145,9 @@ def test_infer_behavior_no_answers():
 
     db, profiles_stored = _make_db(session_obj, qset_obj, [])  # empty question list
 
-    with patch("agents.behavior_analysis.agent.anthropic.Anthropic") as mock_anthropic:
+    with patch("agents.behavior_analysis.agent.call_tool") as mock_call_tool:
         infer_behavior(session_id=_SESSION_ID, db_factory=lambda: db)
-        mock_anthropic.return_value.messages.create.assert_not_called()
+        mock_call_tool.assert_not_called()
 
     assert len(profiles_stored) == 0
     db.commit.assert_not_called()
@@ -186,11 +173,7 @@ def test_infer_behavior_llm_failure():
 
     db, profiles_stored = _make_db(session_obj, qset_obj, questions)
 
-    with patch("agents.behavior_analysis.agent.anthropic.Anthropic") as mock_anthropic:
-        mock_client = MagicMock()
-        mock_client.messages.create.side_effect = RuntimeError("API timeout")
-        mock_anthropic.return_value = mock_client
-
+    with patch("agents.behavior_analysis.agent.call_tool", side_effect=RuntimeError("API timeout")):
         # Should not raise
         infer_behavior(session_id=_SESSION_ID, db_factory=lambda: db)
 

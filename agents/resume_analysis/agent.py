@@ -1,7 +1,6 @@
 import logging
 
-import anthropic
-
+from agents.common.groq_client import call_tool
 from agents.resume_analysis.prompts import RESUME_EXTRACTION_TOOL, SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -34,17 +33,12 @@ def _derive_leadership_level(max_team_size: int | None) -> str:
 
 def run_resume_analysis_agent(raw_text: str, job_profile: dict | None) -> dict | None:
     try:
-        client = anthropic.Anthropic()
-        response = client.messages.create(
-            model=_MODEL,
+        result = call_tool(
+            SYSTEM_PROMPT,
+            RESUME_EXTRACTION_TOOL,
+            _build_user_message(raw_text, job_profile),
             max_tokens=_MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            tools=[RESUME_EXTRACTION_TOOL],
-            tool_choice={"type": "tool", "name": "extract_resume"},
-            messages=[{"role": "user", "content": _build_user_message(raw_text, job_profile)}],
         )
-        tool_block = next(b for b in response.content if b.type == "tool_use")
-        result = dict(tool_block.input)
         result["_leadership_level"] = _derive_leadership_level(
             result.get("leadership_indicators", {}).get("max_team_size")
         )

@@ -1,8 +1,7 @@
 import json
 import logging
 
-import anthropic
-
+from agents.common.groq_client import call_tool
 from agents.question_generation.prompts import (
     QUESTION_GENERATION_TOOL,
     SYSTEM_PROMPT,
@@ -49,23 +48,12 @@ def run_question_generation_agent(
     target_question_count: int,
 ) -> list[dict] | None:
     try:
-        client = anthropic.Anthropic()
-        response = client.messages.create(
-            model=_MODEL,
-            max_tokens=_MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            tools=[QUESTION_GENERATION_TOOL],
-            tool_choice={"type": "tool", "name": "generate_question_set"},
-            messages=[{
-                "role": "user",
-                "content": _build_user_message(
-                    job_profile, candidate_profile, category_weightage,
-                    difficulty_level, risk_flags, target_question_count,
-                ),
-            }],
+        user_message = _build_user_message(
+            job_profile, candidate_profile, category_weightage,
+            difficulty_level, risk_flags, target_question_count,
         )
-        tool_block = next(b for b in response.content if b.type == "tool_use")
-        return list(tool_block.input["questions"])
+        result = call_tool(SYSTEM_PROMPT, QUESTION_GENERATION_TOOL, user_message, max_tokens=_MAX_TOKENS)
+        return list(result["questions"])
     except Exception:
         logger.exception("Question generation agent failed — returning None")
         return None

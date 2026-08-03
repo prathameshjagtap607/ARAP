@@ -111,8 +111,7 @@ def test_synthesize_recommendation_happy_path():
 
         db = _make_db(session_obj, report_obj, job_obj, behavior_obj, candidate_obj)
 
-        with patch("anthropic.Anthropic") as MockAnthropic:
-            MockAnthropic.return_value.messages.create.return_value = _fake_llm_response(_TOOL_OUTPUT)
+        with patch("agents.recommendation.agent.call_tool", return_value=dict(_TOOL_OUTPUT)):
             synthesize_recommendation(session_id=_SESSION_ID, db_factory=lambda: db)
 
     assert report_obj.salary_band == "L4 / Senior"
@@ -155,8 +154,7 @@ def test_llm_failure_is_nonfatal():
 
         db = _make_db(session_obj, report_obj, job_obj, candidate_obj=candidate_obj)
 
-        with patch("anthropic.Anthropic") as MockAnthropic:
-            MockAnthropic.return_value.messages.create.side_effect = RuntimeError("API down")
+        with patch("agents.recommendation.agent.call_tool", side_effect=RuntimeError("API down")):
             synthesize_recommendation(session_id=_SESSION_ID, db_factory=lambda: db)
 
     # salary_band unchanged (rollback was called, not commit)

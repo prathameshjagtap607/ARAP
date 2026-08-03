@@ -1,7 +1,6 @@
 import logging
 
-import anthropic
-
+from agents.common.groq_client import call_tool
 from agents.evaluation.prompts import SYSTEM_PROMPT, build_evaluation_tool
 
 logger = logging.getLogger(__name__)
@@ -49,18 +48,9 @@ def score_answer(
     ])
 
     try:
-        client = anthropic.Anthropic()
         tool = build_evaluation_tool(target_competencies)
-        response = client.messages.create(
-            model=_MODEL,
-            max_tokens=_MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            tools=[tool],
-            tool_choice={"type": "tool", "name": "evaluate_answer"},
-            messages=[{"role": "user", "content": user_message}],
-        )
-        tool_block = next(b for b in response.content if b.type == "tool_use")
-        return {"competency_scores": list(tool_block.input["competency_scores"])}
+        result = call_tool(SYSTEM_PROMPT, tool, user_message, max_tokens=_MAX_TOKENS)
+        return {"competency_scores": list(result["competency_scores"])}
     except Exception:
         logger.exception("Evaluation agent failed for question — returning error sentinel")
         return {"error": "evaluation_failed"}

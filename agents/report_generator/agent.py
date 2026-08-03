@@ -3,9 +3,9 @@ import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-import anthropic
 from sqlalchemy.orm import Session
 
+from agents.common.groq_client import call_tool
 from agents.report_generator.prompts import (
     NARRATIVE_SYSTEM_PROMPT,
     NARRATIVE_TOOL,
@@ -146,19 +146,8 @@ def generate_full_report(
             answer_excerpts or "No answers available.",
         ])
 
-        client = anthropic.Anthropic()
-
         # Call 1 — narrative sections
-        narrative_resp = client.messages.create(
-            model=_MODEL,
-            max_tokens=_MAX_TOKENS,
-            system=NARRATIVE_SYSTEM_PROMPT,
-            tools=[NARRATIVE_TOOL],
-            tool_choice={"type": "tool", "name": "generate_report_narrative"},
-            messages=[{"role": "user", "content": narrative_input}],
-        )
-        narrative_block = next(b for b in narrative_resp.content if b.type == "tool_use")
-        narrative = dict(narrative_block.input)
+        narrative = call_tool(NARRATIVE_SYSTEM_PROMPT, NARRATIVE_TOOL, narrative_input, max_tokens=_MAX_TOKENS)
 
         # Call 2 — structured sections
         structured_input = "\n".join([
@@ -173,16 +162,7 @@ def generate_full_report(
             + ", ".join(report.suggested_ceo_questions or []),
             "Training needs from recommendation: " + ", ".join(report.training_needs or []),
         ])
-        structured_resp = client.messages.create(
-            model=_MODEL,
-            max_tokens=_MAX_TOKENS,
-            system=STRUCTURED_SYSTEM_PROMPT,
-            tools=[STRUCTURED_TOOL],
-            tool_choice={"type": "tool", "name": "generate_report_structured"},
-            messages=[{"role": "user", "content": structured_input}],
-        )
-        structured_block = next(b for b in structured_resp.content if b.type == "tool_use")
-        structured = dict(structured_block.input)
+        structured = call_tool(STRUCTURED_SYSTEM_PROMPT, STRUCTURED_TOOL, structured_input, max_tokens=_MAX_TOKENS)
 
         full_report = {
             "meta": {

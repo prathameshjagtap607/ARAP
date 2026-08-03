@@ -27,15 +27,6 @@ def _make_profile(skill_matrix=None, experience_matrix=None):
     return p
 
 
-def _make_tool_response(discrepancies):
-    block = MagicMock()
-    block.type = "tool_use"
-    block.input = {"discrepancies": discrepancies}
-    resp = MagicMock()
-    resp.content = [block]
-    return resp
-
-
 # Case 1: all claims present in resume → no flags
 def test_all_claims_present_no_flag():
     with patch.dict(sys.modules, _FAKE_ORM):
@@ -44,16 +35,15 @@ def test_all_claims_present_no_flag():
         questions = [_make_q(1, "I used Python and Go extensively at Acme Corp.")]
         profile = _make_profile()
 
-        with patch("agents.integrity.checks.resume_consistency.anthropic.Anthropic") as mock_a:
-            mock_a.return_value.messages.create.return_value = _make_tool_response([
-                {
-                    "claim": "Used Python",
-                    "present_in_resume": True,
-                    "conflict_type": "skill_absent",
-                    "evidence": "Python listed in skill_matrix.",
-                    "answer_sequence_no": 1,
-                }
-            ])
+        with patch("agents.integrity.checks.resume_consistency.call_tool", return_value={"discrepancies": [
+            {
+                "claim": "Used Python",
+                "present_in_resume": True,
+                "conflict_type": "skill_absent",
+                "evidence": "Python listed in skill_matrix.",
+                "answer_sequence_no": 1,
+            }
+        ]}):
             result = check_resume_consistency(questions, profile)
 
     assert result == []
@@ -67,16 +57,15 @@ def test_skill_absent_flag_medium():
         questions = [_make_q(1, "I have 5 years of Rust experience.")]
         profile = _make_profile()  # Rust not in skill_matrix
 
-        with patch("agents.integrity.checks.resume_consistency.anthropic.Anthropic") as mock_a:
-            mock_a.return_value.messages.create.return_value = _make_tool_response([
-                {
-                    "claim": "5 years of Rust",
-                    "present_in_resume": False,
-                    "conflict_type": "skill_absent",
-                    "evidence": "Rust not found in skill_matrix.",
-                    "answer_sequence_no": 1,
-                }
-            ])
+        with patch("agents.integrity.checks.resume_consistency.call_tool", return_value={"discrepancies": [
+            {
+                "claim": "5 years of Rust",
+                "present_in_resume": False,
+                "conflict_type": "skill_absent",
+                "evidence": "Rust not found in skill_matrix.",
+                "answer_sequence_no": 1,
+            }
+        ]}):
             result = check_resume_consistency(questions, profile)
 
     assert len(result) == 1
@@ -93,16 +82,15 @@ def test_timeline_conflict_flag_high():
         questions = [_make_q(2, "I led the team at Acme for 7 years starting in 2010.")]
         profile = _make_profile()
 
-        with patch("agents.integrity.checks.resume_consistency.anthropic.Anthropic") as mock_a:
-            mock_a.return_value.messages.create.return_value = _make_tool_response([
-                {
-                    "claim": "7 years at Acme from 2010",
-                    "present_in_resume": False,
-                    "conflict_type": "timeline_conflict",
-                    "evidence": "Resume shows 3 years at Acme Corp.",
-                    "answer_sequence_no": 2,
-                }
-            ])
+        with patch("agents.integrity.checks.resume_consistency.call_tool", return_value={"discrepancies": [
+            {
+                "claim": "7 years at Acme from 2010",
+                "present_in_resume": False,
+                "conflict_type": "timeline_conflict",
+                "evidence": "Resume shows 3 years at Acme Corp.",
+                "answer_sequence_no": 2,
+            }
+        ]}):
             result = check_resume_consistency(questions, profile)
 
     assert len(result) == 1
@@ -117,8 +105,8 @@ def test_no_long_text_skips_llm():
         questions = [_make_q(1, "Yes.", fmt="short_text")]
         profile = _make_profile()
 
-        with patch("agents.integrity.checks.resume_consistency.anthropic.Anthropic") as mock_a:
+        with patch("agents.integrity.checks.resume_consistency.call_tool") as mock_call_tool:
             result = check_resume_consistency(questions, profile)
-            mock_a.return_value.messages.create.assert_not_called()
+            mock_call_tool.assert_not_called()
 
     assert result == []

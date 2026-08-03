@@ -1,8 +1,7 @@
 import json
 import logging
 
-import anthropic
-
+from agents.common.groq_client import call_tool
 from agents.candidate_profile.prompts import CANDIDATE_PROFILE_TOOL, SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -37,17 +36,12 @@ def _build_user_message(extraction: dict, job_profile: dict) -> str:
 
 def run_candidate_profile_agent(extraction: dict, job_profile: dict) -> dict | None:
     try:
-        client = anthropic.Anthropic()
-        response = client.messages.create(
-            model=_MODEL,
+        return call_tool(
+            SYSTEM_PROMPT,
+            CANDIDATE_PROFILE_TOOL,
+            _build_user_message(extraction, job_profile),
             max_tokens=_MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            tools=[CANDIDATE_PROFILE_TOOL],
-            tool_choice={"type": "tool", "name": "synthesize_candidate_profile"},
-            messages=[{"role": "user", "content": _build_user_message(extraction, job_profile)}],
         )
-        tool_block = next(b for b in response.content if b.type == "tool_use")
-        return dict(tool_block.input)
     except Exception:
         logger.exception("Candidate profile agent failed — returning None")
         return None

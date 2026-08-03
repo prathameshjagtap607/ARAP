@@ -84,6 +84,7 @@ services:
       DATABASE_URL: postgresql://arap:arap@db-dev:5432/arap_dev
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
       S3_ENDPOINT_URL: http://minio:9000
       S3_ACCESS_KEY: arap
       S3_SECRET_KEY: arap_secret

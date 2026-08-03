@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from agents.resume_analysis.agent import run_resume_analysis_agent
 
@@ -41,19 +41,8 @@ EXPECTED_FIELDS = {
 }
 
 
-def _mock_anthropic(tool_output: dict):
-    tool_block = MagicMock()
-    tool_block.type = "tool_use"
-    tool_block.input = tool_output
-    response = MagicMock()
-    response.content = [tool_block]
-    client = MagicMock()
-    client.messages.create.return_value = response
-    return client
-
-
 def test_agent_returns_extraction_shape():
-    with patch("agents.resume_analysis.agent.anthropic.Anthropic", return_value=_mock_anthropic(MOCK_TOOL_OUTPUT)):
+    with patch("agents.resume_analysis.agent.call_tool", return_value=dict(MOCK_TOOL_OUTPUT)):
         result = run_resume_analysis_agent(RAW_TEXT, JOB_PROFILE)
     assert result is not None
     assert EXPECTED_FIELDS == set(result.keys())
@@ -64,22 +53,20 @@ def test_agent_returns_extraction_shape():
 
 
 def test_agent_field_confidence_values_in_range():
-    with patch("agents.resume_analysis.agent.anthropic.Anthropic", return_value=_mock_anthropic(MOCK_TOOL_OUTPUT)):
+    with patch("agents.resume_analysis.agent.call_tool", return_value=dict(MOCK_TOOL_OUTPUT)):
         result = run_resume_analysis_agent(RAW_TEXT, JOB_PROFILE)
     for field, score in result["field_confidence"].items():
         assert 0.0 <= score <= 1.0, f"{field} confidence out of range: {score}"
 
 
 def test_agent_returns_none_on_api_error():
-    client = MagicMock()
-    client.messages.create.side_effect = Exception("API down")
-    with patch("agents.resume_analysis.agent.anthropic.Anthropic", return_value=client):
+    with patch("agents.resume_analysis.agent.call_tool", side_effect=Exception("API down")):
         result = run_resume_analysis_agent(RAW_TEXT, JOB_PROFILE)
     assert result is None
 
 
 def test_agent_accepts_none_job_profile():
-    with patch("agents.resume_analysis.agent.anthropic.Anthropic", return_value=_mock_anthropic(MOCK_TOOL_OUTPUT)):
+    with patch("agents.resume_analysis.agent.call_tool", return_value=dict(MOCK_TOOL_OUTPUT)):
         result = run_resume_analysis_agent(RAW_TEXT, None)
     assert result is not None
 

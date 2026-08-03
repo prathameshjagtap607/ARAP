@@ -1,7 +1,6 @@
 import json
 
-import anthropic
-
+from agents.common.groq_client import call_tool
 from agents.integrity.checks.ai_generated import FlagResult
 
 _MODEL = "claude-sonnet-4-6"
@@ -87,17 +86,8 @@ def check_resume_consistency(questions: list, candidate_profile) -> list[FlagRes
         f"RESUME EXPERIENCE MATRIX:\n{experience_matrix}"
     )
 
-    client = anthropic.Anthropic()
-    response = client.messages.create(
-        model=_MODEL,
-        max_tokens=_MAX_TOKENS,
-        system=_SYSTEM_PROMPT,
-        tools=[_TOOL],
-        tool_choice={"type": "tool", "name": "check_resume_consistency"},
-        messages=[{"role": "user", "content": user_content}],
-    )
-    tool_block = next(b for b in response.content if b.type == "tool_use")
-    discrepancies = tool_block.input.get("discrepancies", [])
+    result = call_tool(_SYSTEM_PROMPT, _TOOL, user_content, max_tokens=_MAX_TOKENS)
+    discrepancies = result.get("discrepancies", [])
 
     seq_to_id = {q.sequence_no: q.id for q in questions}
 

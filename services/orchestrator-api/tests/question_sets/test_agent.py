@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 FAKE_QUESTIONS = [
     {
@@ -31,20 +31,10 @@ CATEGORY_WEIGHTAGE = {"Technical": 7, "Conflict Resolution": 3}
 RISK_FLAGS = ["No direct people-management despite Manager title"]
 
 
-def _make_fake_response(questions):
-    tool_block = MagicMock()
-    tool_block.type = "tool_use"
-    tool_block.input = {"questions": questions}
-    response = MagicMock()
-    response.content = [tool_block]
-    return response
-
-
 def test_agent_returns_question_list():
     from agents.question_generation.agent import run_question_generation_agent
 
-    with patch("agents.question_generation.agent.anthropic.Anthropic") as MockClient:
-        MockClient.return_value.messages.create.return_value = _make_fake_response(FAKE_QUESTIONS)
+    with patch("agents.question_generation.agent.call_tool", return_value={"questions": FAKE_QUESTIONS}):
         result = run_question_generation_agent(
             JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
         )
@@ -57,8 +47,7 @@ def test_agent_returns_question_list():
 def test_agent_returns_none_on_exception():
     from agents.question_generation.agent import run_question_generation_agent
 
-    with patch("agents.question_generation.agent.anthropic.Anthropic") as MockClient:
-        MockClient.return_value.messages.create.side_effect = Exception("API error")
+    with patch("agents.question_generation.agent.call_tool", side_effect=Exception("API error")):
         result = run_question_generation_agent(
             JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
         )
@@ -69,8 +58,7 @@ def test_agent_returns_none_on_exception():
 def test_agent_result_contains_required_fields():
     from agents.question_generation.agent import run_question_generation_agent
 
-    with patch("agents.question_generation.agent.anthropic.Anthropic") as MockClient:
-        MockClient.return_value.messages.create.return_value = _make_fake_response(FAKE_QUESTIONS)
+    with patch("agents.question_generation.agent.call_tool", return_value={"questions": FAKE_QUESTIONS}):
         result = run_question_generation_agent(
             JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
         )
@@ -83,8 +71,7 @@ def test_agent_result_contains_required_fields():
 def test_agent_result_has_at_least_one_resume_reference():
     from agents.question_generation.agent import run_question_generation_agent
 
-    with patch("agents.question_generation.agent.anthropic.Anthropic") as MockClient:
-        MockClient.return_value.messages.create.return_value = _make_fake_response(FAKE_QUESTIONS)
+    with patch("agents.question_generation.agent.call_tool", return_value={"questions": FAKE_QUESTIONS}):
         result = run_question_generation_agent(
             JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
         )

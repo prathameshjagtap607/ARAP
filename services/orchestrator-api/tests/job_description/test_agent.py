@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 import src.models  # noqa: F401
@@ -80,23 +80,10 @@ _FAKE_PROFILE = {
 }
 
 
-def _make_mock_client():
-    tool_use_block = MagicMock()
-    tool_use_block.type = "tool_use"
-    tool_use_block.input = _FAKE_PROFILE
-
-    message = MagicMock()
-    message.content = [tool_use_block]
-
-    client = MagicMock()
-    client.messages.create.return_value = message
-    return client
-
-
 def test_agent_writes_job_profile(db, assessment):
     from agents.job_description.agent import run_job_description_agent
 
-    with patch("agents.job_description.agent.anthropic.Anthropic", return_value=_make_mock_client()):
+    with patch("agents.job_description.agent.call_tool", return_value=dict(_FAKE_PROFILE)):
         run_job_description_agent(db, assessment)
 
     db.refresh(assessment)
@@ -112,10 +99,7 @@ def test_agent_non_fatal_on_api_error(db, assessment):
     assessment.job_profile = None
     db.commit()
 
-    failing_client = MagicMock()
-    failing_client.messages.create.side_effect = Exception("API down")
-
-    with patch("agents.job_description.agent.anthropic.Anthropic", return_value=failing_client):
+    with patch("agents.job_description.agent.call_tool", side_effect=Exception("API down")):
         run_job_description_agent(db, assessment)
 
     db.refresh(assessment)

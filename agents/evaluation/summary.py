@@ -1,6 +1,6 @@
 import logging
 
-import anthropic
+from agents.common.groq_client import call_tool
 
 logger = logging.getLogger(__name__)
 
@@ -66,17 +66,7 @@ def generate_summary(job_title: str, rollup: dict, verdict: str, candidate_name:
     ])
 
     try:
-        client = anthropic.Anthropic()
-        response = client.messages.create(
-            model=_MODEL,
-            max_tokens=_MAX_TOKENS,
-            system=_SYSTEM_PROMPT,
-            tools=[_SUMMARY_TOOL],
-            tool_choice={"type": "tool", "name": "generate_report_summary"},
-            messages=[{"role": "user", "content": user_message}],
-        )
-        tool_block = next(b for b in response.content if b.type == "tool_use")
-        return dict(tool_block.input)
+        return call_tool(_SYSTEM_PROMPT, _SUMMARY_TOOL, user_message, max_tokens=_MAX_TOKENS)
     except Exception:
         logger.exception("Summary generation failed")
         return None

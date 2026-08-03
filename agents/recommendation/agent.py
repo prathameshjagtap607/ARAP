@@ -3,9 +3,9 @@ import math
 import uuid
 from collections.abc import Callable
 
-import anthropic
 from sqlalchemy.orm import Session
 
+from agents.common.groq_client import call_tool
 from agents.recommendation.prompts import (
     RECOMMENDATION_SYSTEM_PROMPT,
     RECOMMENDATION_TOOL,
@@ -100,17 +100,7 @@ def synthesize_recommendation(
             f"Behavior profile: {behavior_summary or 'Not available'}",
         ])
 
-        client = anthropic.Anthropic()
-        response = client.messages.create(
-            model=_MODEL,
-            max_tokens=_MAX_TOKENS,
-            system=RECOMMENDATION_SYSTEM_PROMPT,
-            tools=[RECOMMENDATION_TOOL],
-            tool_choice={"type": "tool", "name": "synthesize_recommendation"},
-            messages=[{"role": "user", "content": user_message}],
-        )
-        tool_block = next(b for b in response.content if b.type == "tool_use")
-        result = dict(tool_block.input)
+        result = call_tool(RECOMMENDATION_SYSTEM_PROMPT, RECOMMENDATION_TOOL, user_message, max_tokens=_MAX_TOKENS)
 
         report.salary_band = result["salary_band"]
         report.ai_confidence_score = confidence

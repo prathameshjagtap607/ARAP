@@ -159,9 +159,8 @@ def test_generate_full_report_writes_full_report():
                       candidate_profile_obj=candidate_profile_obj,
                       questions=questions, qset_obj=qset_obj)
 
-        responses = [_fake_llm_response(_NARRATIVE_OUTPUT), _fake_llm_response(_STRUCTURED_OUTPUT)]
-        with patch("anthropic.Anthropic") as MockAnthropic:
-            MockAnthropic.return_value.messages.create.side_effect = responses
+        responses = [dict(_NARRATIVE_OUTPUT), dict(_STRUCTURED_OUTPUT)]
+        with patch("agents.report_generator.agent.call_tool", side_effect=responses):
             generate_full_report(session_id=_SESSION_ID, db_factory=lambda: db)
 
     full = report_obj.full_report
@@ -187,9 +186,8 @@ def test_requires_human_review_when_low_confidence():
         db = _make_db(session_obj, report_obj, job_obj,
                       candidate_obj=candidate_obj, questions=[], qset_obj=qset_obj)
 
-        responses = [_fake_llm_response(_NARRATIVE_OUTPUT), _fake_llm_response(_STRUCTURED_OUTPUT)]
-        with patch("anthropic.Anthropic") as MockAnthropic:
-            MockAnthropic.return_value.messages.create.side_effect = responses
+        responses = [dict(_NARRATIVE_OUTPUT), dict(_STRUCTURED_OUTPUT)]
+        with patch("agents.report_generator.agent.call_tool", side_effect=responses):
             generate_full_report(session_id=_SESSION_ID, db_factory=lambda: db)
 
     assert report_obj.full_report["meta"]["requires_human_review"] is True
@@ -209,9 +207,8 @@ def test_final_verdict_is_not_bare_label():
         db = _make_db(session_obj, report_obj, job_obj,
                       candidate_obj=candidate_obj, questions=[], qset_obj=qset_obj)
 
-        responses = [_fake_llm_response(_NARRATIVE_OUTPUT), _fake_llm_response(_STRUCTURED_OUTPUT)]
-        with patch("anthropic.Anthropic") as MockAnthropic:
-            MockAnthropic.return_value.messages.create.side_effect = responses
+        responses = [dict(_NARRATIVE_OUTPUT), dict(_STRUCTURED_OUTPUT)]
+        with patch("agents.report_generator.agent.call_tool", side_effect=responses):
             generate_full_report(session_id=_SESSION_ID, db_factory=lambda: db)
 
     assert len(report_obj.full_report["final_verdict"]) > 20
@@ -249,8 +246,7 @@ def test_generate_full_report_llm_failure_nonfatal():
         db = _make_db(session_obj, report_obj, job_obj,
                       candidate_obj=candidate_obj, questions=[], qset_obj=qset_obj)
 
-        with patch("anthropic.Anthropic") as MockAnthropic:
-            MockAnthropic.return_value.messages.create.side_effect = RuntimeError("timeout")
+        with patch("agents.report_generator.agent.call_tool", side_effect=RuntimeError("timeout")):
             generate_full_report(session_id=_SESSION_ID, db_factory=lambda: db)
 
     # full_report not updated (still empty from make_report)
