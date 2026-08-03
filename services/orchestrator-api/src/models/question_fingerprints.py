@@ -29,7 +29,9 @@ class QuestionFingerprint(Base):
     org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orgs.id"), nullable=False)
     question_text: Mapped[str] = mapped_column(Text, nullable=False)
     question_embedding: Mapped[list] = mapped_column(Vector(EMBEDDING_DIM), nullable=False)
-    question_set_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("question_sets.id"))
+    question_set_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("question_sets.id", ondelete="SET NULL")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
