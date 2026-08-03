@@ -245,7 +245,7 @@ def generate_question_set(
         )
 
         question_obj = {
-            "question": q["question"],
+            "text": q["question"],
             "category": q["category"],
             "target_competencies": q.get("target_competencies", []),
             "difficulty": q["difficulty"],
@@ -309,7 +309,7 @@ def _build_response(qs: QuestionSet, sqs: list[SessionQuestion]) -> QuestionSetR
         QuestionItem(
             id=sq.id,
             sequence_no=sq.sequence_no,
-            question=sq.question.get("question", ""),
+            question=sq.question.get("text", ""),
             category=sq.category,
             target_competencies=list(sq.target_competencies),
             difficulty=sq.difficulty,
