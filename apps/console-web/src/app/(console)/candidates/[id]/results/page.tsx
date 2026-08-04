@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getSessionReport, type SessionReport } from '@/lib/api/sessions';
+import { getSessionReport, submitReviewerFeedback, type SessionReport } from '@/lib/api/sessions';
 
 export default function ResultsPage() {
   const { id } = useParams();
@@ -10,6 +10,11 @@ export default function ResultsPage() {
   const [report, setReport] = useState<SessionReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [decision, setDecision] = useState<'hire' | 'no_hire' | 'hold'>('hold');
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -25,6 +30,20 @@ export default function ResultsPage() {
 
     load();
   }, [id]);
+
+  const handleSubmitDecision = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const result = await submitReviewerFeedback(id as string, { final_decision: decision, comment });
+      setReport((prev) => (prev ? { ...prev, reviewer_override: result.reviewer_override as SessionReport['reviewer_override'] } : prev));
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to submit decision');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (loading) return <p className="text-center py-12">Loading results...</p>;
   if (error)
@@ -48,6 +67,7 @@ export default function ResultsPage() {
 
   const full = report.full_report || {};
   const isFullReportGenerated = full.executive_summary !== undefined;
+  const alreadySubmitted = submitted || report.reviewer_override != null;
   const overallPct =
     full.overall_rating !== undefined ? Math.round((full.overall_rating / 5) * 100) : null;
   const confidencePct =
@@ -175,6 +195,64 @@ export default function ResultsPage() {
               <p className="text-slate-700 text-sm leading-relaxed">{full.final_verdict}</p>
             </div>
           )}
+
+          {/* Reviewer Decision */}
+          <div className="rounded-lg border border-slate-200 bg-white p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-slate-900">Assessment Stage Decision</h2>
+            <p className="text-xs text-slate-500 -mt-2">
+              This only reflects the outcome of this AI assessment stage, not a final hiring decision.
+            </p>
+            {alreadySubmitted ? (
+              <p className="text-sm text-green-700 font-medium">
+                {report.reviewer_override
+                  ? `Decision submitted: ${report.reviewer_override.final_decision.replace('_', ' ').toUpperCase()}`
+                  : 'Decision submitted.'}
+              </p>
+            ) : (
+              <>
+                <div className="flex gap-3">
+                  {(
+                    [
+                      { value: 'hire', label: 'Proceed to Next Round' },
+                      { value: 'hold', label: 'Hold' },
+                      { value: 'no_hire', label: 'Reject at This Stage' },
+                    ] as const
+                  ).map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setDecision(option.value)}
+                      className={`px-4 py-2 rounded-lg border text-sm font-medium ${
+                        decision === option.value
+                          ? 'border-slate-900 bg-slate-900 text-white'
+                          : 'border-slate-300 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Comment (optional)"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  rows={3}
+                />
+                {submitError && (
+                  <p className="text-sm text-red-700">{submitError}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSubmitDecision}
+                  disabled={submitting}
+                  className="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {submitting ? 'Submitting...' : 'Submit Decision'}
+                </button>
+              </>
+            )}
+          </div>
         </>
       )}
     </div>

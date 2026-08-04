@@ -49,7 +49,9 @@ export async function fetchHRDashboardCounts(
       activeAssessments,
       candidatesInProgress: inProgressCandidates,
       awaitingReview: awaitingReviewReports.total_count || 0,
-      pendingDecisions: 0,
+      // Reports with a verdict but no reviewer_override yet — same condition
+      // the backend already uses for "awaiting_review" (see reports/service.py).
+      pendingDecisions: awaitingReviewReports.total_count || 0,
     };
   } catch (error) {
     console.error("[fetchHRDashboardCounts] Error:", error);

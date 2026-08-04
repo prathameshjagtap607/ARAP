@@ -54,6 +54,7 @@ def get_full_report(
         ai_confidence_score=float(report.ai_confidence_score) if report.ai_confidence_score is not None else None,
         salary_band=report.salary_band,
         full_report=report.full_report,
+        reviewer_override=report.reviewer_override,
         created_at=report.created_at,
     )
 
@@ -213,6 +214,16 @@ def submit_reviewer_feedback(
         invalidate_org_analytics(get_redis(), org_id)
     except Exception:
         pass  # cache invalidation is best-effort
+
+    try:
+        candidate = db.query(Candidate).filter_by(id=session.candidate_id).first()
+        job = db.query(JobAssessment).filter_by(id=session.job_assessment_id).first()
+        if candidate and job:
+            from src.modules.sessions.email import send_decision_email
+            send_decision_email(candidate.email, job.title, body.final_decision)
+    except Exception:
+        pass  # decision email is best-effort, never blocks the decision itself
+
     return ReviewerFeedbackResponse(reviewer_override=override)
 
 

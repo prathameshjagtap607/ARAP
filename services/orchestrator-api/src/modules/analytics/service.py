@@ -288,14 +288,25 @@ def get_skill_trends(
     from_date: datetime,
     to_date: datetime,
 ) -> SkillTrendsResponse:
+    # Computed live from completed sessions' competency_scores (no separate
+    # materialization job exists yet — snapshot table stays unused for now).
     sql = text("""
-        SELECT week_start, competency, avg_score, sample_count
-        FROM skill_trend_snapshots
-        WHERE org_id = :org_id
-          AND (:dept IS NULL OR department = :dept)
-          AND (:role IS NULL OR role_family = :role)
-          AND week_start BETWEEN :from_date AND :to_date
-        ORDER BY week_start, competency
+        SELECT
+            DATE_TRUNC('week', s.completed_at)::date AS week_start,
+            comp.key AS competency,
+            AVG(comp.value::numeric) AS avg_score,
+            COUNT(*) AS sample_count
+        FROM assessment_sessions s
+        JOIN hiring_reports r ON r.session_id = s.id
+        JOIN job_assessments j ON j.id = s.job_assessment_id,
+        LATERAL jsonb_each_text(COALESCE(r.score_rollup->'competency_scores', '{}'::jsonb)) AS comp(key, value)
+        WHERE s.org_id = :org_id
+          AND s.status = 'completed'
+          AND (:dept IS NULL OR j.department = :dept)
+          AND (:role IS NULL OR j.title = :role)
+          AND s.completed_at BETWEEN :from_date AND :to_date
+        GROUP BY 1, 2
+        ORDER BY 1, 2
     """)
 
     rows = db.execute(sql, {

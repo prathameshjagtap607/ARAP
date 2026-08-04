@@ -28,6 +28,7 @@ class FullReportResponse(BaseModel):
     ai_confidence_score: float | None
     salary_band: str | None
     full_report: dict
+    reviewer_override: dict | None
     created_at: datetime | None
 
     model_config = {"from_attributes": True}

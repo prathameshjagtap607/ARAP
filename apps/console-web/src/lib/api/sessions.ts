@@ -39,6 +39,12 @@ export interface FullReportBody {
   integrity_summary_prose?: string;
 }
 
+export interface ReviewerOverride {
+  final_decision: 'hire' | 'no_hire' | 'hold';
+  comment: string;
+  submitted_at: string;
+}
+
 export interface SessionReport {
   session_id: string;
   report_ready: boolean;
@@ -47,6 +53,7 @@ export interface SessionReport {
   ai_confidence_score: number | null;
   salary_band: string | null;
   full_report: FullReportBody;
+  reviewer_override: ReviewerOverride | null;
   created_at: string | null;
 }
 
@@ -71,4 +78,23 @@ export async function sendSessionInvite(
 
 export async function deleteSession(sessionId: string): Promise<void> {
   await apiFetch(`/sessions/${sessionId}`, { method: 'DELETE' });
+}
+
+export interface ReviewerFeedbackInput {
+  final_decision: 'hire' | 'no_hire' | 'hold';
+  comment: string;
+}
+
+export interface ReviewerFeedbackResult {
+  reviewer_override: Record<string, unknown>;
+}
+
+export async function submitReviewerFeedback(
+  sessionId: string,
+  body: ReviewerFeedbackInput
+): Promise<ReviewerFeedbackResult> {
+  return apiFetch(`/reports/${sessionId}/feedback`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
 }
