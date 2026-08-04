@@ -12,7 +12,11 @@ SYSTEM_PROMPT = (
     "executive) is a DIFFERENT field from each question's own 'difficulty' "
     "value. Each question's 'difficulty' MUST be exactly one of: easy, medium, "
     "hard, expert — never reuse the job difficulty_level word (e.g. never "
-    "output 'mid'; use 'medium' instead)."
+    "output 'mid'; use 'medium' instead). "
+    "target_competencies MUST only contain values from the fixed competency "
+    "vocabulary provided in the tool schema (e.g. 'technical', 'problem_solving', "
+    "'leadership', 'communication') — never invent free-form skill names like "
+    "'Java' or 'CSS'."
 )
 
 # Maps PRD category names to lowercase competency key aliases for weight lookup.
@@ -41,6 +45,7 @@ CATEGORY_TO_COMPETENCY: dict[str, str] = {
 }
 
 VALID_CATEGORIES = list(CATEGORY_TO_COMPETENCY.keys())
+VALID_COMPETENCIES = sorted(set(CATEGORY_TO_COMPETENCY.values()))
 
 QUESTION_GENERATION_TOOL: dict = {
     "name": "generate_question_set",
@@ -57,7 +62,7 @@ QUESTION_GENERATION_TOOL: dict = {
                         "category": {"type": "string", "enum": VALID_CATEGORIES},
                         "target_competencies": {
                             "type": "array",
-                            "items": {"type": "string"},
+                            "items": {"type": "string", "enum": VALID_COMPETENCIES},
                         },
                         "difficulty": {
                             "type": "string",

@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from agents.common.groq_client import call_tool
+from agents.evaluation.pipeline import _resolve_answer_text
 from agents.report_generator.prompts import (
     NARRATIVE_SYSTEM_PROMPT,
     NARRATIVE_TOOL,
@@ -116,7 +117,7 @@ def generate_full_report(
 
         answer_excerpts = "\n".join(
             f"Q{q.sequence_no} [{q.category}]: {q.question.get('text', '')}\n"
-            f"A: {q.answer_text}\n"
+            f"A: {_resolve_answer_text(q)}\n"
             f"Evaluation note: {(q.evaluation or {}).get('explanation', '')}"
             for q in questions
         )

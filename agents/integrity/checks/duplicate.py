@@ -2,6 +2,7 @@
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from agents.evaluation.pipeline import _resolve_answer_text
 from agents.integrity.checks.ai_generated import FlagResult
 
 _HIGH_THRESHOLD = 0.92
@@ -13,7 +14,7 @@ def check_duplicate(questions: list, session, db: Session) -> list[FlagResult]:
     if not answered:
         return []
 
-    embeddings = _embed_answers([q.answer_text for q in answered])
+    embeddings = _embed_answers([_resolve_answer_text(q) for q in answered])
     flags: list[FlagResult] = []
 
     for q, embedding in zip(answered, embeddings):
@@ -66,7 +67,7 @@ def ingest_corpus(
         return
 
     if embeddings is None:
-        embeddings = _embed_answers([q.answer_text for q in answered])
+        embeddings = _embed_answers([_resolve_answer_text(q) for q in answered])
 
     for q, embedding in zip(answered, embeddings):
         db.add(

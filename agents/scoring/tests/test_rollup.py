@@ -21,8 +21,8 @@ def test_composites_list():
 
 
 def test_competency_to_composite_coverage():
-    assert len(COMPETENCY_TO_COMPOSITE) == 20, (
-        f"Expected 20 competency entries, got {len(COMPETENCY_TO_COMPOSITE)}"
+    assert len(COMPETENCY_TO_COMPOSITE) == 21, (
+        f"Expected 21 competency entries, got {len(COMPETENCY_TO_COMPOSITE)}"
     )
     for comp, cat in COMPETENCY_TO_COMPOSITE.items():
         assert cat in COMPOSITES, f"{comp} maps to unknown composite {cat}"
