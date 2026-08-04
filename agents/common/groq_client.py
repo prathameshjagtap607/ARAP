@@ -3,7 +3,6 @@ import logging
 
 import groq
 from groq import Groq
-
 from src.config import settings
 
 logger = logging.getLogger(__name__)

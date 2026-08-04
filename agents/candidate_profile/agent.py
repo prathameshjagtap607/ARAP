@@ -1,8 +1,8 @@
 import json
 import logging
 
-from agents.common.groq_client import call_tool
 from agents.candidate_profile.prompts import CANDIDATE_PROFILE_TOOL, SYSTEM_PROMPT
+from agents.common.groq_client import call_tool
 
 logger = logging.getLogger(__name__)
 

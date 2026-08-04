@@ -4,13 +4,13 @@ from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
-from agents.common.groq_client import call_tool
 from agents.behavior_analysis.prompts import (
     EXTRACT_SYSTEM_PROMPT,
     EXTRACT_TOOL,
     SYNTHESIZE_SYSTEM_PROMPT,
     build_synthesize_tool,
 )
+from agents.common.groq_client import call_tool
 
 logger = logging.getLogger(__name__)
 

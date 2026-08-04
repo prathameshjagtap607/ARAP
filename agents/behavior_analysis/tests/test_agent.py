@@ -115,12 +115,15 @@ def test_infer_behavior_happy_path():
         obj = SimpleNamespace(**kwargs)
         return obj
 
-    with patch("agents.behavior_analysis.agent.call_tool", side_effect=fake_call_tool):
-        with patch("agents.behavior_analysis.agent.Session"), patch("src.models.behavior_profiles.BehaviorProfile", side_effect=mock_behavior_profile_class):
-            infer_behavior(
-                session_id=_SESSION_ID,
-                db_factory=lambda: db,
-            )
+    with (
+        patch("agents.behavior_analysis.agent.call_tool", side_effect=fake_call_tool),
+        patch("agents.behavior_analysis.agent.Session"),
+        patch("src.models.behavior_profiles.BehaviorProfile", side_effect=mock_behavior_profile_class),
+    ):
+        infer_behavior(
+            session_id=_SESSION_ID,
+            db_factory=lambda: db,
+        )
 
     assert len(profiles_stored) == 1
     profile = profiles_stored[0]
