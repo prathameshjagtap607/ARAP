@@ -85,6 +85,7 @@ jobs:
           JWT_SECRET_KEY: ci-test-jwt-secret-key-not-for-production
           ANTHROPIC_API_KEY: ci-test-anthropic-key-not-real
           OPENAI_API_KEY: ci-test-openai-key-not-real
+          GROQ_API_KEY: ci-test-groq-key-not-real
         run: pytest -v
 
   build:
