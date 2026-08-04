@@ -16,7 +16,15 @@ SYSTEM_PROMPT = (
     "target_competencies MUST only contain values from the fixed competency "
     "vocabulary provided in the tool schema (e.g. 'technical', 'problem_solving', "
     "'leadership', 'communication') — never invent free-form skill names like "
-    "'Java' or 'CSS'."
+    "'Java' or 'CSS'. "
+    "For the 'DISC' category specifically: write a workplace scenario, then give "
+    "3-4 options where each option is phrased in a distinctly different DISC "
+    "style — Dominance (direct, results-focused, decisive), Influence "
+    "(persuasive, enthusiastic, people-focused), Steadiness (patient, "
+    "cooperative, methodical), Conscientiousness (analytical, precise, "
+    "rule-following). Do not label the options with D/I/S/C — only phrase them "
+    "so each one reflects one style; the behavior-analysis step infers the "
+    "candidate's style from which option they pick."
 )
 
 # Maps PRD category names to lowercase competency key aliases for weight lookup.
@@ -42,6 +50,7 @@ CATEGORY_TO_COMPETENCY: dict[str, str] = {
     "Financial": "financial",
     "Presentation": "presentation",
     "Customer Handling": "customer_handling",
+    "DISC": "disc",
 }
 
 VALID_CATEGORIES = list(CATEGORY_TO_COMPETENCY.keys())

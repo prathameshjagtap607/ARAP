@@ -201,6 +201,7 @@ def generate_full_report(
             "suggested_ceo_questions": structured["suggested_ceo_questions"],
             "integrity_summary": integrity_summary,
             "integrity_summary_prose": narrative["integrity_summary_prose"],
+            "disc_profile": behavior.disc_style if behavior and behavior.disc_style else None,
             "final_verdict": narrative["final_verdict"],
         }
 

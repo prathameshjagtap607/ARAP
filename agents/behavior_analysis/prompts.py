@@ -10,6 +10,11 @@ EXTRACT_SYSTEM_PROMPT = (
     "Identify observable patterns in how the candidate communicates and reasons — "
     "language choice, decision framing, response structure, stress responses, "
     "conflict and teamwork patterns, and cross-answer themes. "
+    "Questions tagged [DISC] present a scenario with options each phrased in a "
+    "distinct DISC style (Dominance/Influence/Steadiness/Conscientiousness) — "
+    "give the option the candidate picked on these questions the most weight "
+    "when describing decision_framing and cross_answer_themes, since they are "
+    "the strongest direct signal for DISC classification. "
     "Base every observation strictly on the text of the answers. "
     + _SECTION_15_EXCLUSION
 )

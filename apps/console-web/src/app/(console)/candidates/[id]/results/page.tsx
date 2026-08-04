@@ -153,6 +153,30 @@ export default function ResultsPage() {
             </div>
           )}
 
+          {/* DISC Profile */}
+          {full.disc_profile && (
+            <div className="rounded-lg border border-slate-200 bg-white p-6">
+              <h2 className="text-lg font-semibold text-slate-900 mb-3">DISC Profile</h2>
+              <div className="flex gap-6 mb-3">
+                <div>
+                  <p className="text-xs text-slate-600 mb-1">Primary Style</p>
+                  <p className="text-2xl font-bold text-slate-900">{full.disc_profile.primary}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-600 mb-1">Secondary Style</p>
+                  <p className="text-2xl font-bold text-slate-900">{full.disc_profile.secondary}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-600 mb-1">Confidence</p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {Math.round(full.disc_profile.confidence * 100)}%
+                  </p>
+                </div>
+              </div>
+              <p className="text-slate-700 text-sm leading-relaxed">{full.disc_profile.rationale}</p>
+            </div>
+          )}
+
           {/* Potential Risks */}
           {full.potential_risks && (
             <div className="rounded-lg border border-slate-200 bg-white p-6">

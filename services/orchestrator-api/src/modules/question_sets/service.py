@@ -28,6 +28,39 @@ def _options_list_to_dict(options: list[str]) -> dict[str, str]:
     return {_OPTION_LETTERS[i]: opt for i, opt in enumerate(options)}
 
 
+def _resolve_competency_names(db: Session, org_id: uuid.UUID, competency_weightage: dict) -> dict:
+    """job_assessments.competency_weightage is keyed by competency_library UUIDs
+    (set by the assessment form), but category matching in _derive_category_counts
+    works on names like "leadership". Resolve UUID keys to their library names
+    so weightage is actually respected instead of silently falling back to an
+    equal split across every category.
+    """
+    from src.models.competency_library import CompetencyLibrary
+
+    resolved: dict[str, float] = {}
+    id_keys: list[str] = []
+    for key, weight in competency_weightage.items():
+        try:
+            uuid.UUID(str(key))
+            id_keys.append(str(key))
+        except (ValueError, AttributeError, TypeError):
+            resolved[key] = weight  # not a UUID — already a plain name, keep as-is
+
+    if id_keys:
+        rows = (
+            db.query(CompetencyLibrary)
+            .filter(CompetencyLibrary.org_id == org_id, CompetencyLibrary.id.in_(id_keys))
+            .all()
+        )
+        id_to_name = {str(r.id): r.name for r in rows}
+        for key in id_keys:
+            name = id_to_name.get(key)
+            if name:
+                resolved[name] = competency_weightage[key]
+
+    return resolved
+
+
 def _derive_category_counts(competency_weightage: dict, target: int) -> dict[str, int]:
     lower_weight: dict[str, float] = {k.lower().replace(" ", "_"): v for k, v in competency_weightage.items()}
 
@@ -62,6 +95,18 @@ def _derive_category_counts(competency_weightage: dict, target: int) -> dict[str
             n = round(category_weights[cat] / total_weight * target)
             counts[cat] = max(n, 0)
             allocated += counts[cat]
+
+    # Selecting Leadership implicitly also asks for DISC-style behavioral
+    # questions (used to classify D/I/S/C) — carve out a share of Leadership's
+    # allocation for the DISC category rather than requiring it to be added
+    # as a separate competency.
+    if counts.get("Leadership", 0) > 0:
+        leadership_count = counts["Leadership"]
+        disc_count = max(1, round(leadership_count * 0.4))
+        disc_count = min(disc_count, leadership_count)
+        counts["Leadership"] = leadership_count - disc_count
+        counts["DISC"] = counts.get("DISC", 0) + disc_count
+
     return {k: v for k, v in counts.items() if v > 0}
 
 
@@ -165,7 +210,8 @@ def generate_question_set(
         raise ValueError("Candidate profile record missing — run M3 first")
 
     difficulty_level = job.job_profile.get("difficulty_level", "mid")
-    category_counts = _derive_category_counts(job.competency_weightage or {}, target)
+    resolved_weightage = _resolve_competency_names(db, org_id, job.competency_weightage or {})
+    category_counts = _derive_category_counts(resolved_weightage, target)
     risk_flags = profile.risk_flags or []
 
     candidate_profile_dict = {

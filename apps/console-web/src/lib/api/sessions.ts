@@ -18,6 +18,13 @@ export interface CompositeScore {
   vs_org_bar: string;
 }
 
+export interface DiscProfile {
+  primary: string;
+  secondary: string;
+  confidence: number;
+  rationale: string;
+}
+
 export interface FullReportBody {
   executive_summary?: string;
   candidate_overview?: string;
@@ -37,6 +44,7 @@ export interface FullReportBody {
   recommended_next_round?: string;
   final_verdict?: string;
   integrity_summary_prose?: string;
+  disc_profile?: DiscProfile | null;
 }
 
 export interface ReviewerOverride {

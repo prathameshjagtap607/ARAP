@@ -113,6 +113,16 @@
 <h2>Promotion Potential</h2>
 <div class="section"><p>{{ report.promotion_potential }}</p></div>
 
+{% if report.disc_profile %}
+<h2>DISC Profile</h2>
+<div class="section">
+  <p><strong>Primary style:</strong> {{ report.disc_profile.primary }}
+  &nbsp;&nbsp;<strong>Secondary style:</strong> {{ report.disc_profile.secondary }}
+  &nbsp;&nbsp;<strong>Confidence:</strong> {{ (report.disc_profile.confidence * 100) | round | int }}%</p>
+  <p>{{ report.disc_profile.rationale }}</p>
+</div>
+{% endif %}
+
 <h2>Integrity Summary</h2>
 <div class="section"><p>{{ report.integrity_summary_prose }}</p></div>
 

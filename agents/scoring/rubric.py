@@ -29,6 +29,7 @@ COMPETENCY_TO_COMPOSITE: dict[str, str] = {
     "behavioral": "Behavior",
     "case_study": "Technical",
     "scenario": "Technical",
+    "disc": "Behavior",
 }
 
 # Ordered high → low; first threshold the overall score meets wins.

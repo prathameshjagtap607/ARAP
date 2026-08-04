@@ -7,6 +7,57 @@ from agents.question_generation.prompts import PROMPT_VERSION
 from tests.question_sets.conftest import FAKE_EMBEDDINGS, FAKE_QUESTIONS
 
 
+def test_derive_category_counts_carves_disc_out_of_leadership():
+    from src.modules.question_sets.service import _derive_category_counts
+
+    counts = _derive_category_counts({"leadership": 100.0}, target=10)
+
+    assert counts.get("DISC", 0) > 0
+    assert counts.get("Leadership", 0) + counts["DISC"] == 10
+
+
+def test_derive_category_counts_no_disc_without_leadership():
+    from src.modules.question_sets.service import _derive_category_counts
+
+    counts = _derive_category_counts({"technical": 100.0}, target=10)
+
+    assert "DISC" not in counts
+    assert counts.get("Technical", 0) == 10
+
+
+def test_resolve_competency_names_maps_uuid_keys_to_names(db, seed):
+    from src.models.competency_library import CompetencyLibrary
+    from src.modules.question_sets.service import _resolve_competency_names
+
+    org = seed["job"].org_id
+    admin_id = seed["job"].created_by
+    entry = CompetencyLibrary(org_id=org, name="Leadership", created_by=admin_id)
+    db.add(entry)
+    db.flush()
+
+    resolved = _resolve_competency_names(db, org, {str(entry.id): 100.0})
+
+    assert resolved == {"Leadership": 100.0}
+
+
+def test_resolve_competency_names_passes_through_plain_names(db, seed):
+    from src.modules.question_sets.service import _resolve_competency_names
+
+    org = seed["job"].org_id
+    resolved = _resolve_competency_names(db, org, {"technical": 70.0, "leadership": 30.0})
+
+    assert resolved == {"technical": 70.0, "leadership": 30.0}
+
+
+def test_resolve_competency_names_drops_unknown_uuid(db, seed):
+    from src.modules.question_sets.service import _resolve_competency_names
+
+    org = seed["job"].org_id
+    resolved = _resolve_competency_names(db, org, {str(uuid.uuid4()): 100.0})
+
+    assert resolved == {}
+
+
 def test_generate_persists_question_set(db, seed, mock_agent, mock_embed):
     from src.modules.question_sets.service import generate_question_set
 
