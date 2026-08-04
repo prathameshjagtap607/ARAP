@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from tests.job_assessments.conftest import JA_BODY
@@ -103,10 +105,11 @@ async def test_sessions_invite_emails_once_questions_are_locked(
     db.add(qset)
     db.commit()
 
-    send_resp = await async_client.post(
-        f"/sessions/{session_id}/invite",
-        headers={"Authorization": f"Bearer {user_token}"},
-    )
+    with patch("src.modules.sessions.service.send_invite_email", return_value=True):
+        send_resp = await async_client.post(
+            f"/sessions/{session_id}/invite",
+            headers={"Authorization": f"Bearer {user_token}"},
+        )
     assert send_resp.status_code == 200
     assert send_resp.json()["email_sent"] is True
 

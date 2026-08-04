@@ -35,8 +35,19 @@ export default function ResultsPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const result = await submitReviewerFeedback(id as string, { final_decision: decision, comment });
-      setReport((prev) => (prev ? { ...prev, reviewer_override: result.reviewer_override as SessionReport['reviewer_override'] } : prev));
+      await submitReviewerFeedback(id as string, { final_decision: decision, comment });
+      setReport((prev) =>
+        prev
+          ? {
+              ...prev,
+              reviewer_override: {
+                final_decision: decision,
+                comment,
+                submitted_at: new Date().toISOString(),
+              },
+            }
+          : prev
+      );
       setSubmitted(true);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Failed to submit decision');
