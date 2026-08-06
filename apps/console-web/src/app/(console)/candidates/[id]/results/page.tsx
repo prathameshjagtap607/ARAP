@@ -65,24 +65,11 @@ export default function ResultsPage() {
     );
   if (!report) return <p className="text-center py-12">Results not found</p>;
 
-  const getVerdictColor = (verdict: string | null) => {
-    const colors: Record<string, string> = {
-      strong_hire: 'text-green-700 bg-green-50 border-green-200',
-      hire: 'text-green-600 bg-green-50 border-green-200',
-      consider: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-      borderline: 'text-orange-600 bg-orange-50 border-orange-200',
-      reject: 'text-red-700 bg-red-50 border-red-200',
-    };
-    return (verdict && colors[verdict]) || 'text-gray-700 bg-gray-50 border-gray-200';
-  };
-
   const full = report.full_report || {};
   const isFullReportGenerated = full.executive_summary !== undefined;
   const alreadySubmitted = submitted || report.reviewer_override != null;
-  const overallPct =
-    full.overall_rating !== undefined ? Math.round((full.overall_rating / 5) * 100) : null;
-  const confidencePct =
-    report.ai_confidence_score !== null ? Math.round(report.ai_confidence_score) : null;
+  const discPct =
+    full.disc_profile?.confidence != null ? Math.round(full.disc_profile.confidence * 100) : null;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -96,28 +83,31 @@ export default function ResultsPage() {
         </button>
       </div>
 
-      {/* Overall Score Card */}
+      {/* DISC Profile Card */}
       <div className="rounded-lg border border-slate-200 bg-white p-6 space-y-4">
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-xs text-slate-600 mb-1">Overall Score</p>
+            <p className="text-xs text-slate-600 mb-1">Primary DISC Style</p>
             <p className="text-3xl font-bold text-slate-900">
-              {overallPct !== null ? `${overallPct}%` : '—'}
+              {full.disc_profile?.primary || '—'}
             </p>
           </div>
           <div>
-            <p className="text-xs text-slate-600 mb-1">AI Confidence</p>
+            <p className="text-xs text-slate-600 mb-1">Secondary DISC Style</p>
             <p className="text-3xl font-bold text-slate-900">
-              {confidencePct !== null ? `${confidencePct}%` : '—'}
+              {full.disc_profile?.secondary || '—'}
             </p>
           </div>
           <div>
-            <p className="text-xs text-slate-600 mb-1">Verdict</p>
-            <div className={`rounded-lg border px-3 py-2 text-sm font-medium ${getVerdictColor(report.verdict)}`}>
-              {report.verdict ? report.verdict.replace(/_/g, ' ').toUpperCase() : '—'}
-            </div>
+            <p className="text-xs text-slate-600 mb-1">Confidence</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {discPct !== null ? `${discPct}%` : '—'}
+            </p>
           </div>
         </div>
+        {full.disc_profile?.rationale && (
+          <p className="text-slate-700 text-sm leading-relaxed">{full.disc_profile.rationale}</p>
+        )}
       </div>
 
       {!isFullReportGenerated ? (
@@ -161,30 +151,6 @@ export default function ResultsPage() {
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
-
-          {/* DISC Profile */}
-          {full.disc_profile && (
-            <div className="rounded-lg border border-slate-200 bg-white p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-3">DISC Profile</h2>
-              <div className="flex gap-6 mb-3">
-                <div>
-                  <p className="text-xs text-slate-600 mb-1">Primary Style</p>
-                  <p className="text-2xl font-bold text-slate-900">{full.disc_profile.primary}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-600 mb-1">Secondary Style</p>
-                  <p className="text-2xl font-bold text-slate-900">{full.disc_profile.secondary}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-600 mb-1">Confidence</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {Math.round(full.disc_profile.confidence * 100)}%
-                  </p>
-                </div>
-              </div>
-              <p className="text-slate-700 text-sm leading-relaxed">{full.disc_profile.rationale}</p>
             </div>
           )}
 

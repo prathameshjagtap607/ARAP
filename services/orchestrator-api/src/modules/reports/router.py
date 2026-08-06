@@ -24,6 +24,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 @router.get("", response_model=ReportListResponse)
 def list_reports(
     verdict: str | None = None,
+    disc_category: str | None = None,
     status: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
@@ -33,7 +34,7 @@ def list_reports(
     db: Session = Depends(get_db),
 ):
     return service.list_reports(
-        db, claims.org_id, verdict, status, date_from, date_to, limit, offset
+        db, claims.org_id, verdict, disc_category, status, date_from, date_to, limit, offset
     )
 
 

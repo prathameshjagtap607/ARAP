@@ -8,20 +8,18 @@ import { fetchReportsList, downloadReportPdf } from '@/lib/api/dashboards';
 import type { Filter } from '@/lib/types/dashboard';
 import type { ReportsDashboardData } from '@/lib/types/dashboard';
 
-const verdictBadgeMap: Record<string, { color: 'green' | 'blue' | 'amber' | 'orange' | 'red' }> = {
-  strong_hire: { color: 'green' },
-  hire: { color: 'blue' },
-  consider: { color: 'amber' },
-  borderline: { color: 'orange' },
-  reject: { color: 'red' },
+const discBadgeMap: Record<string, { color: 'green' | 'blue' | 'amber' | 'orange' | 'red' }> = {
+  D: { color: 'red' },
+  I: { color: 'amber' },
+  S: { color: 'green' },
+  C: { color: 'blue' },
 };
 
-const verdictLabels: Record<string, string> = {
-  strong_hire: 'Strong Hire',
-  hire: 'Hire',
-  consider: 'Consider',
-  borderline: 'Borderline',
-  reject: 'Reject',
+const discLabels: Record<string, string> = {
+  D: 'Dominance',
+  I: 'Influence',
+  S: 'Steadiness',
+  C: 'Conscientiousness',
 };
 
 export default function ReportsDashboardPage() {
@@ -31,8 +29,8 @@ export default function ReportsDashboardPage() {
   // State for reports data
   const [data, setData] = useState<ReportsDashboardData>({
     reports: [],
-    verdictDistribution: [],
-    scoreBandDistribution: [],
+    discCategoryDistribution: [],
+    discConfidenceDistribution: [],
     totalCount: 0,
     currentPage: 0,
     pageSize: 20,
@@ -41,8 +39,8 @@ export default function ReportsDashboardPage() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // State for filters
-  const [verdictFilter, setVerdictFilter] = useState<string[]>([]);
-  const [scoreBandFilter, setScoreBandFilter] = useState<string[]>([]);
+  const [discCategoryFilter, setDiscCategoryFilter] = useState<string[]>([]);
+  const [discConfidenceFilter, setDiscConfidenceFilter] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -58,27 +56,25 @@ export default function ReportsDashboardPage() {
       placeholder: 'Search by candidate name or job title',
     },
     {
-      key: 'verdict',
-      label: 'Verdict',
+      key: 'discCategory',
+      label: 'DISC Category',
       type: 'multi-select',
       options: [
-        { label: 'Strong Hire', value: 'strong_hire' },
-        { label: 'Hire', value: 'hire' },
-        { label: 'Consider', value: 'consider' },
-        { label: 'Borderline', value: 'borderline' },
-        { label: 'Reject', value: 'reject' },
+        { label: 'D — Dominance', value: 'D' },
+        { label: 'I — Influence', value: 'I' },
+        { label: 'S — Steadiness', value: 'S' },
+        { label: 'C — Conscientiousness', value: 'C' },
       ],
     },
     {
-      key: 'scoreBand',
-      label: 'Score Band',
+      key: 'discConfidence',
+      label: 'DISC Confidence',
       type: 'multi-select',
       options: [
-        { label: '4.5-5.0', value: '4.5-5.0' },
-        { label: '4.0-4.4', value: '4.0-4.4' },
-        { label: '3.5-3.9', value: '3.5-3.9' },
-        { label: '3.0-3.4', value: '3.0-3.4' },
-        { label: '<3.0', value: '<3.0' },
+        { label: '80-100%', value: '80-100%' },
+        { label: '60-79%', value: '60-79%' },
+        { label: '40-59%', value: '40-59%' },
+        { label: '<40%', value: '<40%' },
       ],
     },
     {
@@ -100,8 +96,8 @@ export default function ReportsDashboardPage() {
         // Build filters object for API
         const apiFilters: Record<string, unknown> = {};
 
-        if (verdictFilter.length > 0) {
-          apiFilters.verdict = verdictFilter;
+        if (discCategoryFilter.length > 0) {
+          apiFilters.discCategory = discCategoryFilter;
         }
         if (dateFrom) {
           apiFilters.dateFrom = dateFrom;
@@ -122,15 +118,15 @@ export default function ReportsDashboardPage() {
           // Filter by score band and search query if provided
           let filteredReports = response.reports;
 
-          if (scoreBandFilter.length > 0) {
+          if (discConfidenceFilter.length > 0) {
             filteredReports = filteredReports.filter((report) => {
-              const score = report.overallScore;
-              return scoreBandFilter.some((band) => {
-                if (band === '4.5-5.0') return score >= 4.5 && score <= 5.0;
-                if (band === '4.0-4.4') return score >= 4.0 && score < 4.5;
-                if (band === '3.5-3.9') return score >= 3.5 && score < 4.0;
-                if (band === '3.0-3.4') return score >= 3.0 && score < 3.5;
-                if (band === '<3.0') return score < 3.0;
+              if (report.discConfidence == null) return false;
+              const pct = report.discConfidence * 100;
+              return discConfidenceFilter.some((band) => {
+                if (band === '80-100%') return pct >= 80;
+                if (band === '60-79%') return pct >= 60 && pct < 80;
+                if (band === '40-59%') return pct >= 40 && pct < 60;
+                if (band === '<40%') return pct < 40;
                 return false;
               });
             });
@@ -165,12 +161,12 @@ export default function ReportsDashboardPage() {
     return () => {
       controller.abort();
     };
-  }, [orgId, verdictFilter, scoreBandFilter, searchQuery, dateFrom, dateTo, currentPage]);
+  }, [orgId, discCategoryFilter, discConfidenceFilter, searchQuery, dateFrom, dateTo, currentPage]);
 
   const handleFilterApply = (values: Record<string, any>) => {
     setSearchQuery(values.search || '');
-    setVerdictFilter(values.verdict || []);
-    setScoreBandFilter(values.scoreBand || []);
+    setDiscCategoryFilter(values.discCategory || []);
+    setDiscConfidenceFilter(values.discConfidence || []);
     setDateFrom(values.dateRange_start || '');
     setDateTo(values.dateRange_end || '');
     setCurrentPage(0); // Reset to first page
@@ -178,8 +174,8 @@ export default function ReportsDashboardPage() {
 
   const handleFilterReset = () => {
     setSearchQuery('');
-    setVerdictFilter([]);
-    setScoreBandFilter([]);
+    setDiscCategoryFilter([]);
+    setDiscConfidenceFilter([]);
     setDateFrom('');
     setDateTo('');
     setCurrentPage(0);
@@ -198,8 +194,8 @@ export default function ReportsDashboardPage() {
     }
   };
 
-  const formatScore = (score: number) => {
-    return score.toFixed(2);
+  const formatConfidence = (confidence: number | null) => {
+    return confidence == null ? '—' : `${Math.round(confidence * 100)}%`;
   };
 
   const handleDownload = async (reportId: string) => {
@@ -217,14 +213,14 @@ export default function ReportsDashboardPage() {
   const canPrevious = currentPage > 0;
   const canNext = currentPage < totalPages - 1;
 
-  // Transform verdict distribution for pie chart
-  const verdictChartData = data.verdictDistribution.map((item) => ({
-    name: verdictLabels[item.verdict] || item.verdict,
+  // Transform DISC category distribution for pie chart
+  const discCategoryChartData = data.discCategoryDistribution.map((item) => ({
+    name: discLabels[item.category] || item.category,
     value: item.count,
   }));
 
-  // Transform score band distribution for bar chart
-  const scoreBandChartData = data.scoreBandDistribution.map((item) => ({
+  // Transform DISC confidence distribution for bar chart
+  const discConfidenceChartData = data.discConfidenceDistribution.map((item) => ({
     band: item.band,
     count: item.count,
   }));
@@ -245,8 +241,8 @@ export default function ReportsDashboardPage() {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard
-          title="Verdict Distribution"
-          data={verdictChartData}
+          title="DISC Category Distribution"
+          data={discCategoryChartData}
           chartType="pie"
           xKey="name"
           yKey="value"
@@ -254,8 +250,8 @@ export default function ReportsDashboardPage() {
           height={300}
         />
         <ChartCard
-          title="Score Band Distribution"
-          data={scoreBandChartData}
+          title="DISC Confidence Distribution"
+          data={discConfidenceChartData}
           chartType="bar"
           xKey="band"
           yKey="count"
@@ -300,10 +296,10 @@ export default function ReportsDashboardPage() {
                       Job
                     </th>
                     <th className="px-6 py-3 text-left font-semibold text-slate-900">
-                      Verdict
+                      DISC Category
                     </th>
                     <th className="px-6 py-3 text-left font-semibold text-slate-900">
-                      Score
+                      Confidence
                     </th>
                     <th className="px-6 py-3 text-left font-semibold text-slate-900">
                       Created
@@ -326,24 +322,26 @@ export default function ReportsDashboardPage() {
                         {report.jobTitle}
                       </td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                            verdictBadgeMap[report.verdict]?.color === 'green'
-                              ? 'bg-green-100 text-green-900'
-                              : verdictBadgeMap[report.verdict]?.color === 'blue'
-                              ? 'bg-blue-100 text-blue-900'
-                              : verdictBadgeMap[report.verdict]?.color === 'amber'
-                              ? 'bg-amber-100 text-amber-900'
-                              : verdictBadgeMap[report.verdict]?.color === 'orange'
-                              ? 'bg-orange-100 text-orange-900'
-                              : 'bg-red-100 text-red-900'
-                          }`}
-                        >
-                          {verdictLabels[report.verdict] || report.verdict}
-                        </span>
+                        {report.discPrimary ? (
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                              discBadgeMap[report.discPrimary]?.color === 'green'
+                                ? 'bg-green-100 text-green-900'
+                                : discBadgeMap[report.discPrimary]?.color === 'blue'
+                                ? 'bg-blue-100 text-blue-900'
+                                : discBadgeMap[report.discPrimary]?.color === 'amber'
+                                ? 'bg-amber-100 text-amber-900'
+                                : 'bg-red-100 text-red-900'
+                            }`}
+                          >
+                            {report.discPrimary} — {discLabels[report.discPrimary]}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-slate-700">
-                        {formatScore(report.overallScore)}
+                        {formatConfidence(report.discConfidence)}
                       </td>
                       <td className="px-6 py-4 text-slate-700">
                         {formatDate(report.createdAt)}

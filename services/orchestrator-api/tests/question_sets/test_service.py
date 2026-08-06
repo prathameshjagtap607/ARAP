@@ -7,22 +7,28 @@ from agents.question_generation.prompts import PROMPT_VERSION
 from tests.question_sets.conftest import FAKE_EMBEDDINGS, FAKE_QUESTIONS
 
 
-def test_derive_category_counts_carves_disc_out_of_leadership():
+def test_derive_category_counts_is_always_all_disc():
     from src.modules.question_sets.service import _derive_category_counts
 
     counts = _derive_category_counts({"leadership": 100.0}, target=10)
 
-    assert counts.get("DISC", 0) > 0
-    assert counts.get("Leadership", 0) + counts["DISC"] == 10
+    assert counts == {"DISC": 10}
 
 
-def test_derive_category_counts_no_disc_without_leadership():
+def test_derive_category_counts_all_disc_regardless_of_selected_competency():
     from src.modules.question_sets.service import _derive_category_counts
 
     counts = _derive_category_counts({"technical": 100.0}, target=10)
 
-    assert "DISC" not in counts
-    assert counts.get("Technical", 0) == 10
+    assert counts == {"DISC": 10}
+
+
+def test_derive_category_counts_all_disc_with_multiple_competencies():
+    from src.modules.question_sets.service import _derive_category_counts
+
+    counts = _derive_category_counts({"technical": 50.0, "leadership": 50.0}, target=10)
+
+    assert counts == {"DISC": 10}
 
 
 def test_resolve_competency_names_maps_uuid_keys_to_names(db, seed):

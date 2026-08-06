@@ -116,8 +116,8 @@ export async function fetchReportsList(
     });
 
     if (filters) {
-      if (filters.verdict) {
-        queryParams.append("verdict", String(filters.verdict));
+      if (filters.discCategory) {
+        queryParams.append("disc_category", String(filters.discCategory));
       }
       if (filters.dateFrom) {
         queryParams.append("date_from", String(filters.dateFrom));
@@ -139,44 +139,46 @@ export async function fetchReportsList(
         sessionId: String(camelReport.sessionId),
         candidateName: String(camelReport.candidateName || ""),
         jobTitle: String(camelReport.jobTitle || ""),
-        verdict: (camelReport.verdict as ReportRow["verdict"]) || "consider",
-        overallScore: Number(camelReport.overallScore || 0),
+        discPrimary: (camelReport.discPrimary as ReportRow["discPrimary"]) ?? null,
+        discConfidence:
+          camelReport.discConfidence != null ? Number(camelReport.discConfidence) : null,
         createdAt: String(camelReport.createdAt || ""),
       };
     });
 
-    // Compute verdict and score band distributions
-    const verdictDistribution: { verdict: string; count: number }[] = [];
-    const verdictCounts = new Map<string, number>();
+    // Compute DISC category and confidence distributions
+    const discCategoryDistribution: { category: string; count: number }[] = [];
+    const categoryCounts = new Map<string, number>();
 
     reports.forEach((r) => {
-      verdictCounts.set(r.verdict, (verdictCounts.get(r.verdict) || 0) + 1);
+      const category = r.discPrimary || "Unclassified";
+      categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
     });
 
-    verdictCounts.forEach((count, verdict) => {
-      verdictDistribution.push({ verdict, count });
+    categoryCounts.forEach((count, category) => {
+      discCategoryDistribution.push({ category, count });
     });
 
-    const scoreBandDistribution: { band: string; count: number }[] = [
-      { band: "4.5-5.0", count: 0 },
-      { band: "4.0-4.4", count: 0 },
-      { band: "3.5-3.9", count: 0 },
-      { band: "3.0-3.4", count: 0 },
-      { band: "<3.0", count: 0 },
+    const discConfidenceDistribution: { band: string; count: number }[] = [
+      { band: "80-100%", count: 0 },
+      { band: "60-79%", count: 0 },
+      { band: "40-59%", count: 0 },
+      { band: "<40%", count: 0 },
     ];
 
     reports.forEach((r) => {
-      if (r.overallScore >= 4.5) scoreBandDistribution[0].count++;
-      else if (r.overallScore >= 4.0) scoreBandDistribution[1].count++;
-      else if (r.overallScore >= 3.5) scoreBandDistribution[2].count++;
-      else if (r.overallScore >= 3.0) scoreBandDistribution[3].count++;
-      else scoreBandDistribution[4].count++;
+      if (r.discConfidence == null) return;
+      const pct = r.discConfidence * 100;
+      if (pct >= 80) discConfidenceDistribution[0].count++;
+      else if (pct >= 60) discConfidenceDistribution[1].count++;
+      else if (pct >= 40) discConfidenceDistribution[2].count++;
+      else discConfidenceDistribution[3].count++;
     });
 
     return {
       reports,
-      verdictDistribution,
-      scoreBandDistribution,
+      discCategoryDistribution,
+      discConfidenceDistribution,
       totalCount: response.total_count || 0,
       currentPage: Math.floor(offset / limit),
       pageSize: limit,
@@ -185,8 +187,8 @@ export async function fetchReportsList(
     console.error("[fetchReportsList] Error:", error);
     return {
       reports: [],
-      verdictDistribution: [],
-      scoreBandDistribution: [],
+      discCategoryDistribution: [],
+      discConfidenceDistribution: [],
       totalCount: 0,
       currentPage: 0,
       pageSize: limit,

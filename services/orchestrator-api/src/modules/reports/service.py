@@ -231,6 +231,7 @@ def list_reports(
     db: Session,
     org_id: uuid.UUID,
     verdict: str | None = None,
+    disc_category: str | None = None,
     status: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
@@ -246,6 +247,10 @@ def list_reports(
     )
     if verdict:
         query = query.filter(HiringReport.verdict == verdict)
+    if disc_category:
+        query = query.filter(
+            HiringReport.full_report["disc_profile"]["primary"].astext == disc_category
+        )
     if status == "awaiting_review":
         query = query.filter(HiringReport.reviewer_override.is_(None))
     if date_from:
@@ -269,6 +274,12 @@ def list_reports(
             job_title=job_title,
             verdict=report.verdict,
             overall_score=(report.score_rollup or {}).get("overall"),
+            disc_primary=(report.full_report or {}).get("disc_profile", {}).get("primary")
+            if report.full_report
+            else None,
+            disc_confidence=(report.full_report or {}).get("disc_profile", {}).get("confidence")
+            if report.full_report
+            else None,
             created_at=report.created_at,
         )
         for report, candidate_name, job_title in rows

@@ -72,6 +72,8 @@ class ReportListItem(BaseModel):
     job_title: str
     verdict: str | None
     overall_score: float | None
+    disc_primary: str | None
+    disc_confidence: float | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

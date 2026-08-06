@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 from agents.question_generation.agent import run_question_generation_agent
-from agents.question_generation.prompts import CATEGORY_TO_COMPETENCY, PROMPT_VERSION
+from agents.question_generation.prompts import PROMPT_VERSION
 from src.models.assessment_sessions import AssessmentSession
 from src.models.candidate_profiles import CandidateProfile
 from src.models.job_assessments import JobAssessment
@@ -62,52 +62,12 @@ def _resolve_competency_names(db: Session, org_id: uuid.UUID, competency_weighta
 
 
 def _derive_category_counts(competency_weightage: dict, target: int) -> dict[str, int]:
-    lower_weight: dict[str, float] = {k.lower().replace(" ", "_"): v for k, v in competency_weightage.items()}
-
-    category_weights: dict[str, float] = {}
-    for cat, alias in CATEGORY_TO_COMPETENCY.items():
-        w = lower_weight.get(alias)
-        if w is None:
-            # substring fallback
-            for k, v in lower_weight.items():
-                if alias in k or k in alias:
-                    w = v
-                    break
-        if w is not None:
-            category_weights[cat] = float(w)
-
-    if not category_weights:
-        each = target // len(CATEGORY_TO_COMPETENCY)
-        counts = {cat: each for cat in CATEGORY_TO_COMPETENCY}
-        remainder = target - each * len(CATEGORY_TO_COMPETENCY)
-        for cat in list(CATEGORY_TO_COMPETENCY.keys())[:remainder]:
-            counts[cat] += 1
-        return {k: v for k, v in counts.items() if v > 0}
-
-    total_weight = sum(category_weights.values())
-    counts: dict[str, int] = {}
-    allocated = 0
-    cats = list(category_weights.keys())
-    for i, cat in enumerate(cats):
-        if i == len(cats) - 1:
-            counts[cat] = max(target - allocated, 0)
-        else:
-            n = round(category_weights[cat] / total_weight * target)
-            counts[cat] = max(n, 0)
-            allocated += counts[cat]
-
-    # Selecting Leadership implicitly also asks for DISC-style behavioral
-    # questions (used to classify D/I/S/C) — carve out a share of Leadership's
-    # allocation for the DISC category rather than requiring it to be added
-    # as a separate competency.
-    if counts.get("Leadership", 0) > 0:
-        leadership_count = counts["Leadership"]
-        disc_count = max(1, round(leadership_count * 0.4))
-        disc_count = min(disc_count, leadership_count)
-        counts["Leadership"] = leadership_count - disc_count
-        counts["DISC"] = counts.get("DISC", 0) + disc_count
-
-    return {k: v for k, v in counts.items() if v > 0}
+    # This assessment is a pure DISC personality test: every generated
+    # question is DISC-style regardless of which competencies are selected
+    # or how they're weighted. Competency selection still flows into the
+    # DISC prompt as target_competencies context, but no other category
+    # (Technical, Behavioral, Leadership, etc.) is generated.
+    return {"DISC": target}
 
 
 # NOTE: The HNSW index covers the full table (not org-scoped). PostgreSQL cannot
@@ -257,7 +217,7 @@ def generate_question_set(
     # Ensure at least one resume-referenced question (M4-F03)
     if not any(q.get("resume_reference") for q, _ in accepted):
         ref_batch = _call_agent(
-            job.job_profile, candidate_profile_dict, {"Behavioral": 2},
+            job.job_profile, candidate_profile_dict, {"DISC": 2},
             difficulty_level, risk_flags, 2,
         )
         if ref_batch:

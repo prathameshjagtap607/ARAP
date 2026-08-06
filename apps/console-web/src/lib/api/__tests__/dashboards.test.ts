@@ -103,8 +103,8 @@ describe("fetchReportsList", () => {
           id: "r1",
           candidate_name: "Bob",
           job_title: "PM",
-          verdict: "hire",
-          overall_score: 4.2,
+          disc_primary: "D",
+          disc_confidence: 0.82,
           created_at: "2026-07-28T00:00:00Z",
         },
       ],
@@ -114,7 +114,8 @@ describe("fetchReportsList", () => {
     const result = await fetchReportsList("org-1");
     expect(result.totalCount).toBe(1);
     expect(result.reports[0].candidateName).toBe("Bob");
-    expect(result.reports[0].overallScore).toBe(4.2);
+    expect(result.reports[0].discPrimary).toBe("D");
+    expect(result.reports[0].discConfidence).toBe(0.82);
   });
 });
 

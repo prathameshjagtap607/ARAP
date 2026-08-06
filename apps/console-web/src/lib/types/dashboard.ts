@@ -58,16 +58,16 @@ export interface ReportRow {
   sessionId: string;
   candidateName: string;
   jobTitle: string;
-  verdict: "strong_hire" | "hire" | "consider" | "borderline" | "reject";
-  overallScore: number;
+  discPrimary: "D" | "I" | "S" | "C" | null;
+  discConfidence: number | null;
   createdAt: string;
 }
 
 // Reports Dashboard summary
 export interface ReportsDashboardData {
   reports: ReportRow[];
-  verdictDistribution: { verdict: string; count: number }[];
-  scoreBandDistribution: { band: string; count: number }[];
+  discCategoryDistribution: { category: string; count: number }[];
+  discConfidenceDistribution: { band: string; count: number }[];
   totalCount: number;
   currentPage: number;
   pageSize: number;
