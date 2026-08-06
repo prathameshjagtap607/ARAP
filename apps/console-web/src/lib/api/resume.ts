@@ -4,6 +4,14 @@ const INGESTION_BASE_URL =
 async function parseErrorDetail(res: Response): Promise<string> {
   const body = await res.json().catch(() => ({}));
   if (typeof body?.detail === "string") return body.detail;
+  if (Array.isArray(body?.detail)) {
+    return body.detail
+      .map((item: { loc?: unknown[]; msg?: string }) => {
+        const field = Array.isArray(item.loc) ? item.loc.slice(1).join(".") : "";
+        return field ? `${field}: ${item.msg}` : item.msg;
+      })
+      .join(", ");
+  }
   return `HTTP ${res.status}`;
 }
 

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { ConsoleUser } from "@/types/auth";
-import { decodeToken } from "@/lib/auth";
+import { decodeToken, refresh } from "@/lib/auth";
 import { setGlobalAccessToken } from "@/lib/api/index";
 
 interface AuthState {
@@ -37,29 +37,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Restore session from localStorage on mount
   useEffect(() => {
-    try {
-      const savedToken = localStorage.getItem(STORAGE_KEY);
-      const savedUser = localStorage.getItem(USER_STORAGE_KEY);
+    const restore = async () => {
+      try {
+        const savedToken = localStorage.getItem(STORAGE_KEY);
+        const savedUser = localStorage.getItem(USER_STORAGE_KEY);
 
-      if (savedToken && savedUser) {
-        try {
-          const decoded = decodeToken(savedToken);
-          const isExpired = decoded.exp && decoded.exp * 1000 < Date.now();
-          if (isExpired) throw new Error("expired");
-          const user = JSON.parse(savedUser) as ConsoleUser;
-          setGlobalAccessToken(savedToken);
-          setState({ user, accessToken: savedToken, loading: false });
-        } catch {
-          localStorage.removeItem(STORAGE_KEY);
-          localStorage.removeItem(USER_STORAGE_KEY);
+        if (savedToken && savedUser) {
+          try {
+            const decoded = decodeToken(savedToken);
+            const isExpired = decoded.exp && decoded.exp * 1000 < Date.now();
+            if (isExpired) throw new Error("expired");
+            const user = JSON.parse(savedUser) as ConsoleUser;
+            setGlobalAccessToken(savedToken);
+            setState({ user, accessToken: savedToken, loading: false });
+          } catch {
+            // Token missing/expired/corrupt — try a silent refresh before
+            // giving up, so a page reload doesn't log the user out just
+            // because the 15-minute access token happened to expire.
+            try {
+              const { user, accessToken } = await refresh();
+              setGlobalAccessToken(accessToken);
+              localStorage.setItem(STORAGE_KEY, accessToken);
+              localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+              setState({ user, accessToken, loading: false });
+            } catch {
+              localStorage.removeItem(STORAGE_KEY);
+              localStorage.removeItem(USER_STORAGE_KEY);
+              setState(prev => ({ ...prev, loading: false }));
+            }
+          }
+        } else {
           setState(prev => ({ ...prev, loading: false }));
         }
-      } else {
+      } catch {
         setState(prev => ({ ...prev, loading: false }));
       }
-    } catch {
-      setState(prev => ({ ...prev, loading: false }));
-    }
+    };
+
+    restore();
   }, []);
 
   const setAuth = useCallback((user: ConsoleUser, accessToken: string) => {

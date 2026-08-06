@@ -162,33 +162,6 @@ export default function ResultsPage() {
             </div>
           )}
 
-          {/* Composite Scores */}
-          {full.scores && Object.keys(full.scores).length > 0 && (
-            <div className="rounded-lg border border-slate-200 bg-white p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-3">Composite Scores</h2>
-              <div className="space-y-3">
-                {Object.entries(full.scores).map(([composite, data]) => (
-                  <div key={composite}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium text-slate-700">
-                        {composite.replace(/_/g, ' ')}
-                      </span>
-                      <span className="text-sm font-semibold text-slate-900">
-                        {data.score.toFixed(2)} / 5.0
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div
-                        className="bg-slate-900 h-2 rounded-full transition-all"
-                        style={{ width: `${(data.score / 5) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Final Verdict */}
           {full.final_verdict && (
             <div className="rounded-lg border border-slate-200 bg-white p-6">

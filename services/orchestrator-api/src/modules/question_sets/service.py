@@ -28,6 +28,18 @@ def _options_list_to_dict(options: list[str]) -> dict[str, str]:
     return {_OPTION_LETTERS[i]: opt for i, opt in enumerate(options)}
 
 
+def _force_disc_competency(questions: list[dict]) -> list[dict]:
+    """Every question in this assessment is DISC — enforce this in code rather
+    than trusting the LLM to always tag target_competencies correctly, since a
+    stray non-DISC tag here leaks into the composite-score rollup and produces
+    a misleading Technical/Leadership/Communication score for a personality
+    test that has no such categories.
+    """
+    for q in questions:
+        q["target_competencies"] = ["disc"]
+    return questions
+
+
 def _resolve_competency_names(db: Session, org_id: uuid.UUID, competency_weightage: dict) -> dict:
     """job_assessments.competency_weightage is keyed by competency_library UUIDs
     (set by the assessment form), but category matching in _derive_category_counts
@@ -190,6 +202,7 @@ def generate_question_set(
     )
     if questions is None:
         raise RuntimeError("Question generation agent failed — retry request")
+    questions = _force_disc_competency(questions)
 
     embeddings = embed_texts([q["question"] for q in questions])
     accepted = _dedup(db, org_id, questions, embeddings)
@@ -203,6 +216,7 @@ def generate_question_set(
             difficulty_level, risk_flags, gap + math.ceil(gap * 0.25),
         )
         if gap_questions:
+            gap_questions = _force_disc_competency(gap_questions)
             gap_embeddings = embed_texts([q["question"] for q in gap_questions])
             accepted += _dedup(db, org_id, gap_questions, gap_embeddings)
             accepted = _dedup_within_batch(accepted)
@@ -221,6 +235,7 @@ def generate_question_set(
             difficulty_level, risk_flags, 2,
         )
         if ref_batch:
+            ref_batch = _force_disc_competency(ref_batch)
             ref_q = next((q for q in ref_batch if q.get("resume_reference")), None)
             if ref_q:
                 ref_emb = embed_texts([ref_q["question"]])[0]

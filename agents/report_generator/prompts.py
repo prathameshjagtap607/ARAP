@@ -6,12 +6,18 @@ _SECTION_15_EXCLUSION = (
 )
 
 NARRATIVE_SYSTEM_PROMPT = (
-    "You are a senior HR analyst writing sections of a hiring report. "
-    "Base every statement strictly on the data provided. "
+    "You are a senior HR analyst writing sections of a DISC personality assessment report. "
+    "This is a pure personality/behavioral assessment — every question is a DISC-style workplace "
+    "scenario with no objectively correct or incorrect answer. There is no pass/fail verdict, no "
+    "numeric hiring score, and no competency grading. Base every statement strictly on the "
+    "candidate's DISC classification (primary/secondary style, confidence, rationale) and the "
+    "behavioral patterns evident in their answers — never invent or reference a hire/reject "
+    "decision, a numeric score, or competency correctness. "
     "Every strength and weakness bullet MUST include a direct quote from the candidate's answer, "
     "formatted as: '…(cited from Q{n}: \"…excerpt…\")'. "
     "Never invent quotes or information not present in the input. "
-    "The final_verdict must be a full paragraph — never a bare label. "
+    "The final_verdict field must be a full paragraph summarizing the candidate's DISC profile and "
+    "what it suggests about their working style — never a hire/reject label or score reference. "
     + _SECTION_15_EXCLUSION
 )
 
@@ -23,11 +29,14 @@ NARRATIVE_TOOL = {
         "properties": {
             "executive_summary": {
                 "type": "string",
-                "description": "2-3 sentences. State verdict with reasoning. Never a bare label.",
+                "description": (
+                    "2-3 sentences. State the candidate's primary and secondary DISC style and "
+                    "what it means for how they work. Never state a hire/reject verdict or score."
+                ),
             },
             "candidate_overview": {
                 "type": "string",
-                "description": "2-3 sentences on the candidate's background and suitability.",
+                "description": "2-3 sentences on the candidate's background, from the resume.",
             },
             "resume_summary": {
                 "type": "string",
@@ -35,49 +44,63 @@ NARRATIVE_TOOL = {
             },
             "interview_summary": {
                 "type": "string",
-                "description": "3-4 sentences on overall interview performance across categories.",
+                "description": (
+                    "3-4 sentences on the candidate's overall behavioral/DISC pattern across the "
+                    "workplace-scenario questions — not a performance or correctness summary."
+                ),
             },
             "culture_fit": {
                 "type": "string",
-                "description": "2-3 sentences on alignment with org culture values provided.",
+                "description": "2-3 sentences on how the candidate's DISC style aligns with org culture values provided.",
             },
             "domain_knowledge": {
                 "type": "string",
-                "description": "2-3 sentences on depth of domain expertise evidenced in answers.",
+                "description": (
+                    "2-3 sentences on domain background evidenced in the resume summary. "
+                    "If no domain-specific answers exist (pure DISC assessment), state that "
+                    "explicitly and note this report focuses on behavioral style, not domain skill."
+                ),
             },
             "skill_gap_analysis": {
                 "type": "string",
-                "description": "Paragraph identifying skills below the job bar with specific evidence.",
+                "description": (
+                    "Paragraph on any behavioral working-style considerations for this role, based "
+                    "on the DISC profile — not a skill or score gap analysis, since none exists here."
+                ),
             },
             "strengths": {
                 "type": "array",
-                "description": "2-4 strength bullets. Each MUST cite a quoted answer excerpt.",
+                "description": "2-4 behavioral strength bullets tied to the DISC style. Each MUST cite a quoted answer excerpt.",
                 "minItems": 2,
                 "maxItems": 4,
                 "items": {"type": "string"},
             },
             "weaknesses": {
                 "type": "array",
-                "description": "2-4 weakness bullets. Each MUST cite a quoted answer excerpt.",
+                "description": (
+                    "2-4 behavioral watch-out bullets tied to the DISC style (e.g. blind spots "
+                    "typical of that style) — never a skill deficiency. Each MUST cite a quoted "
+                    "answer excerpt."
+                ),
                 "minItems": 2,
                 "maxItems": 4,
                 "items": {"type": "string"},
             },
             "potential_risks": {
                 "type": "string",
-                "description": "Paragraph on risks if hired, based on score patterns and integrity flags.",
+                "description": "Paragraph on team/role friction risks suggested by the DISC style and integrity flags — never score-based.",
             },
             "learning_curve_estimate": {
                 "type": "string",
-                "description": "2-3 sentences estimating ramp-up time and key learning areas.",
+                "description": "2-3 sentences on how the candidate's DISC style tends to approach ramping up on a new role.",
             },
             "management_readiness": {
                 "type": "string",
-                "description": "2-3 sentences on readiness to manage a team, based on leadership scores.",
+                "description": "2-3 sentences on management/leadership tendencies suggested by the DISC style — never based on a leadership score.",
             },
             "promotion_potential": {
                 "type": "string",
-                "description": "2-3 sentences on long-term growth trajectory.",
+                "description": "2-3 sentences on long-term working-style trajectory suggested by the DISC profile.",
             },
             "integrity_summary_prose": {
                 "type": "string",
@@ -90,8 +113,9 @@ NARRATIVE_TOOL = {
             "final_verdict": {
                 "type": "string",
                 "description": (
-                    "Full paragraph. Start with the verdict label, then explain with specific "
-                    "score references and at least one behavioral observation."
+                    "Full paragraph summarizing the candidate's DISC profile (primary/secondary "
+                    "style, confidence) and what it suggests about their working style and fit. "
+                    "Never a hire/reject label, never a numeric score reference."
                 ),
             },
         },
@@ -105,8 +129,9 @@ NARRATIVE_TOOL = {
 }
 
 STRUCTURED_SYSTEM_PROMPT = (
-    "You are a senior HR analyst completing the structured data sections of a hiring report. "
-    "Use the narrative context and score data provided. Be specific and consistent with the narrative. "
+    "You are a senior HR analyst completing the structured data sections of a DISC personality "
+    "assessment report. Use the narrative context and DISC profile provided — there is no "
+    "competency score data in this assessment type. Be specific and consistent with the narrative. "
     + _SECTION_15_EXCLUSION
 )
 
@@ -122,7 +147,7 @@ STRUCTURED_TOOL = {
             },
             "training_needs_detailed": {
                 "type": "array",
-                "description": "1-3 training needs with priority.",
+                "description": "1-3 development areas with priority, suggested by the DISC style's typical blind spots.",
                 "minItems": 1,
                 "maxItems": 3,
                 "items": {
@@ -137,14 +162,14 @@ STRUCTURED_TOOL = {
             },
             "suggested_hr_questions": {
                 "type": "array",
-                "description": "3 HR-round questions targeting weak competencies.",
+                "description": "3 HR-round questions to further explore the candidate's DISC style and working preferences.",
                 "minItems": 3,
                 "maxItems": 3,
                 "items": {"type": "string"},
             },
             "suggested_ceo_questions": {
                 "type": "array",
-                "description": "3 CEO-round questions on strategic fit and leadership depth.",
+                "description": "3 CEO-round questions on strategic fit and leadership style, informed by the DISC profile.",
                 "minItems": 3,
                 "maxItems": 3,
                 "items": {"type": "string"},

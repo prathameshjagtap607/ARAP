@@ -1,9 +1,11 @@
 import openai
 
+from src.config import settings
+
 _MODEL = "text-embedding-3-small"
 
 
 def embed_texts(texts: list[str]) -> list[list[float]]:
-    client = openai.OpenAI()
+    client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
     response = client.embeddings.create(model=_MODEL, input=texts)
     return [item.embedding for item in sorted(response.data, key=lambda x: x.index)]

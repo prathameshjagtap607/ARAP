@@ -74,8 +74,11 @@ export async function refresh(): Promise<{ user: ConsoleUser; accessToken: strin
 }
 
 export async function logout(): Promise<void> {
+  const refreshToken = getRefreshTokenFromCookie();
   await fetch(`${API_BASE}/auth/logout`, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     credentials: "include",
+    body: JSON.stringify({ refresh_token: refreshToken }),
   }).catch(() => undefined);
 }

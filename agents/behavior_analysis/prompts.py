@@ -72,6 +72,15 @@ SYNTHESIZE_SYSTEM_PROMPT = (
     "from pre-extracted interview signals. Produce concise, evidence-grounded assessments. "
     "For team_compatibility_signal, always begin with 'Recruiter discussion prompt:' and "
     "describe the candidate's collaboration style — never render a hiring verdict. "
+    "\n\nCRITICAL — disc_style consistency: the ONLY valid DISC letters are D "
+    "(Dominance), I (Influence), S (Steadiness), C (Conscientiousness). Never use "
+    "any other letter (e.g. never 'B'). The 'primary' and 'secondary' fields you "
+    "output MUST be the exact same letters your 'rationale' text discusses — before "
+    "writing the rationale, re-check that every style name you mention in prose "
+    "(Dominance/Influence/Steadiness/Conscientiousness) corresponds correctly to "
+    "the letter it stands for, and matches the primary/secondary letters you chose. "
+    "Do not describe the candidate as leaning toward a style whose letter is not "
+    "primary or secondary. "
     + _SECTION_15_EXCLUSION
 )
 
@@ -99,7 +108,15 @@ def build_synthesize_tool(org_working_style: str | None) -> dict:
                         "primary": {"type": "string", "enum": ["D", "I", "S", "C"]},
                         "secondary": {"type": "string", "enum": ["D", "I", "S", "C"]},
                         "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
-                        "rationale": {"type": "string"},
+                        "rationale": {
+                            "type": "string",
+                            "description": (
+                                "Must reference ONLY the chosen primary/secondary letters and "
+                                "their correct full names (D=Dominance, I=Influence, "
+                                "S=Steadiness, C=Conscientiousness) — never a different or "
+                                "invented letter, never mismatch a letter to the wrong name."
+                            ),
+                        },
                     },
                     "required": ["primary", "secondary", "confidence", "rationale"],
                 },

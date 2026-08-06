@@ -122,24 +122,30 @@ def generate_full_report(
             for q in questions
         )
 
-        behavior_text = ""
+        behavior_text = "Not available"
+        disc_text = "Not available"
         if behavior:
             behavior_text = (
-                f"DISC: {behavior.disc_style}, Big Five: {behavior.big_five}, "
-                f"Leadership: {behavior.leadership_style}, EQ: {behavior.eq_signal}"
+                f"Big Five: {behavior.big_five}, "
+                f"Leadership style: {behavior.leadership_style}, EQ: {behavior.eq_signal}"
             )
+            if behavior.disc_style:
+                disc = behavior.disc_style
+                disc_text = (
+                    f"Primary style: {disc.get('primary')}, Secondary style: {disc.get('secondary')}, "
+                    f"Confidence: {disc.get('confidence')}, Rationale: {disc.get('rationale')}"
+                )
 
         narrative_input = "\n".join([
             f"Candidate: {candidate.name if candidate else 'Unknown'}",
             f"Role: {job.title if job else 'Unknown'}",
-            f"Verdict: {report.verdict}",
-            f"Verdict reasoning: {(report.full_report or {}).get('_recommendation_context', {}).get('verdict_reasoning', '')}",
-            f"Overall score: {rollup.get('overall', 0):.2f} / 5.0",
-            "Composite scores: " + ", ".join(f"{k}: {v:.2f}" for k, v in composite_scores.items()),
+            "This is a pure DISC personality assessment — every question is a workplace scenario "
+            "with no correct/incorrect answer. There is no hiring score or verdict to reference.",
+            f"DISC profile: {disc_text}",
+            f"Other behavioral signals: {behavior_text}",
             f"Salary band: {report.salary_band}",
             (f"Integrity: risk={integrity_summary.get('overall_risk', 'low')}, "
             f"flags={integrity_summary.get('flagged_count', 0)}"),
-            f"Behavior: {behavior_text or 'Not available'}",
             f"Resume summary: {candidate_profile.summary if candidate_profile else 'Not available'}",
             f"Culture values: {', '.join(getattr(job, 'culture_values', []))}",
             "",
@@ -156,8 +162,7 @@ def generate_full_report(
             narrative.get("executive_summary", ""),
             narrative.get("skill_gap_analysis", ""),
             "",
-            "Score data:",
-            "Composite scores: " + ", ".join(f"{k}: {v:.2f}" for k, v in composite_scores.items()),
+            f"DISC profile: {disc_text}",
             f"Salary band: {report.salary_band}",
             "Existing CEO questions from recommendation: "
             + ", ".join(report.suggested_ceo_questions or []),
