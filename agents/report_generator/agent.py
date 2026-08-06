@@ -139,8 +139,8 @@ def generate_full_report(
         narrative_input = "\n".join([
             f"Candidate: {candidate.name if candidate else 'Unknown'}",
             f"Role: {job.title if job else 'Unknown'}",
-            "This is a pure DISC personality assessment — every question is a workplace scenario "
-            "with no correct/incorrect answer. There is no hiring score or verdict to reference.",
+            ("This is a pure DISC personality assessment — every question is a workplace scenario "
+            "with no correct/incorrect answer. There is no hiring score or verdict to reference."),
             f"DISC profile: {disc_text}",
             f"Other behavioral signals: {behavior_text}",
             f"Salary band: {report.salary_band}",
