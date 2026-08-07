@@ -420,10 +420,6 @@ export default function AdminPage() {
           />
         )}
       </div>
-
-      <p className="text-xs text-slate-400">
-        Organisation & user management — Phase 1. Competency management — Phase 2.
-      </p>
     </div>
   );
 }
