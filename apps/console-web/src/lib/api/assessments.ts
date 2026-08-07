@@ -32,12 +32,6 @@ export async function deleteAssessment(id: string): Promise<void> {
   });
 }
 
-export async function cloneAssessment(id: string): Promise<AssessmentResponse> {
-  return apiFetch(`/job-assessments/${id}/clone`, {
-    method: 'POST',
-  });
-}
-
 export interface SendInviteResult {
   link: string;
   email_sent: boolean;

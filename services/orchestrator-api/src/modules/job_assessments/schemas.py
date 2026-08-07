@@ -63,20 +63,6 @@ class JobAssessmentUpdate(BaseModel):
         return v
 
 
-class CloneRequest(BaseModel):
-    competency_weightage: dict[str, float] | None = None
-    required_skills: list[str] | None = None
-    preferred_skills: list[str] | None = None
-    role_family: str | None = None
-
-    @field_validator("competency_weightage")
-    @classmethod
-    def weightage_sums_to_100(cls, v: dict[str, float] | None) -> dict[str, float] | None:
-        if v is not None:
-            return _validate_weightage(v)
-        return v
-
-
 class InviteRequest(BaseModel):
     candidate_name: str
     candidate_email: EmailStr

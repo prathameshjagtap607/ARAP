@@ -7,7 +7,6 @@ from src.models.assessment_sessions import AssessmentSession
 from src.models.candidates import Candidate
 from src.models.job_assessments import JobAssessment
 from src.modules.job_assessments.schemas import (
-    CloneRequest,
     InviteRequest,
     InviteResponse,
     JobAssessmentCreate,
@@ -85,40 +84,6 @@ def delete_assessment(db: Session, org_id: uuid.UUID, assessment_id: uuid.UUID) 
         raise PermissionError("Cannot delete assessment with existing sessions")
     db.delete(row)
     db.commit()
-
-
-def clone_assessment(
-    db: Session, org_id: uuid.UUID, user_id: uuid.UUID,
-    assessment_id: uuid.UUID, overrides: CloneRequest,
-) -> JobAssessment:
-    source = get_assessment(db, org_id, assessment_id)
-    clone = JobAssessment(
-        org_id=org_id,
-        title=source.title,
-        department=source.department,
-        experience_min=source.experience_min,
-        experience_max=source.experience_max,
-        required_skills=overrides.required_skills if overrides.required_skills is not None else list(source.required_skills),
-        preferred_skills=overrides.preferred_skills if overrides.preferred_skills is not None else list(source.preferred_skills),
-        responsibilities=source.responsibilities,
-        education=source.education,
-        certifications=list(source.certifications),
-        behavioral_competencies=list(source.behavioral_competencies),
-        leadership_competencies=list(source.leadership_competencies),
-        culture_values=list(source.culture_values),
-        difficulty_level=source.difficulty_level,
-        duration_minutes=source.duration_minutes,
-        competency_weightage=overrides.competency_weightage if overrides.competency_weightage is not None else dict(source.competency_weightage),
-        is_template=False,
-        role_family=overrides.role_family if overrides.role_family is not None else source.role_family,
-        created_by=user_id,
-    )
-    db.add(clone)
-    db.commit()
-    db.refresh(clone)
-    run_job_description_agent(db, clone)
-    db.refresh(clone)
-    return clone
 
 
 def invite_candidate(

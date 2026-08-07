@@ -7,7 +7,6 @@ from src.database import get_db
 from src.modules.auth.dependencies import TokenClaims, require_user
 from src.modules.job_assessments import service
 from src.modules.job_assessments.schemas import (
-    CloneRequest,
     InviteRequest,
     InviteResponse,
     JobAssessmentCreate,
@@ -73,19 +72,6 @@ def delete_assessment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
-
-
-@router.post("/{assessment_id}/clone", response_model=JobAssessmentResponse, status_code=status.HTTP_201_CREATED)
-def clone_assessment(
-    assessment_id: uuid.UUID,
-    body: CloneRequest = CloneRequest(),
-    claims: TokenClaims = Depends(require_user),
-    db: Session = Depends(get_db),
-):
-    try:
-        return service.clone_assessment(db, claims.org_id, uuid.UUID(claims.sub), assessment_id, body)
-    except LookupError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post("/{assessment_id}/invite", response_model=InviteResponse, status_code=status.HTTP_201_CREATED)

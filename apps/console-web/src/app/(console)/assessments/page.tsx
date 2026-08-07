@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getAssessments, deleteAssessment, cloneAssessment } from '@/lib/api/assessments';
+import { getAssessments, deleteAssessment } from '@/lib/api/assessments';
 import AssessmentTable from '@/components/tables/AssessmentTable';
 import type { AssessmentResponse } from '@/lib/types/assessment';
 
@@ -36,16 +36,6 @@ export default function AssessmentsPage() {
     }
   };
 
-  const handleClone = async (id: string) => {
-    setError(null);
-    try {
-      const cloned = await cloneAssessment(id);
-      setAssessments((prev) => [cloned, ...prev]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clone assessment');
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -72,7 +62,6 @@ export default function AssessmentsPage() {
         <AssessmentTable
           assessments={assessments}
           onDelete={handleDelete}
-          onClone={handleClone}
         />
       )}
     </div>

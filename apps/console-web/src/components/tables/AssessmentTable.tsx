@@ -7,16 +7,13 @@ import type { AssessmentResponse } from '@/lib/types/assessment';
 interface AssessmentTableProps {
   assessments: AssessmentResponse[];
   onDelete: (id: string) => Promise<void>;
-  onClone: (id: string) => Promise<void>;
 }
 
 export default function AssessmentTable({
   assessments,
   onDelete,
-  onClone,
 }: AssessmentTableProps) {
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [cloning, setCloning] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     if (confirm('Delete this assessment? This action cannot be undone.')) {
@@ -26,15 +23,6 @@ export default function AssessmentTable({
       } finally {
         setDeleting(null);
       }
-    }
-  };
-
-  const handleClone = async (id: string) => {
-    setCloning(id);
-    try {
-      await onClone(id);
-    } finally {
-      setCloning(null);
     }
   };
 
@@ -107,13 +95,6 @@ export default function AssessmentTable({
                 >
                   Invite
                 </Link>
-                <button
-                  onClick={() => handleClone(assessment.id)}
-                  disabled={cloning === assessment.id}
-                  className="inline text-sm font-medium text-purple-600 hover:text-purple-800 disabled:opacity-50"
-                >
-                  {cloning === assessment.id ? 'Cloning...' : 'Clone'}
-                </button>
                 <button
                   onClick={() => handleDelete(assessment.id)}
                   disabled={deleting === assessment.id}
