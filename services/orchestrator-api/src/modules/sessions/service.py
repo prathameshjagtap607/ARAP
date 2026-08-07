@@ -34,6 +34,7 @@ def _get_session_or_404(db: Session, session_id: uuid.UUID, org_id: uuid.UUID) -
 def delete_session(db: Session, session_id: uuid.UUID, org_id: uuid.UUID) -> None:
     from src.models.answer_corpus import AnswerCorpus
     from src.models.behavior_profiles import BehaviorProfile
+    from src.models.candidate_profiles import CandidateProfile
     from src.models.hiring_reports import HiringReport
     from src.models.integrity_flags import IntegrityFlag
     from src.models.report_shares import ReportShare
@@ -52,6 +53,9 @@ def delete_session(db: Session, session_id: uuid.UUID, org_id: uuid.UUID) -> Non
     db.query(IntegrityFlag).filter_by(session_id=session_id).delete(synchronize_session="fetch")
     db.query(AnswerCorpus).filter_by(session_id=session_id).delete(synchronize_session="fetch")
     db.query(BehaviorProfile).filter_by(session_id=session_id).delete(synchronize_session="fetch")
+    db.query(CandidateProfile).filter_by(
+        candidate_id=session.candidate_id, job_assessment_id=session.job_assessment_id
+    ).delete(synchronize_session="fetch")
     db.flush()
 
     qset = db.query(QuestionSet).filter_by(session_id=session_id).first()

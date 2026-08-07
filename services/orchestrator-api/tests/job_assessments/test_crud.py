@@ -111,6 +111,38 @@ async def test_delete_with_session_returns_409(async_client, seed, user_token, a
 
 
 @pytest.mark.asyncio
+async def test_delete_with_candidate_profile_returns_409(async_client, seed, user_token, mock_jd_agent, db):
+    from src.models.candidate_profiles import CandidateProfile
+    from src.models.candidates import Candidate
+
+    create_resp = await async_client.post(
+        "/job-assessments", json=JA_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    ja_id = create_resp.json()["id"]
+
+    candidate = Candidate(
+        org_id=seed["org"].id, name="Test C", email="tc2@x.com", auth_method="magic_link"
+    )
+    db.add(candidate)
+    db.flush()
+    import uuid
+    profile = CandidateProfile(
+        org_id=seed["org"].id,
+        candidate_id=candidate.id,
+        job_assessment_id=uuid.UUID(ja_id),
+    )
+    db.add(profile)
+    db.commit()
+
+    resp = await async_client.delete(
+        f"/job-assessments/{ja_id}",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
 async def test_get_wrong_org_returns_404(async_client, seed, user_token, mock_jd_agent):
     import uuid
     resp = await async_client.get(

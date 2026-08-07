@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from agents.job_description.agent import run_job_description_agent
 from src.models.assessment_sessions import AssessmentSession
+from src.models.candidate_profiles import CandidateProfile
 from src.models.candidates import Candidate
 from src.models.job_assessments import JobAssessment
 from src.modules.job_assessments.schemas import (
@@ -82,6 +83,11 @@ def delete_assessment(db: Session, org_id: uuid.UUID, assessment_id: uuid.UUID) 
     ).first() is not None
     if has_sessions:
         raise PermissionError("Cannot delete assessment with existing sessions")
+    has_candidate_profiles = db.query(CandidateProfile).filter_by(
+        job_assessment_id=assessment_id
+    ).first() is not None
+    if has_candidate_profiles:
+        raise PermissionError("Cannot delete assessment with existing candidate profiles")
     db.delete(row)
     db.commit()
 
