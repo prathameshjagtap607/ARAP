@@ -1,10 +1,7 @@
-import boto3
 import pytest
 from moto import mock_aws
-from unittest.mock import patch
-
-from src.s3 import upload_file, download_file, ensure_bucket
 from src import config as config_module
+from src.s3 import download_file, ensure_bucket, upload_file
 
 
 @pytest.fixture

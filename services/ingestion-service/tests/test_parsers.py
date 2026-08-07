@@ -1,7 +1,7 @@
 import io
-import pytest
 
-from src.parsers import extract_text, SUPPORTED_MIME_TYPES
+import pytest
+from src.parsers import SUPPORTED_MIME_TYPES, extract_text
 
 
 def _make_docx_bytes() -> bytes:

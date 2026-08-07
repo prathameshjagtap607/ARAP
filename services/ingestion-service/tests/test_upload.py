@@ -1,8 +1,6 @@
 import io
 from unittest.mock import patch
 
-import pytest
-
 from tests.conftest import SAMPLE_PDF_BYTES
 
 

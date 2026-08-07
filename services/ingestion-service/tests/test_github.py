@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, patch
 
-
 GITHUB_REPOS = [
     {"name": "api-service", "language": "Python", "stargazers_count": 5,
      "pushed_at": "2026-07-01T00:00:00Z"},
@@ -10,7 +9,6 @@ GITHUB_REPOS = [
 
 
 def test_github_enrichment_populated(client, db, seed, mock_agent, mock_embed):
-    from tests.conftest import MOCK_AGENT_OUTPUT, MOCK_EMBEDDING
     cand = seed["candidate"]
     job = seed["job"]
     cand.resume_file_url = "resumes/test/resume.pdf"

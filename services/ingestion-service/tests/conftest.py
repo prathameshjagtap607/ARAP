@@ -1,15 +1,12 @@
-import io
 import os
-import uuid
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
-
 from src.database import get_db
-from src.models import Base, Candidate, CandidateProfile, JobAssessment, Org
+from src.models import Base, Candidate, JobAssessment, Org
 
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL",

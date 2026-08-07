@@ -1,9 +1,5 @@
 import uuid
-from unittest.mock import patch, MagicMock
-
-import pytest
-
-from tests.conftest import MOCK_AGENT_OUTPUT, MOCK_EMBEDDING
+from unittest.mock import patch
 
 
 def _set_candidate_s3_key(db, candidate, key):
