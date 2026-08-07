@@ -77,6 +77,7 @@ describe("fetchRecentSessions", () => {
     mockedApiFetch.mockResolvedValue([
       {
         id: "s1",
+        candidate_name: "Alice",
         candidate_email: "alice@example.com",
         job_title: "Engineer",
         status: "invited",
@@ -87,7 +88,7 @@ describe("fetchRecentSessions", () => {
 
     const result = await fetchRecentSessions("org-1");
     expect(result).toHaveLength(1);
-    expect(result[0].candidateName).toBe("alice@example.com");
+    expect(result[0].candidateName).toBe("Alice");
     expect(result[0].jobTitle).toBe("Engineer");
     expect(result[0].status).toBe("invited");
   });

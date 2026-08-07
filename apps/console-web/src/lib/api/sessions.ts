@@ -4,6 +4,7 @@ export interface SessionItem {
   id: string;
   candidate_id: string;
   job_assessment_id: string;
+  candidate_name: string;
   candidate_email: string;
   job_title: string;
   status: string;

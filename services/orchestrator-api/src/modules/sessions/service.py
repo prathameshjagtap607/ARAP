@@ -275,6 +275,7 @@ def list_sessions(db: Session, org_id: uuid.UUID) -> list:
             AssessmentSession.id,
             AssessmentSession.candidate_id,
             AssessmentSession.job_assessment_id,
+            Candidate.name.label("candidate_name"),
             Candidate.email.label("candidate_email"),
             JobAssessment.title.label("job_title"),
             AssessmentSession.status,

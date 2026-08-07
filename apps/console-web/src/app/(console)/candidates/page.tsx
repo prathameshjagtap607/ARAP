@@ -94,6 +94,9 @@ export default function CandidatesPage() {
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
+                  Candidate Name
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
                   Candidate Email
                 </th>
                 <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
@@ -117,6 +120,9 @@ export default function CandidatesPage() {
               {sessions.map((session) => (
                 <tr key={session.id} className="border-b border-slate-200 hover:bg-slate-50">
                   <td className="px-6 py-4 text-sm text-slate-900 font-medium">
+                    {session.candidate_name}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-900">
                     {session.candidate_email}
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600">

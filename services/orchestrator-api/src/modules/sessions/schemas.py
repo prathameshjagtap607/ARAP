@@ -62,6 +62,7 @@ class SessionListItem(BaseModel):
     id: uuid.UUID
     candidate_id: uuid.UUID
     job_assessment_id: uuid.UUID
+    candidate_name: str
     candidate_email: str
     job_title: str
     status: str

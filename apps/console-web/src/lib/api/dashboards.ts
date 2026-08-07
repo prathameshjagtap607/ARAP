@@ -86,7 +86,7 @@ export async function fetchRecentSessions(
       const camelSession = toCamelCase(session);
       return {
         id: String(camelSession.id),
-        candidateName: String(camelSession.candidateEmail || ""),
+        candidateName: String(camelSession.candidateName || ""),
         jobTitle: String(camelSession.jobTitle || ""),
         status: (camelSession.status as DashboardSession["status"]) || "invited",
         startedAt: camelSession.startedAt ? String(camelSession.startedAt) : null,
