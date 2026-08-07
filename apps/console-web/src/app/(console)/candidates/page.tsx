@@ -9,6 +9,7 @@ export default function CandidatesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   async function handleDelete(sessionId: string) {
     if (!window.confirm('Delete this candidate session? This cannot be undone.')) {
@@ -64,9 +65,27 @@ export default function CandidatesPage() {
     );
   };
 
+  const filteredSessions = sessions.filter((s) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      s.candidate_name.toLowerCase().includes(q) ||
+      s.candidate_email.toLowerCase().includes(q) ||
+      s.job_title.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-slate-900">Candidates</h1>
+
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search by name, email, or assessment..."
+        className="w-full max-w-sm px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-slate-900"
+      />
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
@@ -117,7 +136,7 @@ export default function CandidatesPage() {
               </tr>
             </thead>
             <tbody>
-              {sessions.map((session) => (
+              {filteredSessions.map((session) => (
                 <tr key={session.id} className="border-b border-slate-200 hover:bg-slate-50">
                   <td className="px-6 py-4 text-sm text-slate-900 font-medium">
                     {session.candidate_name}

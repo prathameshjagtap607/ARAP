@@ -10,6 +10,7 @@ export default function AssessmentsPage() {
   const [assessments, setAssessments] = useState<AssessmentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -36,6 +37,10 @@ export default function AssessmentsPage() {
     }
   };
 
+  const filteredAssessments = assessments.filter((a) =>
+    a.title.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -47,6 +52,14 @@ export default function AssessmentsPage() {
           Create Assessment
         </Link>
       </div>
+
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search by job title..."
+        className="w-full max-w-sm px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-slate-900"
+      />
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
@@ -60,7 +73,7 @@ export default function AssessmentsPage() {
         </div>
       ) : (
         <AssessmentTable
-          assessments={assessments}
+          assessments={filteredAssessments}
           onDelete={handleDelete}
         />
       )}
