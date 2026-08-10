@@ -133,7 +133,7 @@ export default function InviteForm({ sessionId, jobTitle, orgId = '', durationMi
 
         <div className="flex gap-3">
           <button
-            onClick={() => router.push('/dashboard/assessments')}
+            onClick={() => router.push('/assessments')}
             className="px-6 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 focus:outline focus:outline-2 focus:outline-offset-2"
           >
             Back to Assessments

@@ -53,9 +53,6 @@ def delete_session(db: Session, session_id: uuid.UUID, org_id: uuid.UUID) -> Non
     db.query(IntegrityFlag).filter_by(session_id=session_id).delete(synchronize_session="fetch")
     db.query(AnswerCorpus).filter_by(session_id=session_id).delete(synchronize_session="fetch")
     db.query(BehaviorProfile).filter_by(session_id=session_id).delete(synchronize_session="fetch")
-    db.query(CandidateProfile).filter_by(
-        candidate_id=session.candidate_id, job_assessment_id=session.job_assessment_id
-    ).delete(synchronize_session="fetch")
     db.flush()
 
     qset = db.query(QuestionSet).filter_by(session_id=session_id).first()
@@ -65,7 +62,18 @@ def delete_session(db: Session, session_id: uuid.UUID, org_id: uuid.UUID) -> Non
         db.query(QuestionSet).filter_by(id=qset.id).delete(synchronize_session="fetch")
         db.flush()
 
+    candidate_id = session.candidate_id
+    job_assessment_id = session.job_assessment_id
     db.delete(session)
+    db.flush()
+
+    other_session_exists = db.query(AssessmentSession).filter_by(
+        candidate_id=candidate_id, job_assessment_id=job_assessment_id
+    ).first() is not None
+    if not other_session_exists:
+        db.query(CandidateProfile).filter_by(
+            candidate_id=candidate_id, job_assessment_id=job_assessment_id
+        ).delete(synchronize_session="fetch")
     db.commit()
 
 

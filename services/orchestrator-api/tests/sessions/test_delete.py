@@ -75,6 +75,8 @@ async def test_delete_session_removes_candidate_profile(
         job_assessment_id=session.job_assessment_id,
     )
     db.add(profile)
+    db.flush()
+    session.candidate_profile_id = profile.id
     db.commit()
     profile_id = profile.id
 
@@ -85,6 +87,44 @@ async def test_delete_session_removes_candidate_profile(
     assert resp.status_code == 204
 
     assert db.query(CandidateProfile).filter_by(id=profile_id).first() is None
+
+
+@pytest.mark.asyncio
+async def test_delete_session_keeps_candidate_profile_if_other_session_uses_it(
+    async_client, seed, user_token, db
+):
+    from src.models.assessment_sessions import AssessmentSession
+    from src.models.candidate_profiles import CandidateProfile
+
+    session = seed["session"]
+
+    profile = CandidateProfile(
+        org_id=seed["org"].id,
+        candidate_id=seed["candidate"].id,
+        job_assessment_id=session.job_assessment_id,
+    )
+    db.add(profile)
+    db.flush()
+    session.candidate_profile_id = profile.id
+
+    other_session = AssessmentSession(
+        org_id=seed["org"].id,
+        job_assessment_id=session.job_assessment_id,
+        candidate_id=session.candidate_id,
+        candidate_profile_id=profile.id,
+        time_budget_seconds=3600,
+    )
+    db.add(other_session)
+    db.commit()
+    profile_id = profile.id
+
+    resp = await async_client.delete(
+        f"/sessions/{session.id}",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert resp.status_code == 204
+
+    assert db.query(CandidateProfile).filter_by(id=profile_id).first() is not None
 
 
 @pytest.mark.asyncio
