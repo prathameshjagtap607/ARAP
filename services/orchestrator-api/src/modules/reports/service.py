@@ -240,7 +240,7 @@ def list_reports(
     db: Session,
     org_id: uuid.UUID,
     verdict: str | None = None,
-    disc_category: str | None = None,
+    disc_category: list[str] | None = None,
     disc_confidence_band: list[str] | None = None,
     status: str | None = None,
     date_from: str | None = None,
@@ -259,7 +259,7 @@ def list_reports(
         query = query.filter(HiringReport.verdict == verdict)
     if disc_category:
         query = query.filter(
-            HiringReport.full_report["disc_profile"]["primary"].astext == disc_category
+            HiringReport.full_report["disc_profile"]["primary"].astext.in_(disc_category)
         )
     if disc_confidence_band:
         confidence_expr = HiringReport.full_report["disc_profile"]["confidence"].astext.cast(Float)

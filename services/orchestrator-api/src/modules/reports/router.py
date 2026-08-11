@@ -24,7 +24,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 @router.get("", response_model=ReportListResponse)
 def list_reports(
     verdict: str | None = None,
-    disc_category: str | None = None,
+    disc_category: list[str] | None = Query(default=None),
     disc_confidence_band: list[str] | None = Query(default=None),
     status: str | None = None,
     date_from: str | None = None,
