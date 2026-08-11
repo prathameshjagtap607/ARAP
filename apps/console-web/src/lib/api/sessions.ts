@@ -66,8 +66,8 @@ export interface SessionReport {
   created_at: string | null;
 }
 
-export async function getSessions(): Promise<SessionItem[]> {
-  return apiFetch('/sessions');
+export async function getSessions(filterUserId?: string): Promise<SessionItem[]> {
+  return apiFetch(`/sessions?${filterUserId ? `filter_user_id=${filterUserId}` : ''}`);
 }
 
 export async function getSessionReport(sessionId: string): Promise<SessionReport> {

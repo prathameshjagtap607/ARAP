@@ -33,6 +33,57 @@ async def test_list_assessments(async_client, seed, user_token, mock_jd_agent):
 
 
 @pytest.mark.asyncio
+async def test_list_assessments_scopes_user_to_own_created(
+    async_client, seed, user_token, admin_token, mock_jd_agent
+):
+    # admin creates an assessment
+    await async_client.post(
+        "/job-assessments", json=JA_BODY,
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+
+    # plain user does not see admin's assessment
+    resp = await async_client.get(
+        "/job-assessments",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+    # admin still sees it, unrestricted
+    resp = await async_client.get(
+        "/job-assessments",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    assert len(resp.json()) >= 1
+
+
+@pytest.mark.asyncio
+async def test_admin_can_filter_assessments_by_user(
+    async_client, seed, user_token, admin_token, mock_jd_agent
+):
+    await async_client.post(
+        "/job-assessments", json=JA_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+
+    resp = await async_client.get(
+        f"/job-assessments?filter_user_id={seed['user'].id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    assert len(resp.json()) >= 1
+
+    resp = await async_client.get(
+        f"/job-assessments?filter_user_id={seed['admin'].id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+@pytest.mark.asyncio
 async def test_get_assessment(async_client, seed, user_token, mock_jd_agent):
     create_resp = await async_client.post(
         "/job-assessments", json=JA_BODY,

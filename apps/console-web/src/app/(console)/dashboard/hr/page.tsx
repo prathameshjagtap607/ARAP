@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import SummaryCard from '@/components/dashboard/SummaryCard';
 import FilterBar from '@/components/dashboard/FilterBar';
-import { fetchHRDashboardCounts, fetchRecentSessions } from '@/lib/api/dashboards';
+import { fetchHRDashboardCounts, fetchRecentSessions, fetchUsersList } from '@/lib/api/dashboards';
 import type { Filter } from '@/lib/types/dashboard';
 import type { DashboardSession } from '@/lib/types/dashboard';
 
@@ -18,6 +18,7 @@ const statusBadgeMap: Record<string, { color: 'amber' | 'green' | 'red' | 'blue'
 export default function HRDashboardPage() {
   const { user } = useAuth();
   const orgId = user?.orgId || '';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   // State for counts/summary data
   const [counts, setCounts] = useState({
@@ -34,9 +35,19 @@ export default function HRDashboardPage() {
 
   // State for filter
   const [statusFilter, setStatusFilter] = useState('');
+  const [filterUserId, setFilterUserId] = useState('');
+  const [userOptions, setUserOptions] = useState<{ label: string; value: string }[]>([]);
 
   // Abort controller for cleanup
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+
+  // Admin-only: load the user list to populate the "Filter by user" dropdown
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchUsersList().then((users) => {
+      setUserOptions(users.map((u) => ({ label: u.email, value: u.id })));
+    });
+  }, [isAdmin]);
 
   const filters: Filter[] = [
     {
@@ -51,6 +62,17 @@ export default function HRDashboardPage() {
         { label: 'Expired', value: 'expired' },
       ],
     },
+    ...(isAdmin
+      ? [
+          {
+            key: 'filterUserId',
+            label: 'Filter by User',
+            type: 'select' as const,
+            placeholder: 'All Users',
+            options: userOptions,
+          },
+        ]
+      : []),
   ];
 
   // Fetch counts on mount and when org changes
@@ -63,7 +85,7 @@ export default function HRDashboardPage() {
     const loadCounts = async () => {
       setCountsLoading(true);
       try {
-        const data = await fetchHRDashboardCounts(orgId, controller.signal);
+        const data = await fetchHRDashboardCounts(orgId, controller.signal, filterUserId || undefined);
         if (!controller.signal.aborted) {
           setCounts(data);
         }
@@ -83,7 +105,7 @@ export default function HRDashboardPage() {
     return () => {
       controller.abort();
     };
-  }, [orgId]);
+  }, [orgId, filterUserId]);
 
   // Fetch sessions on mount and when status filter changes
   useEffect(() => {
@@ -99,7 +121,8 @@ export default function HRDashboardPage() {
           orgId,
           statusFilter || undefined,
           20,
-          controller.signal
+          controller.signal,
+          filterUserId || undefined
         );
         if (!controller.signal.aborted) {
           setSessions(data);
@@ -120,14 +143,16 @@ export default function HRDashboardPage() {
     return () => {
       controller.abort();
     };
-  }, [orgId, statusFilter]);
+  }, [orgId, statusFilter, filterUserId]);
 
   const handleFilterApply = (values: Record<string, any>) => {
     setStatusFilter(values.status || '');
+    setFilterUserId(values.filterUserId || '');
   };
 
   const handleFilterReset = () => {
     setStatusFilter('');
+    setFilterUserId('');
   };
 
   const formatDate = (dateString: string | null) => {

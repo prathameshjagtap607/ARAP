@@ -3,19 +3,32 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getAssessments, deleteAssessment } from '@/lib/api/assessments';
+import { fetchUsersList } from '@/lib/api/dashboards';
 import AssessmentTable from '@/components/tables/AssessmentTable';
+import { useAuth } from '@/context/AuthContext';
 import type { AssessmentResponse } from '@/lib/types/assessment';
 
 export default function AssessmentsPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
   const [assessments, setAssessments] = useState<AssessmentResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [filterUserId, setFilterUserId] = useState('');
+  const [userOptions, setUserOptions] = useState<{ id: string; email: string }[]>([]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchUsersList().then(setUserOptions);
+  }, [isAdmin]);
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
       try {
-        const data = await getAssessments();
+        const data = await getAssessments(filterUserId || undefined);
         setAssessments(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load assessments');
@@ -25,7 +38,7 @@ export default function AssessmentsPage() {
     };
 
     load();
-  }, []);
+  }, [filterUserId]);
 
   const handleDelete = async (id: string) => {
     setError(null);
@@ -53,13 +66,30 @@ export default function AssessmentsPage() {
         </Link>
       </div>
 
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by job title..."
-        className="w-full max-w-sm px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-slate-900"
-      />
+      <div className="flex gap-3 flex-wrap">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by job title..."
+          className="w-full max-w-sm px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-slate-900"
+        />
+
+        {isAdmin && (
+          <select
+            value={filterUserId}
+            onChange={(e) => setFilterUserId(e.target.value)}
+            className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-slate-900"
+          >
+            <option value="">All Users</option>
+            {userOptions.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.email}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">

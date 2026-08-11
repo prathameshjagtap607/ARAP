@@ -247,6 +247,9 @@ def list_reports(
     date_to: str | None = None,
     limit: int = 20,
     offset: int = 0,
+    user_id: uuid.UUID | None = None,
+    role: str | None = None,
+    filter_user_id: uuid.UUID | None = None,
 ) -> ReportListResponse:
     query = (
         db.query(HiringReport, Candidate.name, JobAssessment.title)
@@ -255,6 +258,10 @@ def list_reports(
         .join(JobAssessment, AssessmentSession.job_assessment_id == JobAssessment.id)
         .filter(HiringReport.org_id == org_id)
     )
+    if role == "user" and user_id is not None:
+        query = query.filter(AssessmentSession.invited_by == user_id)
+    elif role == "admin" and filter_user_id is not None:
+        query = query.filter(AssessmentSession.invited_by == filter_user_id)
     if verdict:
         query = query.filter(HiringReport.verdict == verdict)
     if disc_category:

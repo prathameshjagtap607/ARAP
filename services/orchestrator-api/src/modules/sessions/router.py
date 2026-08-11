@@ -26,10 +26,13 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 @router.get("", response_model=list[SessionListItem])
 def list_sessions(
+    filter_user_id: uuid.UUID | None = None,
     claims: TokenClaims = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    return service.list_sessions(db, claims.org_id)
+    return service.list_sessions(
+        db, claims.org_id, uuid.UUID(claims.sub), claims.role, filter_user_id
+    )
 
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)

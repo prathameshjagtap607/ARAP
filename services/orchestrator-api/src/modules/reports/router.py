@@ -31,12 +31,14 @@ def list_reports(
     date_to: str | None = None,
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    filter_user_id: uuid.UUID | None = Query(default=None),
     claims: TokenClaims = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     return service.list_reports(
         db, claims.org_id, verdict, disc_category, disc_confidence_band,
-        status, date_from, date_to, limit, offset
+        status, date_from, date_to, limit, offset,
+        uuid.UUID(claims.sub), claims.role, filter_user_id,
     )
 
 

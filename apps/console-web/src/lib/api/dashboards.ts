@@ -24,16 +24,22 @@ function toCamelCase(obj: Record<string, unknown>): Record<string, unknown> {
  */
 export async function fetchHRDashboardCounts(
   orgId: string,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  filterUserId?: string
 ): Promise<Omit<HRDashboardData, "recentSessions" | "completionTrend">> {
   try {
+    const userQuery = filterUserId ? `&filter_user_id=${filterUserId}` : "";
     const [assessments, sessions, awaitingReviewReports] = await Promise.all([
-      apiFetch<{ is_template: boolean }[]>(`/job-assessments`, { signal: abortSignal }),
-      apiFetch<{ candidate_email: string; status: string }[]>(`/sessions`, {
-        signal: abortSignal,
-      }),
+      apiFetch<{ is_template: boolean }[]>(
+        `/job-assessments?${filterUserId ? `filter_user_id=${filterUserId}` : ""}`,
+        { signal: abortSignal }
+      ),
+      apiFetch<{ candidate_email: string; status: string }[]>(
+        `/sessions?${filterUserId ? `filter_user_id=${filterUserId}` : ""}`,
+        { signal: abortSignal }
+      ),
       apiFetch<{ total_count: number }>(
-        `/reports?status=awaiting_review`,
+        `/reports?status=awaiting_review${userQuery}`,
         { signal: abortSignal }
       ),
     ]);
@@ -71,12 +77,14 @@ export async function fetchRecentSessions(
   orgId: string,
   status?: string,
   limit: number = 10,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  filterUserId?: string
 ): Promise<DashboardSession[]> {
   try {
-    const sessions = await apiFetch<Record<string, unknown>[]>(`/sessions`, {
-      signal: abortSignal,
-    });
+    const sessions = await apiFetch<Record<string, unknown>[]>(
+      `/sessions?${filterUserId ? `filter_user_id=${filterUserId}` : ""}`,
+      { signal: abortSignal }
+    );
 
     const filtered = (sessions || []).filter(
       (session) => !status || session.status === status
@@ -131,6 +139,9 @@ export async function fetchReportsList(
       }
       if (filters.dateTo) {
         queryParams.append("date_to", String(filters.dateTo));
+      }
+      if (filters.filterUserId) {
+        queryParams.append("filter_user_id", String(filters.filterUserId));
       }
     }
 
@@ -200,6 +211,23 @@ export async function fetchReportsList(
       currentPage: 0,
       pageSize: limit,
     };
+  }
+}
+
+/**
+ * Fetch a lightweight list of org users (id + email) — used to populate the
+ * admin-only "Filter by user" dropdown.
+ */
+export async function fetchUsersList(): Promise<{ id: string; email: string }[]> {
+  try {
+    const response = await apiFetch<{ items: Record<string, unknown>[] }>(`/users`);
+    return (response.items || []).map((user) => {
+      const camel = toCamelCase(user);
+      return { id: String(camel.id), email: String(camel.email || "") };
+    });
+  } catch (error) {
+    console.error("[fetchUsersList] Error:", error);
+    return [];
   }
 }
 

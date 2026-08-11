@@ -3,13 +3,25 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getSessions, deleteSession, type SessionItem } from '@/lib/api/sessions';
+import { fetchUsersList } from '@/lib/api/dashboards';
+import { useAuth } from '@/context/AuthContext';
 
 export default function CandidatesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [filterUserId, setFilterUserId] = useState('');
+  const [userOptions, setUserOptions] = useState<{ id: string; email: string }[]>([]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchUsersList().then(setUserOptions);
+  }, [isAdmin]);
 
   async function handleDelete(sessionId: string) {
     if (!window.confirm('Delete this candidate session? This cannot be undone.')) {
@@ -28,8 +40,9 @@ export default function CandidatesPage() {
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
       try {
-        const data = await getSessions();
+        const data = await getSessions(filterUserId || undefined);
         setSessions(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load sessions');
@@ -39,7 +52,7 @@ export default function CandidatesPage() {
     };
 
     load();
-  }, []);
+  }, [filterUserId]);
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '—';
@@ -79,13 +92,30 @@ export default function CandidatesPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-slate-900">Candidates</h1>
 
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search by name, email, or assessment..."
-        className="w-full max-w-sm px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-slate-900"
-      />
+      <div className="flex gap-3 flex-wrap">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, email, or assessment..."
+          className="w-full max-w-sm px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-slate-900"
+        />
+
+        {isAdmin && (
+          <select
+            value={filterUserId}
+            onChange={(e) => setFilterUserId(e.target.value)}
+            className="px-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-slate-900"
+          >
+            <option value="">All Users</option>
+            {userOptions.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.email}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">

@@ -279,10 +279,16 @@ def calibrate_answer(
     return calibration
 
 
-def list_sessions(db: Session, org_id: uuid.UUID) -> list:
+def list_sessions(
+    db: Session,
+    org_id: uuid.UUID,
+    user_id: uuid.UUID | None = None,
+    role: str | None = None,
+    filter_user_id: uuid.UUID | None = None,
+) -> list:
     from src.modules.sessions.schemas import SessionListItem
 
-    sessions = (
+    query = (
         db.query(
             AssessmentSession.id,
             AssessmentSession.candidate_id,
@@ -298,8 +304,12 @@ def list_sessions(db: Session, org_id: uuid.UUID) -> list:
         .join(Candidate, AssessmentSession.candidate_id == Candidate.id)
         .join(JobAssessment, AssessmentSession.job_assessment_id == JobAssessment.id)
         .filter(AssessmentSession.org_id == org_id)
-        .order_by(AssessmentSession.invited_at.desc())
-        .all()
     )
+    if role == "user" and user_id is not None:
+        query = query.filter(AssessmentSession.invited_by == user_id)
+    elif role == "admin" and filter_user_id is not None:
+        query = query.filter(AssessmentSession.invited_by == filter_user_id)
+
+    sessions = query.order_by(AssessmentSession.invited_at.desc()).all()
 
     return [SessionListItem(**dict(s._mapping)) for s in sessions]

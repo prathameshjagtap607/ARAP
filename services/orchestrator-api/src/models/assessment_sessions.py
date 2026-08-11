@@ -33,3 +33,6 @@ class AssessmentSession(Base):
     prompt_template_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("prompt_templates.id"), nullable=True
     )
+    invited_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )

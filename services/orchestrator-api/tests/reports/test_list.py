@@ -135,6 +135,47 @@ async def test_list_reports_filters_by_disc_confidence_band(
 
 
 @pytest.mark.anyio
+async def test_list_reports_scopes_user_role_to_own_invites(
+    async_client, report_seed, db
+):
+    from src.models.hiring_reports import HiringReport
+    from src.models.users import User
+    from src.modules.auth.token import create_access_token
+
+    other_user = User(
+        org_id=report_seed["org"].id,
+        email="other-user@test.com",
+        role="user",
+        password_hash="x",
+    )
+    db.add(other_user)
+    db.flush()
+
+    # session in report_seed has no invited_by set — belongs to nobody
+    report = HiringReport(
+        org_id=report_seed["org"].id,
+        session_id=report_seed["session"].id,
+        score_rollup={"overall": 3.0},
+        verdict="consider",
+    )
+    db.add(report)
+    db.commit()
+
+    other_user_token = create_access_token({
+        "sub": str(other_user.id),
+        "role": "user",
+        "org_id": str(report_seed["org"].id),
+    })
+
+    resp = await async_client.get(
+        "/reports",
+        headers={"Authorization": f"Bearer {other_user_token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["total_count"] == 0
+
+
+@pytest.mark.anyio
 async def test_list_reports_requires_auth(async_client, report_seed):
     resp = await async_client.get("/reports")
     assert resp.status_code == 401

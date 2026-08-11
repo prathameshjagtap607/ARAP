@@ -18,8 +18,8 @@ export async function updateAssessment(
   });
 }
 
-export async function getAssessments(): Promise<AssessmentResponse[]> {
-  return apiFetch('/job-assessments');
+export async function getAssessments(filterUserId?: string): Promise<AssessmentResponse[]> {
+  return apiFetch(`/job-assessments?${filterUserId ? `filter_user_id=${filterUserId}` : ''}`);
 }
 
 export async function getAssessment(id: string): Promise<AssessmentResponse> {

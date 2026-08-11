@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import FilterBar from '@/components/dashboard/FilterBar';
 import ChartCard from '@/components/dashboard/ChartCard';
-import { fetchReportsList, downloadReportPdf } from '@/lib/api/dashboards';
+import { fetchReportsList, downloadReportPdf, fetchUsersList } from '@/lib/api/dashboards';
 import type { Filter } from '@/lib/types/dashboard';
 import type { ReportsDashboardData } from '@/lib/types/dashboard';
 
@@ -25,6 +25,7 @@ const discLabels: Record<string, string> = {
 export default function ReportsDashboardPage() {
   const { user } = useAuth();
   const orgId = user?.orgId || '';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   // State for reports data
   const [data, setData] = useState<ReportsDashboardData>({
@@ -44,9 +45,18 @@ export default function ReportsDashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [filterUserId, setFilterUserId] = useState('');
+  const [userOptions, setUserOptions] = useState<{ label: string; value: string }[]>([]);
 
   // State for pagination
   const [currentPage, setCurrentPage] = useState(0);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchUsersList().then((users) => {
+      setUserOptions(users.map((u) => ({ label: u.email, value: u.id })));
+    });
+  }, [isAdmin]);
 
   const filters: Filter[] = [
     {
@@ -82,6 +92,17 @@ export default function ReportsDashboardPage() {
       label: 'Date Range',
       type: 'date-range',
     },
+    ...(isAdmin
+      ? [
+          {
+            key: 'filterUserId',
+            label: 'Filter by User',
+            type: 'select' as const,
+            placeholder: 'All Users',
+            options: userOptions,
+          },
+        ]
+      : []),
   ];
 
   // Fetch reports data on mount and when filters/pagination changes
@@ -107,6 +128,9 @@ export default function ReportsDashboardPage() {
         }
         if (dateTo) {
           apiFilters.dateTo = dateTo;
+        }
+        if (filterUserId) {
+          apiFilters.filterUserId = filterUserId;
         }
 
         const response = await fetchReportsList(
@@ -150,7 +174,7 @@ export default function ReportsDashboardPage() {
     return () => {
       controller.abort();
     };
-  }, [orgId, discCategoryFilter, discConfidenceFilter, searchQuery, dateFrom, dateTo, currentPage]);
+  }, [orgId, discCategoryFilter, discConfidenceFilter, searchQuery, dateFrom, dateTo, filterUserId, currentPage]);
 
   const handleFilterApply = (values: Record<string, any>) => {
     setSearchQuery(values.search || '');
@@ -158,6 +182,7 @@ export default function ReportsDashboardPage() {
     setDiscConfidenceFilter(values.discConfidence || []);
     setDateFrom(values.dateRange_start || '');
     setDateTo(values.dateRange_end || '');
+    setFilterUserId(values.filterUserId || '');
     setCurrentPage(0); // Reset to first page
   };
 
@@ -167,6 +192,7 @@ export default function ReportsDashboardPage() {
     setDiscConfidenceFilter([]);
     setDateFrom('');
     setDateTo('');
+    setFilterUserId('');
     setCurrentPage(0);
   };
 

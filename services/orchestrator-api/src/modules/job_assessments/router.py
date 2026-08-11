@@ -20,10 +20,13 @@ router = APIRouter(prefix="/job-assessments", tags=["job-assessments"])
 @router.get("", response_model=list[JobAssessmentResponse])
 def list_assessments(
     is_template: bool | None = Query(default=None),
+    filter_user_id: uuid.UUID | None = Query(default=None),
     claims: TokenClaims = Depends(require_user),
     db: Session = Depends(get_db),
 ):
-    return service.list_assessments(db, claims.org_id, is_template)
+    return service.list_assessments(
+        db, claims.org_id, is_template, uuid.UUID(claims.sub), claims.role, filter_user_id
+    )
 
 
 @router.post("", response_model=JobAssessmentResponse, status_code=status.HTTP_201_CREATED)

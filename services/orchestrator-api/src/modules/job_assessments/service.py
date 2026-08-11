@@ -16,11 +16,20 @@ from src.modules.job_assessments.schemas import (
 
 
 def list_assessments(
-    db: Session, org_id: uuid.UUID, is_template: bool | None = None
+    db: Session,
+    org_id: uuid.UUID,
+    is_template: bool | None = None,
+    user_id: uuid.UUID | None = None,
+    role: str | None = None,
+    filter_user_id: uuid.UUID | None = None,
 ) -> list[JobAssessment]:
     q = db.query(JobAssessment).filter_by(org_id=org_id)
     if is_template is not None:
         q = q.filter(JobAssessment.is_template == is_template)
+    if role == "user" and user_id is not None:
+        q = q.filter(JobAssessment.created_by == user_id)
+    elif role == "admin" and filter_user_id is not None:
+        q = q.filter(JobAssessment.created_by == filter_user_id)
     return q.all()
 
 
@@ -145,6 +154,7 @@ def invite_candidate(
         candidate_id=candidate.id,
         time_budget_seconds=data.time_budget_seconds,
         prompt_template_id=active_template,
+        invited_by=user_id,
     )
     db.add(session)
     db.commit()
