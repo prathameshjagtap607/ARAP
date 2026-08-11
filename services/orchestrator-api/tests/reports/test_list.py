@@ -77,6 +77,35 @@ async def test_list_reports_awaiting_review_excludes_reviewed(
 
 
 @pytest.mark.anyio
+async def test_list_reports_filters_by_disc_confidence_band(
+    async_client, report_seed, user_token, db
+):
+    from src.models.hiring_reports import HiringReport
+
+    high_confidence = HiringReport(
+        org_id=report_seed["org"].id,
+        session_id=report_seed["session"].id,
+        full_report={"disc_profile": {"primary": "D", "confidence": 0.9}},
+    )
+    db.add(high_confidence)
+    db.commit()
+
+    resp = await async_client.get(
+        "/reports?disc_confidence_band=60-79%25",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["total_count"] == 0
+
+    resp = await async_client.get(
+        "/reports?disc_confidence_band=80-100%25",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["total_count"] == 1
+
+
+@pytest.mark.anyio
 async def test_list_reports_requires_auth(async_client, report_seed):
     resp = await async_client.get("/reports")
     assert resp.status_code == 401

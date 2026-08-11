@@ -99,6 +99,9 @@ export default function ReportsDashboardPage() {
         if (discCategoryFilter.length > 0) {
           apiFilters.discCategory = discCategoryFilter;
         }
+        if (discConfidenceFilter.length > 0) {
+          apiFilters.discConfidence = discConfidenceFilter;
+        }
         if (dateFrom) {
           apiFilters.dateFrom = dateFrom;
         }
@@ -115,22 +118,8 @@ export default function ReportsDashboardPage() {
         );
 
         if (!controller.signal.aborted) {
-          // Filter by score band and search query if provided
+          // Filter by search query if provided (not sent to the backend)
           let filteredReports = response.reports;
-
-          if (discConfidenceFilter.length > 0) {
-            filteredReports = filteredReports.filter((report) => {
-              if (report.discConfidence == null) return false;
-              const pct = report.discConfidence * 100;
-              return discConfidenceFilter.some((band) => {
-                if (band === '80-100%') return pct >= 80;
-                if (band === '60-79%') return pct >= 60 && pct < 80;
-                if (band === '40-59%') return pct >= 40 && pct < 60;
-                if (band === '<40%') return pct < 40;
-                return false;
-              });
-            });
-          }
 
           if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();

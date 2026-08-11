@@ -25,6 +25,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 def list_reports(
     verdict: str | None = None,
     disc_category: str | None = None,
+    disc_confidence_band: list[str] | None = Query(default=None),
     status: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
@@ -34,7 +35,8 @@ def list_reports(
     db: Session = Depends(get_db),
 ):
     return service.list_reports(
-        db, claims.org_id, verdict, disc_category, status, date_from, date_to, limit, offset
+        db, claims.org_id, verdict, disc_category, disc_confidence_band,
+        status, date_from, date_to, limit, offset
     )
 
 

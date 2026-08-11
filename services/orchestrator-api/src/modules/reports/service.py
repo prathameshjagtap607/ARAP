@@ -1,6 +1,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import Float, or_
 from sqlalchemy.orm import Session
 
 from src.database import get_redis
@@ -227,11 +228,20 @@ def submit_reviewer_feedback(
     return ReviewerFeedbackResponse(reviewer_override=override)
 
 
+_CONFIDENCE_BANDS = {
+    "80-100%": lambda c: c >= 0.8,
+    "60-79%": lambda c: (c >= 0.6) & (c < 0.8),
+    "40-59%": lambda c: (c >= 0.4) & (c < 0.6),
+    "<40%": lambda c: c < 0.4,
+}
+
+
 def list_reports(
     db: Session,
     org_id: uuid.UUID,
     verdict: str | None = None,
     disc_category: str | None = None,
+    disc_confidence_band: list[str] | None = None,
     status: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
@@ -251,6 +261,15 @@ def list_reports(
         query = query.filter(
             HiringReport.full_report["disc_profile"]["primary"].astext == disc_category
         )
+    if disc_confidence_band:
+        confidence_expr = HiringReport.full_report["disc_profile"]["confidence"].astext.cast(Float)
+        conditions = [
+            _CONFIDENCE_BANDS[band](confidence_expr)
+            for band in disc_confidence_band
+            if band in _CONFIDENCE_BANDS
+        ]
+        if conditions:
+            query = query.filter(or_(*conditions))
     if status == "awaiting_review":
         query = query.filter(HiringReport.reviewer_override.is_(None))
     if date_from:

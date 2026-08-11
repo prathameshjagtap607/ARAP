@@ -119,6 +119,11 @@ export async function fetchReportsList(
       if (filters.discCategory) {
         queryParams.append("disc_category", String(filters.discCategory));
       }
+      if (Array.isArray(filters.discConfidence)) {
+        filters.discConfidence.forEach((band) =>
+          queryParams.append("disc_confidence_band", String(band))
+        );
+      }
       if (filters.dateFrom) {
         queryParams.append("date_from", String(filters.dateFrom));
       }
