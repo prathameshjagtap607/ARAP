@@ -25,8 +25,6 @@ class FullReportResponse(BaseModel):
     report_ready: bool
     requires_human_review: bool
     verdict: str | None
-    ai_confidence_score: float | None
-    salary_band: str | None
     full_report: dict
     reviewer_override: dict | None
     created_at: datetime | None

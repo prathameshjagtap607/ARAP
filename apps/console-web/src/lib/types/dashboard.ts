@@ -47,7 +47,8 @@ export interface HRDashboardData {
   activeAssessments: number;
   candidatesInProgress: number;
   awaitingReview: number;
-  pendingDecisions: number;
+  candidatesInvited: number;
+  candidatesCompleted: number;
   recentSessions: DashboardSession[];
   completionTrend?: { date: string; count: number }[];
 }

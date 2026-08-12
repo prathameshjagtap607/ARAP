@@ -25,7 +25,8 @@ export default function HRDashboardPage() {
     activeAssessments: 0,
     candidatesInProgress: 0,
     awaitingReview: 0,
-    pendingDecisions: 0,
+    candidatesInvited: 0,
+    candidatesCompleted: 0,
   });
   const [countsLoading, setCountsLoading] = useState(true);
 
@@ -174,11 +175,17 @@ export default function HRDashboardPage() {
       <h1 className="text-2xl font-bold text-slate-900">HR Dashboard</h1>
 
       {/* Summary Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <SummaryCard
           title="Active Assessments"
           value={counts.activeAssessments}
           icon="📋"
+          loading={countsLoading}
+        />
+        <SummaryCard
+          title="Candidates Invited"
+          value={counts.candidatesInvited}
+          icon="✉️"
           loading={countsLoading}
         />
         <SummaryCard
@@ -188,15 +195,15 @@ export default function HRDashboardPage() {
           loading={countsLoading}
         />
         <SummaryCard
-          title="Awaiting Review"
-          value={counts.awaitingReview}
-          icon="🔍"
+          title="Candidates Completed"
+          value={counts.candidatesCompleted}
+          icon="✅"
           loading={countsLoading}
         />
         <SummaryCard
-          title="Pending Final Decision"
-          value={counts.pendingDecisions}
-          icon="⏳"
+          title="Awaiting Review"
+          value={counts.awaitingReview}
+          icon="🔍"
           loading={countsLoading}
         />
       </div>

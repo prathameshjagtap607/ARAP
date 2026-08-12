@@ -45,19 +45,22 @@ export async function fetchHRDashboardCounts(
     ]);
 
     const activeAssessments = (assessments || []).filter((a) => !a.is_template).length;
-    const inProgressCandidates = new Set(
-      (sessions || [])
-        .filter((s) => s.status === "in_progress")
-        .map((s) => s.candidate_email)
-    ).size;
+    const inProgressCandidates = (sessions || []).filter(
+      (s) => s.status === "in_progress"
+    ).length;
+    const invitedCandidates = (sessions || []).filter(
+      (s) => s.status === "invited"
+    ).length;
+    const completedCandidates = (sessions || []).filter(
+      (s) => s.status === "completed"
+    ).length;
 
     return {
       activeAssessments,
       candidatesInProgress: inProgressCandidates,
       awaitingReview: awaitingReviewReports.total_count || 0,
-      // Reports with a verdict but no reviewer_override yet — same condition
-      // the backend already uses for "awaiting_review" (see reports/service.py).
-      pendingDecisions: awaitingReviewReports.total_count || 0,
+      candidatesInvited: invitedCandidates,
+      candidatesCompleted: completedCandidates,
     };
   } catch (error) {
     console.error("[fetchHRDashboardCounts] Error:", error);
@@ -65,7 +68,8 @@ export async function fetchHRDashboardCounts(
       activeAssessments: 0,
       candidatesInProgress: 0,
       awaitingReview: 0,
-      pendingDecisions: 0,
+      candidatesInvited: 0,
+      candidatesCompleted: 0,
     };
   }
 }

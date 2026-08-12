@@ -52,8 +52,6 @@ def get_full_report(
         report_ready=True,
         requires_human_review=requires_human_review,
         verdict=report.verdict,
-        ai_confidence_score=float(report.ai_confidence_score) if report.ai_confidence_score is not None else None,
-        salary_band=report.salary_band,
         full_report=report.full_report,
         reviewer_override=report.reviewer_override,
         created_at=report.created_at,

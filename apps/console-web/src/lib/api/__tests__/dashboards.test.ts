@@ -36,7 +36,7 @@ describe("fetchHRDashboardCounts", () => {
     );
   });
 
-  it("counts distinct in-progress candidates from the real /sessions list", async () => {
+  it("counts in-progress sessions from the real /sessions list", async () => {
     mockedApiFetch.mockImplementation((path: string) => {
       if (path.startsWith("/job-assessments")) return Promise.resolve([]);
       if (path.startsWith("/sessions")) {
@@ -51,7 +51,7 @@ describe("fetchHRDashboardCounts", () => {
     });
 
     const result = await fetchHRDashboardCounts("org-1");
-    expect(result.candidatesInProgress).toBe(1);
+    expect(result.candidatesInProgress).toBe(2);
   });
 
   it("reads awaitingReview from the real /reports?status=awaiting_review total_count", async () => {

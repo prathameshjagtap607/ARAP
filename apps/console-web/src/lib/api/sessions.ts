@@ -59,8 +59,6 @@ export interface SessionReport {
   report_ready: boolean;
   requires_human_review: boolean;
   verdict: string | null;
-  ai_confidence_score: number | null;
-  salary_band: string | null;
   full_report: FullReportBody;
   reviewer_override: ReviewerOverride | null;
   created_at: string | null;

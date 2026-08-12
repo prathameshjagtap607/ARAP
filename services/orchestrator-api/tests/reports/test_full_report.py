@@ -77,8 +77,8 @@ async def test_get_full_report_200(async_client, report_seed, user_token, db):
     data = resp.json()
     assert data["report_ready"] is True
     assert data["verdict"] == "hire"
-    assert data["ai_confidence_score"] == pytest.approx(82.5)
-    assert data["salary_band"] == "$90k–$110k"
+    assert "ai_confidence_score" not in data
+    assert "salary_band" not in data
     assert "summary" in data["full_report"]
     assert data["requires_human_review"] is False
 
