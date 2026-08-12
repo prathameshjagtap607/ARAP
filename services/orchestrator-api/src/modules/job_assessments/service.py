@@ -133,6 +133,13 @@ def invite_candidate(
             candidate = db.query(Candidate).filter_by(
                 org_id=org_id, email=data.candidate_email
             ).first()
+    elif candidate.name != data.candidate_name:
+        # A candidate record already exists for this email (e.g. invited to
+        # a different assessment before) — keep the name in sync with what
+        # was actually typed on this invite, instead of silently freezing
+        # it to whatever was entered the first time.
+        candidate.name = data.candidate_name
+        db.flush()
 
     from sqlalchemy import text as _text
 

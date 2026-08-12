@@ -181,6 +181,37 @@ async def test_invite_upserts_candidate_by_email(async_client, seed, user_token,
 
 
 @pytest.mark.asyncio
+async def test_invite_updates_candidate_name_on_repeat_invite(
+    async_client, seed, user_token, mock_jd_agent, db
+):
+    """Re-inviting the same email with a different typed name must update
+    the candidate record's name, not silently keep the first one entered."""
+    from src.models.candidates import Candidate
+
+    create_resp = await async_client.post(
+        "/job-assessments", json=JA_BODY,
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    ja_id = create_resp.json()["id"]
+
+    await async_client.post(
+        f"/job-assessments/{ja_id}/invite",
+        json={**INVITE_BODY, "candidate_email": "carol@candidate.com", "candidate_name": "Carol First"},
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    await async_client.post(
+        f"/job-assessments/{ja_id}/invite",
+        json={**INVITE_BODY, "candidate_email": "carol@candidate.com", "candidate_name": "Carol Updated"},
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+
+    candidate = db.query(Candidate).filter_by(
+        org_id=seed["org"].id, email="carol@candidate.com"
+    ).first()
+    assert candidate.name == "Carol Updated"
+
+
+@pytest.mark.asyncio
 async def test_invite_creates_distinct_sessions(async_client, seed, user_token, mock_jd_agent):
     create_resp = await async_client.post(
         "/job-assessments", json=JA_BODY,
