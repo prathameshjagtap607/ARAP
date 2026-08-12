@@ -3,11 +3,9 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AssessmentFormData, CreateAssessmentRequest } from '@/lib/types/assessment';
-import type { Competency } from '@/lib/types/competency';
 import { apiFetch } from '@/lib/api';
 
 interface AssessmentFormProps {
-  competencies: Competency[];
   initialData?: Partial<AssessmentFormData>;
   assessmentId?: string;
   isEditing?: boolean;
@@ -16,7 +14,6 @@ interface AssessmentFormProps {
 const DIFFICULTY_OPTIONS = ['junior', 'mid', 'senior', 'executive'];
 
 export default function AssessmentForm({
-  competencies,
   initialData,
   assessmentId,
   isEditing = false,
@@ -30,16 +27,11 @@ export default function AssessmentForm({
     experienceMaxYears: initialData?.experienceMaxYears || 10,
     difficulty: initialData?.difficulty || 'mid',
     durationMinutes: initialData?.durationMinutes || 60,
-    competencies: initialData?.competencies || [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  const calculateWeightageSum = useCallback(() => {
-    return formData.competencies.reduce((sum, c) => sum + c.weightage, 0);
-  }, [formData.competencies]);
 
   const validateForm = useCallback(() => {
     const newErrors: Record<string, string> = {};
@@ -51,42 +43,10 @@ export default function AssessmentForm({
       newErrors.experienceMaxYears = 'Max years must be >= min years';
     }
     if (formData.durationMinutes < 5) newErrors.durationMinutes = 'Duration must be >= 5 minutes';
-    if (formData.competencies.length === 0) newErrors.competencies = 'At least one competency required';
-
-    const sum = calculateWeightageSum();
-    const tolerance = 0.01;
-    if (Math.abs(sum - 100) > tolerance) {
-      newErrors.competencies = `Weightage must sum to 100% (current: ${sum.toFixed(2)}%)`;
-    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, calculateWeightageSum]);
-
-  const handleCompetencyWeightageChange = (competencyId: string, newWeightage: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      competencies: prev.competencies.map((c) =>
-        c.competencyId === competencyId ? { ...c, weightage: newWeightage } : c
-      ),
-    }));
-  };
-
-  const handleAddCompetency = (competencyId: string) => {
-    if (!formData.competencies.find((c) => c.competencyId === competencyId)) {
-      setFormData((prev) => ({
-        ...prev,
-        competencies: [...prev.competencies, { competencyId, weightage: 0 }],
-      }));
-    }
-  };
-
-  const handleRemoveCompetency = (competencyId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      competencies: prev.competencies.filter((c) => c.competencyId !== competencyId),
-    }));
-  };
+  }, [formData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,16 +57,10 @@ export default function AssessmentForm({
     setLoading(true);
 
     try {
-      const competencyWeightage: Record<string, number> = {};
-      formData.competencies.forEach((c) => {
-        competencyWeightage[c.competencyId] = c.weightage;
-      });
-
       const payload: CreateAssessmentRequest = {
         title: formData.jobTitle,
         difficulty_level: formData.difficulty,
         duration_minutes: formData.durationMinutes,
-        competency_weightage: competencyWeightage,
       };
 
       if (isEditing && assessmentId) {
@@ -128,8 +82,6 @@ export default function AssessmentForm({
       setLoading(false);
     }
   };
-
-  const weightageSum = calculateWeightageSum();
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
@@ -263,86 +215,6 @@ export default function AssessmentForm({
           {errors.durationMinutes && (
             <p className="text-xs text-red-600 mt-1">{errors.durationMinutes}</p>
           )}
-        </div>
-      </div>
-
-      {/* Competencies */}
-      <div>
-        <div className="flex justify-between items-center mb-3">
-          <label className="block text-sm font-medium text-slate-700">Competencies *</label>
-          <span
-            className={`text-xs font-medium ${
-              Math.abs(weightageSum - 100) < 0.01 ? 'text-green-600' : 'text-red-600'
-            }`}
-          >
-            Weightage: {weightageSum.toFixed(2)}%
-          </span>
-        </div>
-
-        {errors.competencies && (
-          <p className="text-xs text-red-600 mb-2">{errors.competencies}</p>
-        )}
-
-        {/* Selected Competencies */}
-        <div className="space-y-2 mb-4">
-          {formData.competencies.map((selected) => {
-            const comp = competencies.find((c) => c.id === selected.competencyId);
-            return (
-              <div key={selected.competencyId} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-900">{comp?.name}</p>
-                </div>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={selected.weightage}
-                  onChange={(e) =>
-                    handleCompetencyWeightageChange(selected.competencyId, parseFloat(e.target.value) || 0)
-                  }
-                  className="w-20 px-2 py-1 border border-slate-300 rounded text-sm focus:outline focus:outline-2"
-                  aria-label={`Weightage for ${comp?.name}`}
-                />
-                <span className="text-sm text-slate-600 w-8">%</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveCompetency(selected.competencyId)}
-                  className="text-red-600 hover:text-red-800 text-sm font-medium"
-                >
-                  Remove
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Add Competency Selector */}
-        <div>
-          <label htmlFor="addCompetency" className="block text-xs font-medium text-slate-600 mb-1">
-            Add competency
-          </label>
-          <select
-            id="addCompetency"
-            onChange={(e) => {
-              if (e.target.value) {
-                handleAddCompetency(e.target.value);
-                e.target.value = '';
-              }
-            }}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline focus:outline-2"
-          >
-            <option value="">Select a competency...</option>
-            {competencies.map((comp) => (
-              <option
-                key={comp.id}
-                value={comp.id}
-                disabled={formData.competencies.some((c) => c.competencyId === comp.id)}
-              >
-                {typeof comp === 'object' && comp.name ? comp.name : String(comp)}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 

@@ -228,23 +228,11 @@ def generate_question_set(
 
     accepted = accepted[:target]
 
-    # Ensure at least one resume-referenced question (M4-F03)
-    if not any(q.get("resume_reference") for q, _ in accepted):
-        ref_batch = _call_agent(
-            job.job_profile, candidate_profile_dict, {"DISC": 2},
-            difficulty_level, risk_flags, 2,
-        )
-        if ref_batch:
-            ref_batch = _force_disc_competency(ref_batch)
-            ref_q = next((q for q in ref_batch if q.get("resume_reference")), None)
-            if ref_q:
-                ref_emb = embed_texts([ref_q["question"]])[0]
-                if not _is_duplicate(db, org_id, ref_emb):
-                    accepted[-1] = (ref_q, ref_emb)
-        if not any(q.get("resume_reference") for q, _ in accepted):
-            logger.warning(
-                "M4-F03: resume_reference enforcement failed — persisting question set without a resume-referenced question"
-            )
+    # Note: this is a pure DISC personality/leadership-behavioural assessment,
+    # not a skills-relevance test — questions are no longer required to cite
+    # a specific resume detail (that M4-F03 requirement applied to the old
+    # skills-screening question format). The candidate's profile is still
+    # passed to the agent as context for risk-flag-targeted questions.
 
     # Persist: question_set → session_questions → fingerprints → lock
     question_set = QuestionSet(
@@ -274,6 +262,17 @@ def generate_question_set(
         }
         if options_dict is not None:
             question_obj["options"] = options_dict
+        # DISC-Based Generative Leadership Question Framework metadata —
+        # stored in the flexible JSONB question object so no schema
+        # migration is needed; absent/None when the agent doesn't supply it.
+        if q.get("competency_area"):
+            question_obj["competency_area"] = q["competency_area"]
+        if q.get("leadership_context"):
+            question_obj["leadership_context"] = q["leadership_context"]
+        if q.get("behavioural_triggers"):
+            question_obj["behavioural_triggers"] = q["behavioural_triggers"]
+        if q.get("question_format"):
+            question_obj["question_format"] = q["question_format"]
 
         sq = SessionQuestion(
             org_id=org_id,

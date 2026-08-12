@@ -14,6 +14,7 @@ from src.models.session_questions import SessionQuestion
 from src.modules.auth import service as auth_service
 from src.modules.sessions.email import send_invite_email
 from src.modules.sessions.schemas import (
+    AdaptiveAnswerResponse,
     AnswerResponse,
     InviteResponse,
     QuestionInSession,
@@ -186,6 +187,40 @@ def save_answer(
     db.commit()
     db.refresh(q)
     return AnswerResponse.model_validate(q)
+
+
+def save_adaptive_answer(
+    db: Session,
+    session_id: uuid.UUID,
+    question_id: uuid.UUID,
+    org_id: uuid.UUID,
+    adaptive_answer_text: str,
+) -> AdaptiveAnswerResponse:
+    """DISC-Based Generative Leadership Question Framework — Natural vs
+    Adaptive Behaviour mechanic (spec §8): captures the candidate's ADAPTIVE
+    response ("what would be most effective, even if not your natural
+    choice?") separately from their natural answer_text/answered_at, without
+    touching the natural-answer flow at all."""
+    session = _get_session_or_404(db, session_id, org_id)
+    if session.status != "in_progress":
+        raise ValueError(f"session is {session.status} — answers not accepted")
+    q = (
+        db.query(SessionQuestion)
+        .join(QuestionSet, SessionQuestion.question_set_id == QuestionSet.id)
+        .filter(
+            SessionQuestion.id == question_id,
+            QuestionSet.session_id == session_id,
+        )
+        .first()
+    )
+    if not q:
+        raise LookupError("question not found")
+    q.adaptive_answer_text = adaptive_answer_text
+    q.adaptive_answered_at = datetime.now(UTC)
+    db.flush()
+    db.commit()
+    db.refresh(q)
+    return AdaptiveAnswerResponse.model_validate(q)
 
 
 def submit_session(

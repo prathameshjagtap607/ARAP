@@ -11,6 +11,8 @@ from src.modules.auth.dependencies import (
 )
 from src.modules.sessions import service
 from src.modules.sessions.schemas import (
+    AdaptiveAnswerRequest,
+    AdaptiveAnswerResponse,
     AnswerRequest,
     AnswerResponse,
     CalibrationRequest,
@@ -73,6 +75,23 @@ def get_state(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
+@router.get("/{session_id}/answers", response_model=SessionStateResponse)
+def get_answers(
+    session_id: uuid.UUID,
+    claims: TokenClaims = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Recruiter/admin view of a session's questions with both the
+    candidate's natural (answer_text) and adaptive (adaptive_answer_text)
+    responses — DISC-Based Generative Leadership Question Framework §8.
+    Reuses the exact same service function as the candidate-facing
+    GET /{session_id} above; only the auth scope differs."""
+    try:
+        return service.get_session_state(db, session_id, claims.org_id)
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 @router.post("/{session_id}/start", response_model=SessionStateResponse)
 def start(
     session_id: uuid.UUID,
@@ -100,6 +119,30 @@ def answer(
 ):
     try:
         return service.save_answer(db, session_id, question_id, claims.org_id, body.answer_text)
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.patch(
+    "/{session_id}/questions/{question_id}/adaptive-answer",
+    response_model=AdaptiveAnswerResponse,
+)
+def adaptive_answer(
+    session_id: uuid.UUID,
+    question_id: uuid.UUID,
+    body: AdaptiveAnswerRequest,
+    claims: TokenClaims = Depends(require_candidate_scope),
+    db: Session = Depends(get_db),
+):
+    """DISC-Based Generative Leadership Question Framework §8 — captures the
+    candidate's ADAPTIVE response separately from their natural answer
+    (saved via the /answer endpoint above, which this never touches)."""
+    try:
+        return service.save_adaptive_answer(
+            db, session_id, question_id, claims.org_id, body.adaptive_answer_text
+        )
     except LookupError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except ValueError as e:

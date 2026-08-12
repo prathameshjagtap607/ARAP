@@ -77,6 +77,25 @@ def test_save_answer_long_text(db, seed):
     assert result.answered_at is not None
 
 
+def test_save_adaptive_answer_persists_separately_from_natural_answer(db, seed):
+    """save_adaptive_answer persists adaptive_answer_text/adaptive_answered_at
+    without touching the natural answer_text/answered_at fields."""
+    service.start_session(db, seed["session"].id, seed["org"].id)
+    natural = service.save_answer(
+        db, seed["session"].id, seed["q1"].id, seed["org"].id, "My natural answer"
+    )
+    adaptive = service.save_adaptive_answer(
+        db, seed["session"].id, seed["q1"].id, seed["org"].id, "My adaptive answer"
+    )
+    assert adaptive.adaptive_answer_text == "My adaptive answer"
+    assert adaptive.adaptive_answered_at is not None
+
+    from src.models.session_questions import SessionQuestion
+    q = db.query(SessionQuestion).filter_by(id=seed["q1"].id).first()
+    assert q.answer_text == "My natural answer"
+    assert q.adaptive_answer_text == "My adaptive answer"
+
+
 def test_save_answer_rejects_completed_session(db, seed):
     """save_answer raises ValueError if session is completed."""
     from src.models.assessment_sessions import AssessmentSession

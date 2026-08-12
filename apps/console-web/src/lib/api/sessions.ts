@@ -26,6 +26,18 @@ export interface DiscProfile {
   rationale: string;
 }
 
+export interface DevelopmentalInsights {
+  natural_leadership_tendencies: string;
+  behavioural_strengths: string[];
+  potential_blind_spots: string[];
+  behaviour_under_pressure: string;
+  communication_preferences: string;
+  conflict_tendencies: string;
+  decision_making_tendencies: string;
+  adaptability_assessment: string;
+  areas_for_behavioural_development: string[];
+}
+
 export interface FullReportBody {
   executive_summary?: string;
   candidate_overview?: string;
@@ -46,6 +58,7 @@ export interface FullReportBody {
   final_verdict?: string;
   integrity_summary_prose?: string;
   disc_profile?: DiscProfile | null;
+  developmental_insights?: DevelopmentalInsights | null;
 }
 
 export interface ReviewerOverride {
@@ -70,6 +83,29 @@ export async function getSessions(filterUserId?: string): Promise<SessionItem[]>
 
 export async function getSessionReport(sessionId: string): Promise<SessionReport> {
   return apiFetch(`/reports/${sessionId}/full`);
+}
+
+export interface SessionAnswerItem {
+  id: string;
+  sequence_no: number;
+  question: { text: string; options?: Record<string, string> };
+  options: Record<string, string> | null;
+  answer_text: string | null;
+  adaptive_answer_text: string | null;
+}
+
+export interface SessionAnswersResponse {
+  questions: SessionAnswerItem[];
+}
+
+/**
+ * Recruiter/admin view of a session's questions with both the candidate's
+ * natural and adaptive answers — DISC-Based Generative Leadership Question
+ * Framework §8. Uses the /answers endpoint (distinct from the
+ * candidate-scoped GET /sessions/{id}).
+ */
+export async function getSessionAnswers(sessionId: string): Promise<SessionAnswersResponse> {
+  return apiFetch(`/sessions/${sessionId}/answers`);
 }
 
 export interface SendSessionInviteResult {

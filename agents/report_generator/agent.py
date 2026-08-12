@@ -1,4 +1,5 @@
 import logging
+import re
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -8,6 +9,8 @@ from sqlalchemy.orm import Session
 from agents.common.groq_client import call_tool
 from agents.evaluation.pipeline import _resolve_answer_text
 from agents.report_generator.prompts import (
+    DEVELOPMENTAL_SYSTEM_PROMPT,
+    DEVELOPMENTAL_TOOL,
     NARRATIVE_SYSTEM_PROMPT,
     NARRATIVE_TOOL,
     STRUCTURED_SYSTEM_PROMPT,
@@ -46,6 +49,28 @@ def _get_org_historical_bar(db: Session, role_family: str | None, org_id) -> str
     mid = len(overalls) // 2
     median = overalls[mid] if len(overalls) % 2 else (overalls[mid - 1] + overalls[mid]) / 2
     return round(median, 4)
+
+
+_CITATION_RE = re.compile(r'cited from Q(\d+):\s*"([^"]+)"', re.IGNORECASE)
+
+
+def _validate_citations(bullets: list[str], questions: list) -> None:
+    """Best-effort, non-blocking check: for every '(cited from Qn: "...")'
+    citation in a strengths/weaknesses bullet, verify Qn's actual answer
+    text really contains that quoted excerpt. Logs a warning on mismatch —
+    never raises, never blocks report generation, since this is a quality
+    signal for later prompt tuning, not a hard guarantee."""
+    answers_by_seq = {q.sequence_no: (_resolve_answer_text(q) or "") for q in questions}
+    for bullet in bullets:
+        for q_num_str, quote in _CITATION_RE.findall(bullet):
+            q_num = int(q_num_str)
+            answer_text = answers_by_seq.get(q_num, "")
+            if quote.strip().lower() not in answer_text.lower():
+                logger.warning(
+                    "report citation mismatch: bullet cites Q%s excerpt %r "
+                    "which does not appear in that question's actual answer — bullet: %r",
+                    q_num, quote, bullet,
+                )
 
 
 def _build_score_section(composite_scores: dict, org_bar) -> dict:
@@ -155,6 +180,13 @@ def generate_full_report(
 
         # Call 1 — narrative sections
         narrative = call_tool(NARRATIVE_SYSTEM_PROMPT, NARRATIVE_TOOL, narrative_input, max_tokens=_MAX_TOKENS)
+        try:
+            _validate_citations(
+                list(narrative.get("strengths", [])) + list(narrative.get("weaknesses", [])),
+                questions,
+            )
+        except Exception:
+            pass  # citation validation is best-effort logging only, never blocks generation
 
         # Call 2 — structured sections
         structured_input = "\n".join([
@@ -169,6 +201,18 @@ def generate_full_report(
             "Training needs from recommendation: " + ", ".join(report.training_needs or []),
         ])
         structured = call_tool(STRUCTURED_SYSTEM_PROMPT, STRUCTURED_TOOL, structured_input, max_tokens=_MAX_TOKENS)
+
+        # Call 3 — developmental insights (DISC-Based Generative Leadership
+        # Question Framework §11) — additive, never replaces the sections above.
+        developmental_input = "\n".join([
+            f"DISC profile: {disc_text}",
+            f"Behaviour under pressure evidence: {behavior_text}",
+            "Answer excerpts (use for evidence of natural vs adaptive responses):",
+            answer_excerpts or "No answers available.",
+        ])
+        developmental = call_tool(
+            DEVELOPMENTAL_SYSTEM_PROMPT, DEVELOPMENTAL_TOOL, developmental_input, max_tokens=_MAX_TOKENS
+        )
 
         full_report = {
             "meta": {
@@ -208,6 +252,7 @@ def generate_full_report(
             "integrity_summary_prose": narrative["integrity_summary_prose"],
             "disc_profile": behavior.disc_style if behavior and behavior.disc_style else None,
             "final_verdict": narrative["final_verdict"],
+            "developmental_insights": developmental,
         }
 
         report.full_report = full_report

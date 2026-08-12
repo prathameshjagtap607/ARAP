@@ -6,7 +6,11 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 def _validate_weightage(v: dict[str, float]) -> dict[str, float]:
-    if v is not None and abs(sum(v.values()) - 100) > 0.01:
+    # Not used by question generation (pure DISC assessment — see
+    # question_sets.service._derive_category_counts). Kept optional for
+    # backward compatibility with any client still sending it; only
+    # validated when non-empty.
+    if v and abs(sum(v.values()) - 100) > 0.01:
         raise ValueError("competency_weightage must sum to 100")
     return v
 
@@ -26,7 +30,7 @@ class JobAssessmentCreate(BaseModel):
     culture_values: list[str] = []
     difficulty_level: Literal["junior", "mid", "senior", "executive"]
     duration_minutes: int = Field(gt=0)
-    competency_weightage: dict[str, float]
+    competency_weightage: dict[str, float] = {}
     is_template: bool = False
     role_family: str | None = None
 

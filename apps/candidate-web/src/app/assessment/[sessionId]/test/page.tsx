@@ -21,6 +21,8 @@ export default function QuestionPage() {
   const [timerSeed, setTimerSeed] = useState(0);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [savingAdaptive, setSavingAdaptive] = useState<Record<string, boolean>>({});
+  const [adaptiveSaveError, setAdaptiveSaveError] = useState<string | null>(null);
   const submitCalledRef = useRef(false);
 
   useEffect(() => {
@@ -96,6 +98,24 @@ export default function QuestionPage() {
       setSaveError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving((s) => ({ ...s, [questionId]: false }));
+    }
+  }
+
+  async function saveAdaptiveAnswer(questionId: string, text: string) {
+    if (!state.jwt) return;
+    dispatch({ type: "SET_ADAPTIVE_ANSWER", questionId, text });
+    setSavingAdaptive((s) => ({ ...s, [questionId]: true }));
+    setAdaptiveSaveError(null);
+    try {
+      await apiFetch(`/sessions/${sessionId}/questions/${questionId}/adaptive-answer`, {
+        method: "PATCH",
+        jwt: state.jwt,
+        body: JSON.stringify({ adaptive_answer_text: text }),
+      });
+    } catch (err: unknown) {
+      setAdaptiveSaveError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSavingAdaptive((s) => ({ ...s, [questionId]: false }));
     }
   }
 
@@ -259,6 +279,51 @@ export default function QuestionPage() {
               {saveError}
             </p>
           )}
+
+          {/* DISC-Based Generative Leadership Question Framework §8 — Natural
+              vs Adaptive Behaviour: once a natural (instinctive) answer is
+              given, optionally ask which response would be most EFFECTIVE,
+              even if it isn't the candidate's natural choice. Optional —
+              never gates submission or blocks the existing answer flow. */}
+          {current.answer_format === "multiple_choice" &&
+            current.options &&
+            state.answers[current.id] && (
+              <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
+                <p className="text-slate-700 text-sm font-medium">
+                  Which response would be most effective — even if it isn&apos;t
+                  what you&apos;d naturally do?
+                </p>
+                <fieldset className="space-y-2">
+                  <legend className="sr-only">Select the most effective response</legend>
+                  {Object.entries(current.options).map(([key, label]) => (
+                    <label
+                      key={key}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-slate-200
+                                 cursor-pointer hover:border-slate-400
+                                 has-[:checked]:border-indigo-600 has-[:checked]:bg-indigo-50"
+                    >
+                      <input
+                        type="radio"
+                        name={`adaptive-${current.id}`}
+                        value={key}
+                        checked={state.adaptiveAnswers[current.id] === key}
+                        onChange={() => saveAdaptiveAnswer(current.id, key)}
+                        className="accent-indigo-600"
+                      />
+                      <span className="text-slate-800">{label}</span>
+                    </label>
+                  ))}
+                </fieldset>
+                {savingAdaptive[current.id] && (
+                  <p aria-live="polite" className="text-xs text-slate-600">Saving&hellip;</p>
+                )}
+                {adaptiveSaveError && (
+                  <p role="alert" className="text-xs text-red-600">
+                    {adaptiveSaveError}
+                  </p>
+                )}
+              </div>
+            )}
         </div>
       )}
 

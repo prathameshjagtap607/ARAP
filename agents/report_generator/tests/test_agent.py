@@ -51,6 +51,18 @@ _STRUCTURED_OUTPUT = {
     "suggested_ceo_questions": ["CQ1?", "CQ2?", "CQ3?"],
 }
 
+_DEVELOPMENTAL_OUTPUT = {
+    "natural_leadership_tendencies": "Tends to make fast, decisive calls.",
+    "behavioural_strengths": ["Decisive under time pressure", "Comfortable taking ownership"],
+    "potential_blind_spots": ["May move to a decision before hearing dissent", "Can appear impatient with slower-paced teammates"],
+    "behaviour_under_pressure": "Becomes more directive and less consultative under deadline pressure.",
+    "communication_preferences": "Direct and concise, prefers getting to the point quickly.",
+    "conflict_tendencies": "Addresses disagreement head-on rather than avoiding it.",
+    "decision_making_tendencies": "Fast, decisive, comfortable with limited information.",
+    "adaptability_assessment": "Shows some willingness to slow down and consult when explicitly prompted.",
+    "areas_for_behavioural_development": ["Practice pausing to invite input before finalizing a decision."],
+}
+
 
 def _fake_llm_response(tool_output):
     block = MagicMock()
@@ -159,7 +171,7 @@ def test_generate_full_report_writes_full_report():
                       candidate_profile_obj=candidate_profile_obj,
                       questions=questions, qset_obj=qset_obj)
 
-        responses = [dict(_NARRATIVE_OUTPUT), dict(_STRUCTURED_OUTPUT)]
+        responses = [dict(_NARRATIVE_OUTPUT), dict(_STRUCTURED_OUTPUT), dict(_DEVELOPMENTAL_OUTPUT)]
         with patch("agents.report_generator.agent.call_tool", side_effect=responses):
             generate_full_report(session_id=_SESSION_ID, db_factory=lambda: db)
 
@@ -170,6 +182,72 @@ def test_generate_full_report_writes_full_report():
     assert "meta" in full
     assert "integrity_summary" in full
     db.commit.assert_called()
+
+
+# Case 1a: citation accuracy check — logs a warning when a bullet cites a
+# quote that doesn't actually appear in the referenced question's answer.
+def test_validate_citations_logs_warning_on_mismatch(caplog):
+    with patch.dict(sys.modules, _FAKE_ORM):
+        from agents.report_generator.agent import _validate_citations
+
+        questions = [_make_question(1), _make_question(2)]
+        bullets = [
+            'Shows strong ownership (cited from Q1: "Answer 1")',
+            'Struggles with delegation (cited from Q2: "something not actually said")',
+        ]
+
+        with caplog.at_level("WARNING"):
+            _validate_citations(bullets, questions)
+
+    assert any("citation mismatch" in r.message for r in caplog.records)
+    assert not any("Q1" in r.message and "citation mismatch" in r.message for r in caplog.records)
+
+
+def test_validate_citations_no_warning_when_all_quotes_match(caplog):
+    with patch.dict(sys.modules, _FAKE_ORM):
+        from agents.report_generator.agent import _validate_citations
+
+        questions = [_make_question(1), _make_question(2)]
+        bullets = [
+            'Shows strong ownership (cited from Q1: "Answer 1")',
+            'Communicates clearly (cited from Q2: "Answer 2")',
+        ]
+
+        with caplog.at_level("WARNING"):
+            _validate_citations(bullets, questions)
+
+    assert not any("citation mismatch" in r.message for r in caplog.records)
+
+
+# Case 1b: developmental insights (§11) are generated and persisted additively
+# without disturbing any of the existing report sections.
+def test_generate_full_report_includes_developmental_insights():
+    with patch.dict(sys.modules, _FAKE_ORM):
+        from agents.report_generator.agent import generate_full_report
+
+        session_obj = _make_session()
+        report_obj = _make_report()
+        job_obj = _make_job()
+        candidate_obj = MagicMock(); candidate_obj.name = "Alice"
+        candidate_profile_obj = MagicMock(); candidate_profile_obj.summary = "Experienced engineer."
+        qset_obj = MagicMock(); qset_obj.id = uuid.uuid4()
+        questions = [_make_question(i) for i in range(1, 4)]
+
+        db = _make_db(session_obj, report_obj, job_obj,
+                      candidate_obj=candidate_obj,
+                      candidate_profile_obj=candidate_profile_obj,
+                      questions=questions, qset_obj=qset_obj)
+
+        responses = [dict(_NARRATIVE_OUTPUT), dict(_STRUCTURED_OUTPUT), dict(_DEVELOPMENTAL_OUTPUT)]
+        with patch("agents.report_generator.agent.call_tool", side_effect=responses):
+            generate_full_report(session_id=_SESSION_ID, db_factory=lambda: db)
+
+    insights = report_obj.full_report["developmental_insights"]
+    assert insights["natural_leadership_tendencies"] == _DEVELOPMENTAL_OUTPUT["natural_leadership_tendencies"]
+    assert insights["potential_blind_spots"] == _DEVELOPMENTAL_OUTPUT["potential_blind_spots"]
+    # existing sections must be completely unaffected by the new addition
+    assert report_obj.full_report["executive_summary"] == _NARRATIVE_OUTPUT["executive_summary"]
+    assert report_obj.full_report["recommended_next_round"] == _STRUCTURED_OUTPUT["recommended_next_round"]
 
 
 # Case 2: requires_human_review=True when ai_confidence_score < 60
@@ -186,7 +264,7 @@ def test_requires_human_review_when_low_confidence():
         db = _make_db(session_obj, report_obj, job_obj,
                       candidate_obj=candidate_obj, questions=[], qset_obj=qset_obj)
 
-        responses = [dict(_NARRATIVE_OUTPUT), dict(_STRUCTURED_OUTPUT)]
+        responses = [dict(_NARRATIVE_OUTPUT), dict(_STRUCTURED_OUTPUT), dict(_DEVELOPMENTAL_OUTPUT)]
         with patch("agents.report_generator.agent.call_tool", side_effect=responses):
             generate_full_report(session_id=_SESSION_ID, db_factory=lambda: db)
 
@@ -207,7 +285,7 @@ def test_final_verdict_is_not_bare_label():
         db = _make_db(session_obj, report_obj, job_obj,
                       candidate_obj=candidate_obj, questions=[], qset_obj=qset_obj)
 
-        responses = [dict(_NARRATIVE_OUTPUT), dict(_STRUCTURED_OUTPUT)]
+        responses = [dict(_NARRATIVE_OUTPUT), dict(_STRUCTURED_OUTPUT), dict(_DEVELOPMENTAL_OUTPUT)]
         with patch("agents.report_generator.agent.call_tool", side_effect=responses):
             generate_full_report(session_id=_SESSION_ID, db_factory=lambda: db)
 

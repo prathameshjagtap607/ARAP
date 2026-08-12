@@ -15,6 +15,8 @@ class QuestionInSession(BaseModel):
     options: dict | None
     answer_text: str | None
     answered_at: datetime | None
+    adaptive_answer_text: str | None
+    adaptive_answered_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -49,6 +51,18 @@ class AnswerResponse(BaseModel):
     id: uuid.UUID
     answer_text: str | None
     answered_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class AdaptiveAnswerRequest(BaseModel):
+    adaptive_answer_text: str
+
+
+class AdaptiveAnswerResponse(BaseModel):
+    id: uuid.UUID
+    adaptive_answer_text: str | None
+    adaptive_answered_at: datetime | None
 
     model_config = {"from_attributes": True}
 

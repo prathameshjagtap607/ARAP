@@ -96,7 +96,6 @@ export interface AdminDashboardData {
   templates: {
     id: string;
     name: string;
-    competencyCount: number;
     createdAt: string;
   }[];
 }

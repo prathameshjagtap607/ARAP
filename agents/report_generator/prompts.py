@@ -15,6 +15,12 @@ NARRATIVE_SYSTEM_PROMPT = (
     "decision, a numeric score, or competency correctness. "
     "Every strength and weakness bullet MUST include a direct quote from the candidate's answer, "
     "formatted as: '…(cited from Q{n}: \"…excerpt…\")'. "
+    "CRITICAL ACCURACY RULE: the Q{n} you cite MUST be the exact question number whose answer "
+    "actually contains that quoted excerpt, and the claim in the bullet MUST be genuinely "
+    "supported by that specific quote — never attach a quote from one question to a claim about "
+    "a different topic, and never cite a Q number whose answer does not contain the quoted text. "
+    "Before finalizing each bullet, re-check that the cited Q{n} and the quoted text match the "
+    "answer excerpts given in the input. "
     "Never invent quotes or information not present in the input. "
     "The final_verdict field must be a full paragraph summarizing the candidate's DISC profile and "
     "what it suggests about their working style — never a hire/reject label or score reference. "
@@ -124,6 +130,103 @@ NARRATIVE_TOOL = {
             "culture_fit", "domain_knowledge", "skill_gap_analysis", "strengths", "weaknesses",
             "potential_risks", "learning_curve_estimate", "management_readiness",
             "promotion_potential", "integrity_summary_prose", "final_verdict",
+        ],
+    },
+}
+
+DEVELOPMENTAL_SYSTEM_PROMPT = (
+    "You are a leadership development coach writing the developmental-insight section of a "
+    "DISC-based behavioural profiling report. Per the DISC-Based Generative Leadership Question "
+    "Framework: this section must NEVER label the candidate as a 'type of leader', and must NEVER "
+    "judge their natural tendency as good or bad. Instead, for each insight, identify the natural "
+    "behavioural tendency and frame it as: 'this is your natural tendency — in which situations "
+    "does it help you, and in which situations might you need to adapt?' Base every statement on "
+    "the candidate's DISC profile and their answers to the leadership-scenario questions, "
+    "distinguishing (where evident from the answers) between their NATURAL response and their "
+    "ADAPTIVE/most-effective response to the same scenario. "
+    "\n\nCONSISTENCY RULE: every claim you write — natural tendencies, strengths, blind spots, "
+    "communication/conflict/decision-making style — MUST be logically consistent with the "
+    "candidate's stated PRIMARY and SECONDARY DISC style given in the input. Before writing each "
+    "claim, check that it matches the known behavioural profile of that style and does not "
+    "contradict a claim already made elsewhere in this same output. In particular: a "
+    "Dominance-primary candidate should be described as direct/assertive/confrontational, NEVER "
+    "as naturally diplomatic or conflict-avoidant (that is a Steadiness trait); an "
+    "Influence-primary candidate should be described as relationship-focused/persuasive, NEVER as "
+    "naturally data-driven or process-focused (that is a Conscientiousness trait); a "
+    "Steadiness-primary candidate should be described as patient/consensus-seeking, NEVER as "
+    "naturally confrontational or fast-decision-making (that is a Dominance trait); a "
+    "Conscientiousness-primary candidate should be described as analytical/detail-oriented, NEVER "
+    "as naturally spontaneous or relationship-first (that is an Influence trait). If the "
+    "candidate's answers show a genuine mix of styles, attribute each specific tendency to "
+    "whichever of their two styles (primary or secondary) actually explains it — do not blend "
+    "them into a single contradictory claim. "
+    + _SECTION_15_EXCLUSION
+)
+
+DEVELOPMENTAL_TOOL = {
+    "name": "generate_developmental_insights",
+    "description": (
+        "Generate the non-judgmental developmental-insight output required by the DISC-Based "
+        "Generative Leadership Question Framework (section 11)."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "natural_leadership_tendencies": {
+                "type": "string",
+                "description": "2-3 sentences on the candidate's natural (instinctive) leadership tendency, per their DISC style.",
+            },
+            "behavioural_strengths": {
+                "type": "array",
+                "items": {"type": "string"},
+                "minItems": 2,
+                "maxItems": 4,
+                "description": "Situations where the natural tendency helps them.",
+            },
+            "potential_blind_spots": {
+                "type": "array",
+                "items": {"type": "string"},
+                "minItems": 2,
+                "maxItems": 4,
+                "description": "Situations where the natural tendency might work against them — framed as 'may need to adapt', never as a flaw.",
+            },
+            "behaviour_under_pressure": {
+                "type": "string",
+                "description": "2-3 sentences on how this DISC style tends to respond under time pressure, ambiguity, or conflict.",
+            },
+            "communication_preferences": {
+                "type": "string",
+                "description": "1-2 sentences on this style's natural communication tendency.",
+            },
+            "conflict_tendencies": {
+                "type": "string",
+                "description": "1-2 sentences on this style's natural response to disagreement or confrontation.",
+            },
+            "decision_making_tendencies": {
+                "type": "string",
+                "description": "1-2 sentences on this style's natural decision-making pace and approach.",
+            },
+            "adaptability_assessment": {
+                "type": "string",
+                "description": (
+                    "1-2 sentences assessing, from the evidence available, how well the "
+                    "candidate can consciously adapt their natural response toward a more "
+                    "effective one when the situation calls for it — never a numeric score."
+                ),
+            },
+            "areas_for_behavioural_development": {
+                "type": "array",
+                "items": {"type": "string"},
+                "minItems": 1,
+                "maxItems": 3,
+                "description": "1-3 coaching-style development suggestions tied to the identified blind spots.",
+            },
+        },
+        "required": [
+            "natural_leadership_tendencies", "behavioural_strengths", "potential_blind_spots",
+            "behaviour_under_pressure", "communication_preferences", "conflict_tendencies",
+            "decision_making_tendencies", "adaptability_assessment",
+            "areas_for_behavioural_development",
         ],
     },
 }

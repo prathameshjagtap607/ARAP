@@ -325,11 +325,9 @@ export async function fetchAdminDashboard(
     );
     const templates = templateRows.map((tpl) => {
       const camelTpl = toCamelCase(tpl);
-      const weightage = (camelTpl.competencyWeightage as Record<string, unknown>) || {};
       return {
         id: String(camelTpl.id),
         name: String(camelTpl.title || ""),
-        competencyCount: Object.keys(weightage).length,
         createdAt: String(camelTpl.createdAt || ""),
       };
     });

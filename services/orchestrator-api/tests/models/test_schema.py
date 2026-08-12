@@ -303,7 +303,8 @@ def test_session_questions_columns(engine):
     expected = {
         "id", "org_id", "question_set_id", "sequence_no", "question",
         "category", "target_competencies", "difficulty", "answer_format",
-        "options", "answer_text", "answered_at", "evaluation", "created_at",
+        "options", "answer_text", "answered_at", "adaptive_answer_text",
+        "adaptive_answered_at", "evaluation", "created_at",
     }
     assert cols == expected
 

@@ -12,6 +12,7 @@ const initialState: SessionState = {
   jwt: null,
   session: null,
   answers: {},
+  adaptiveAnswers: {},
   currentIndex: 0,
   submitting: false,
 };
@@ -24,20 +25,28 @@ function reducer(state: SessionState, action: SessionAction): SessionState {
       return { ...state, session: action.session };
     case "REHYDRATE": {
       const serverAnswers: Record<string, string> = {};
+      const serverAdaptiveAnswers: Record<string, string> = {};
       for (const q of action.session.questions) {
         if (q.answer_text) serverAnswers[q.id] = q.answer_text;
+        if (q.adaptive_answer_text) serverAdaptiveAnswers[q.id] = q.adaptive_answer_text;
       }
       // Server answers fill gaps — locally unsaved answers (not yet in DB) win
       return {
         ...state,
         session: action.session,
         answers: { ...serverAnswers, ...state.answers },
+        adaptiveAnswers: { ...serverAdaptiveAnswers, ...state.adaptiveAnswers },
       };
     }
     case "SET_ANSWER":
       return {
         ...state,
         answers: { ...state.answers, [action.questionId]: action.text },
+      };
+    case "SET_ADAPTIVE_ANSWER":
+      return {
+        ...state,
+        adaptiveAnswers: { ...state.adaptiveAnswers, [action.questionId]: action.text },
       };
     case "SET_INDEX":
       return { ...state, currentIndex: action.index };

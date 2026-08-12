@@ -77,6 +77,61 @@ def test_generate_persists_question_set(db, seed, mock_agent, mock_embed):
     assert result.questions[1].sequence_no == 2
 
 
+def test_generate_persists_leadership_framework_metadata(db, seed, mock_embed):
+    """DISC-Based Generative Leadership Question Framework: when the agent
+    supplies competency_area/leadership_context/behavioural_triggers/
+    question_format, they must be persisted in the question JSONB (no schema
+    migration — stored alongside the existing text/category/difficulty)."""
+    from src.modules.question_sets.service import generate_question_set
+
+    framework_questions = [
+        {
+            **FAKE_QUESTIONS[0],
+            "answer_format": "multiple_choice",
+            "options": ["Take charge and decide now", "Rally the team around it",
+                        "Check in with everyone first", "Analyze the data before acting"],
+            "competency_area": "Conflict Management",
+            "leadership_context": "Team conflict",
+            "behavioural_triggers": ["Conflict", "Time pressure"],
+            "question_format": "first_action",
+        },
+        {
+            **FAKE_QUESTIONS[1],
+            "answer_format": "multiple_choice",
+            "options": ["Take charge and decide now", "Rally the team around it",
+                        "Check in with everyone first", "Analyze the data before acting"],
+            "competency_area": "Decision Making",
+            "leadership_context": "Business-critical decisions",
+            "behavioural_triggers": ["Ambiguity"],
+            "question_format": "adaptive_choice",
+        },
+    ]
+
+    with patch(
+        "src.modules.question_sets.service.run_question_generation_agent",
+        return_value=framework_questions,
+    ):
+        result = generate_question_set(db, seed["session"].id, seed["org"].id, target=2)
+
+    from src.models.session_questions import SessionQuestion
+    persisted = (
+        db.query(SessionQuestion)
+        .filter_by(question_set_id=result.id)
+        .order_by(SessionQuestion.sequence_no)
+        .all()
+    )
+
+    q0 = persisted[0].question
+    assert q0["competency_area"] == "Conflict Management"
+    assert q0["leadership_context"] == "Team conflict"
+    assert q0["behavioural_triggers"] == ["Conflict", "Time pressure"]
+    assert q0["question_format"] == "first_action"
+
+    q1 = persisted[1].question
+    assert q1["competency_area"] == "Decision Making"
+    assert q1["question_format"] == "adaptive_choice"
+
+
 def test_generate_rejects_duplicate_above_threshold(db, seed):
     from src.models.question_fingerprints import QuestionFingerprint
     from src.modules.question_sets.service import generate_question_set

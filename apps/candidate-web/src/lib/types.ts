@@ -17,6 +17,11 @@ export interface Question {
   options: Record<string, string> | null;
   answer_text: string | null;
   answered_at: string | null;
+  // DISC-Based Generative Leadership Question Framework §8 — Natural vs
+  // Adaptive Behaviour: the candidate's "most effective, even if not your
+  // natural choice" response, captured separately from answer_text above.
+  adaptive_answer_text?: string | null;
+  adaptive_answered_at?: string | null;
 }
 
 export interface SessionData {
@@ -33,6 +38,7 @@ export interface SessionState {
   jwt: string | null;
   session: SessionData | null;
   answers: Record<string, string>;
+  adaptiveAnswers: Record<string, string>;
   currentIndex: number;
   submitting: boolean;
 }
@@ -41,6 +47,7 @@ export type SessionAction =
   | { type: "SET_JWT"; jwt: string }
   | { type: "SET_SESSION"; session: SessionData }
   | { type: "SET_ANSWER"; questionId: string; text: string }
+  | { type: "SET_ADAPTIVE_ANSWER"; questionId: string; text: string }
   | { type: "SET_INDEX"; index: number }
   | { type: "SET_SUBMITTING"; value: boolean }
   | { type: "REHYDRATE"; session: SessionData };

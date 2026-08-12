@@ -46,6 +46,7 @@ function Harness() {
       <div data-testid="submitting">{String(state.submitting)}</div>
       <div data-testid="answer-q2">{state.answers.q2 ?? "unanswered"}</div>
       <div data-testid="answer-q1">{state.answers.q1 ?? "unanswered"}</div>
+      <div data-testid="adaptive-answer-q1">{state.adaptiveAnswers.q1 ?? "unanswered"}</div>
       <button onClick={() => dispatch({ type: "SET_JWT", jwt: "token-abc" })}>set-jwt</button>
       <button onClick={() => dispatch({ type: "SET_SESSION", session: baseSession })}>
         set-session
@@ -55,6 +56,13 @@ function Harness() {
       </button>
       <button onClick={() => dispatch({ type: "SET_ANSWER", questionId: "q2", text: "Option B" })}>
         answer-q2
+      </button>
+      <button
+        onClick={() =>
+          dispatch({ type: "SET_ADAPTIVE_ANSWER", questionId: "q1", text: "Option B" })
+        }
+      >
+        adaptive-answer-q1
       </button>
       <button onClick={() => dispatch({ type: "SET_INDEX", index: 1 })}>set-index</button>
       <button onClick={() => dispatch({ type: "SET_SUBMITTING", value: true })}>
@@ -102,6 +110,14 @@ describe("SessionContext reducer", () => {
     renderHarness();
     fireEvent.click(screen.getByText("answer-q2"));
     expect(screen.getByTestId("answer-q2")).toHaveTextContent("Option B");
+  });
+
+  it("SET_ADAPTIVE_ANSWER records a local adaptive answer independently of the natural answer", () => {
+    renderHarness();
+    fireEvent.click(screen.getByText("adaptive-answer-q1"));
+    expect(screen.getByTestId("adaptive-answer-q1")).toHaveTextContent("Option B");
+    // the natural answer for q1 is untouched by the adaptive dispatch
+    expect(screen.getByTestId("answer-q1")).toHaveTextContent("unanswered");
   });
 
   it("SET_INDEX and SET_SUBMITTING update their fields", () => {

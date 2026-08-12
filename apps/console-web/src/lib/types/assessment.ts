@@ -5,10 +5,6 @@ export interface AssessmentFormData {
   experienceMaxYears: number;
   difficulty: 'junior' | 'mid' | 'senior' | 'executive';
   durationMinutes: number;
-  competencies: Array<{
-    competencyId: string;
-    weightage: number;
-  }>;
 }
 
 export interface CreateAssessmentRequest {
@@ -16,7 +12,6 @@ export interface CreateAssessmentRequest {
   description?: string;
   difficulty_level: string;
   duration_minutes: number;
-  competency_weightage: Record<string, number>;
 }
 
 export interface AssessmentResponse {

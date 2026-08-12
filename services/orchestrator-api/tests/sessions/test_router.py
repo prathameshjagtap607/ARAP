@@ -56,6 +56,45 @@ async def test_get_session_state(async_client, seed, candidate_token):
 
 
 @pytest.mark.asyncio
+async def test_get_answers_endpoint_requires_user_token(async_client, seed, candidate_token):
+    """GET /sessions/{id}/answers rejects candidate JWT — admin/user-scoped only."""
+    resp = await async_client.get(
+        f"/sessions/{seed['session'].id}/answers",
+        headers={"Authorization": f"Bearer {candidate_token}"},
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_get_answers_endpoint_shows_natural_and_adaptive_answers(
+    started_client, seed, candidate_token, user_token
+):
+    """GET /sessions/{id}/answers (recruiter view) shows both the natural
+    and adaptive answers a candidate saved via the two separate PATCH
+    endpoints — DISC-Based Generative Leadership Question Framework §8."""
+    await started_client.patch(
+        f"/sessions/{seed['session'].id}/questions/{seed['q1'].id}/answer",
+        json={"answer_text": "My natural response"},
+        headers={"Authorization": f"Bearer {candidate_token}"},
+    )
+    await started_client.patch(
+        f"/sessions/{seed['session'].id}/questions/{seed['q1'].id}/adaptive-answer",
+        json={"adaptive_answer_text": "My adaptive response"},
+        headers={"Authorization": f"Bearer {candidate_token}"},
+    )
+
+    resp = await started_client.get(
+        f"/sessions/{seed['session'].id}/answers",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert resp.status_code == 200
+    questions = resp.json()["questions"]
+    q1 = next(q for q in questions if q["id"] == str(seed["q1"].id))
+    assert q1["answer_text"] == "My natural response"
+    assert q1["adaptive_answer_text"] == "My adaptive response"
+
+
+@pytest.mark.asyncio
 async def test_start_session_endpoint(async_client, seed, candidate_token, db):
     """POST /sessions/{id}/start transitions to in_progress."""
     from src.models.assessment_sessions import AssessmentSession

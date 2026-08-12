@@ -277,9 +277,6 @@ export default function AdminDashboardPage() {
                     Name
                   </th>
                   <th className="px-6 py-3 text-left font-semibold text-slate-900">
-                    Competency Count
-                  </th>
-                  <th className="px-6 py-3 text-left font-semibold text-slate-900">
                     Created Date
                   </th>
                 </tr>
@@ -292,9 +289,6 @@ export default function AdminDashboardPage() {
                   >
                     <td className="px-6 py-4 text-slate-900 font-medium">
                       {template.name}
-                    </td>
-                    <td className="px-6 py-4 text-slate-700">
-                      {template.competencyCount}
                     </td>
                     <td className="px-6 py-4 text-slate-700">
                       {formatDate(template.createdAt)}

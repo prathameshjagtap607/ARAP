@@ -157,6 +157,5 @@ describe("fetchAdminDashboard", () => {
     const result = await fetchAdminDashboard("org-1");
     expect(result.templates).toHaveLength(1);
     expect(result.templates[0].name).toBe("Senior Engineer");
-    expect(result.templates[0].competencyCount).toBe(2);
   });
 });
