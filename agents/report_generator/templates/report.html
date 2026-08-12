@@ -51,6 +51,55 @@
 </div>
 {% endif %}
 
+{% if report.developmental_insights %}
+<div class="verdict-box">
+  <h2 style="margin-top:0">Developmental Insights</h2>
+  <p style="font-size:9pt; color:#555;">These reflect natural behavioural tendencies, not judgments —
+  the goal is to identify where a tendency helps and where it may need conscious adaptation.</p>
+
+  <p><strong>Natural Leadership Tendencies</strong></p>
+  <p>{{ report.developmental_insights.natural_leadership_tendencies }}</p>
+
+  <p><strong>Where This Helps</strong></p>
+  <ul>{% for s in report.developmental_insights.behavioural_strengths %}<li>{{ s }}</li>{% endfor %}</ul>
+
+  <p><strong>Where It May Need Adapting</strong></p>
+  <ul>{% for s in report.developmental_insights.potential_blind_spots %}<li>{{ s }}</li>{% endfor %}</ul>
+
+  <p><strong>Under Pressure</strong></p>
+  <p>{{ report.developmental_insights.behaviour_under_pressure }}</p>
+
+  <p><strong>Communication Style</strong></p>
+  <p>{{ report.developmental_insights.communication_preferences }}</p>
+
+  <p><strong>Conflict Tendency</strong></p>
+  <p>{{ report.developmental_insights.conflict_tendencies }}</p>
+
+  <p><strong>Decision-Making</strong></p>
+  <p>{{ report.developmental_insights.decision_making_tendencies }}</p>
+
+  <p><strong>Adaptability</strong></p>
+  <p>{{ report.developmental_insights.adaptability_assessment }}</p>
+
+  <p><strong>Suggested Development Areas</strong></p>
+  <ul>{% for s in report.developmental_insights.areas_for_behavioural_development %}<li>{{ s }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if qa_pairs %}
+<h2>Natural vs. Adaptive Response</h2>
+<div class="section">
+  <p style="font-size:9pt; color:#555;">&quot;Natural&quot; is the candidate&apos;s instinctive choice.
+  &quot;Adaptive&quot; is what they identified as most effective, even if not their instinct — a measure
+  of behavioural flexibility, not a right/wrong comparison.</p>
+  {% for qa in qa_pairs %}
+  <p style="margin-top:12px;"><strong>{{ qa.question_text }}</strong><br>
+     <span class="label">Natural:</span> {{ qa.natural }}<br>
+     <span class="label">Adaptive:</span> {{ qa.adaptive }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
 <h2>Candidate Overview</h2>
 <div class="section"><p>{{ report.candidate_overview }}</p></div>
 
@@ -59,12 +108,6 @@
 
 <h2>Interview Summary</h2>
 <div class="section"><p>{{ report.interview_summary }}</p></div>
-
-<h2>Salary Recommendation</h2>
-<div class="section">
-  <p><span class="label">Band:</span> {{ report.salary_recommendation.band }}</p>
-  <p>{{ report.salary_recommendation.rationale }}</p>
-</div>
 
 <h2>Culture Fit</h2>
 <div class="section"><p>{{ report.culture_fit }}</p></div>
@@ -80,14 +123,6 @@
   <ul>{% for s in report.strengths %}<li>{{ s }}</li>{% endfor %}</ul>
 </div>
 
-<h2>Weaknesses</h2>
-<div class="section">
-  <ul>{% for w in report.weaknesses %}<li>{{ w }}</li>{% endfor %}</ul>
-</div>
-
-<h2>Potential Risks</h2>
-<div class="section"><p>{{ report.potential_risks }}</p></div>
-
 <h2>Learning Curve Estimate</h2>
 <div class="section"><p>{{ report.learning_curve_estimate }}</p></div>
 
@@ -100,18 +135,6 @@
 <h2>Integrity Summary</h2>
 <div class="section"><p>{{ report.integrity_summary_prose }}</p></div>
 
-<h2>Recommended Next Round</h2>
-<div class="section"><p>{{ report.recommended_next_round }}</p></div>
-
-<h2>Training Needs</h2>
-<div class="section">
-  <ul>
-    {% for tn in report.training_needs %}
-    <li><strong>{{ tn.area }}</strong> ({{ tn.priority }}) &mdash; {{ tn.rationale }}</li>
-    {% endfor %}
-  </ul>
-</div>
-
 <h2>Suggested HR-Round Questions</h2>
 <div class="section">
   <ul>{% for q in report.suggested_hr_questions %}<li>{{ q }}</li>{% endfor %}</ul>
@@ -121,9 +144,6 @@
 <div class="section">
   <ul>{% for q in report.suggested_ceo_questions %}<li>{{ q }}</li>{% endfor %}</ul>
 </div>
-
-<h2>Final Verdict</h2>
-<div class="verdict-box"><p>{{ report.final_verdict }}</p></div>
 
 {% if include_transcript %}
 <h2>Raw Transcript</h2>

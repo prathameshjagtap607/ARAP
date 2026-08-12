@@ -10,7 +10,9 @@ from src.models.candidates import Candidate
 from src.models.clients import Client
 from src.models.hiring_reports import HiringReport
 from src.models.job_assessments import JobAssessment
+from src.models.question_sets import QuestionSet
 from src.models.report_shares import ReportShare
+from src.models.session_questions import SessionQuestion
 from src.modules.analytics.cache import invalidate_org_analytics
 from src.modules.reports.schemas import (
     FullReportResponse,
@@ -81,11 +83,32 @@ def get_pdf_bytes(
     if "meta" not in report_data or not report_data.get("executive_summary"):
         raise ValueError("Full report is not ready yet — narrative sections have not been generated")
 
+    # Natural vs Adaptive comparison — DISC-Based Generative Leadership
+    # Question Framework §8, mirrored into the PDF from the web results page.
+    qa_pairs: list[dict] = []
+    qset = db.query(QuestionSet).filter_by(session_id=session_id).first()
+    if qset:
+        questions = (
+            db.query(SessionQuestion)
+            .filter_by(question_set_id=qset.id)
+            .order_by(SessionQuestion.sequence_no)
+            .all()
+        )
+        for q in questions:
+            if q.answer_text and q.adaptive_answer_text:
+                options = (q.question or {}).get("options") or {}
+                qa_pairs.append({
+                    "question_text": (q.question or {}).get("text", ""),
+                    "natural": options.get(q.answer_text, q.answer_text),
+                    "adaptive": options.get(q.adaptive_answer_text, q.adaptive_answer_text),
+                })
+
     return render_pdf(
         report_data=report_data,
         candidate_name=candidate_name,
         job_title=job_title,
         include_transcript=False,
+        qa_pairs=qa_pairs,
     )
 
 

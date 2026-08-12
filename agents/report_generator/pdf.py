@@ -13,6 +13,7 @@ def render_pdf(
     job_title: str,
     include_transcript: bool = False,
     transcript: list[dict] | None = None,
+    qa_pairs: list[dict] | None = None,
 ) -> bytes:
     env = Environment(loader=FileSystemLoader(str(_TEMPLATE_DIR)))
     template = env.get_template("report.html")
@@ -22,6 +23,7 @@ def render_pdf(
         job_title=job_title,
         include_transcript=include_transcript,
         transcript=transcript or [],
+        qa_pairs=qa_pairs or [],
     )
     buffer = io.BytesIO()
     result = pisa.CreatePDF(html_content, dest=buffer)

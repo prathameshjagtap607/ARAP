@@ -89,6 +89,69 @@ def test_render_pdf_includes_transcript_when_requested():
 
 
 # ---------------------------------------------------------------------------
+# Case 5: DISC-Based Generative Leadership Question Framework — Developmental
+# Insights and Natural-vs-Adaptive sections render when present, and the old
+# judgmental sections (removed from the web results page) no longer render.
+# ---------------------------------------------------------------------------
+def test_render_pdf_includes_developmental_insights_and_qa_pairs():
+    mock_result = MagicMock()
+    mock_result.err = 0
+
+    report_with_insights = {
+        **_SAMPLE_REPORT,
+        "developmental_insights": {
+            "natural_leadership_tendencies": "Tends to plan carefully.",
+            "behavioural_strengths": ["Strong at building consensus"],
+            "potential_blind_spots": ["May move slowly under time pressure"],
+            "behaviour_under_pressure": "Stays methodical.",
+            "communication_preferences": "Prefers written detail.",
+            "conflict_tendencies": "Seeks common ground.",
+            "decision_making_tendencies": "Data-driven and deliberate.",
+            "adaptability_assessment": "Can adapt when explicitly prompted.",
+            "areas_for_behavioural_development": ["Practice faster decision-making"],
+        },
+    }
+    qa_pairs = [{
+        "question_text": "A team member disagrees with your decision. What do you do?",
+        "natural": "Seek more data before responding.",
+        "adaptive": "Address it directly in the moment.",
+    }]
+
+    with patch("agents.report_generator.pdf.pisa.CreatePDF", return_value=mock_result) as mock_create:
+        render_pdf(
+            report_with_insights,
+            candidate_name="Alice",
+            job_title="Senior Engineer",
+            qa_pairs=qa_pairs,
+        )
+
+    html_string = mock_create.call_args.args[0]
+    assert "Developmental Insights" in html_string
+    assert "Strong at building consensus" in html_string
+    assert "Natural vs. Adaptive Response" in html_string
+    assert "Address it directly in the moment." in html_string
+    # old judgmental sections must no longer render
+    assert "Weaknesses</h2>" not in html_string
+    assert "Potential Risks</h2>" not in html_string
+    assert "Salary Recommendation</h2>" not in html_string
+    assert "Final Verdict</h2>" not in html_string
+    assert "Recommended Next Round</h2>" not in html_string
+    assert "Training Needs</h2>" not in html_string
+
+
+def test_render_pdf_no_developmental_insights_section_when_absent():
+    mock_result = MagicMock()
+    mock_result.err = 0
+
+    with patch("agents.report_generator.pdf.pisa.CreatePDF", return_value=mock_result) as mock_create:
+        render_pdf(_SAMPLE_REPORT, candidate_name="Alice", job_title="Senior Engineer")
+
+    html_string = mock_create.call_args.args[0]
+    assert "Developmental Insights" not in html_string
+    assert "Natural vs. Adaptive Response" not in html_string
+
+
+# ---------------------------------------------------------------------------
 # Case 4: pisa reporting an error raises instead of returning bad bytes
 # ---------------------------------------------------------------------------
 def test_render_pdf_raises_on_pisa_error():
