@@ -2,13 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { SummaryCard } from "@/components/ui/SummaryCard";
-import CompetencyTable from "@/components/tables/CompetencyTable";
-import CompetencyForm from "@/components/forms/CompetencyForm";
-import { getCompetencies, deleteCompetency } from "@/lib/api/competencies";
 import { apiFetch } from "@/lib/api";
 import { createUser } from "@/lib/api/dashboards";
 import { useAuth } from "@/context/AuthContext";
-import type { Competency } from '@/lib/types/competency';
 
 interface WorkspaceUser {
   id: string;
@@ -17,21 +13,8 @@ interface WorkspaceUser {
   created_at: string;
 }
 
-type Tab = 'users' | 'competencies';
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'users', label: 'Users' },
-  { id: 'competencies', label: 'Competencies' },
-];
-
 export default function AdminPage() {
   const { user: currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>('users');
-  const [competencies, setCompetencies] = useState<Competency[]>([]);
-  const [selectedCompetency, setSelectedCompetency] = useState<Competency | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Users state
   const [users, setUsers] = useState<WorkspaceUser[]>([]);
@@ -121,68 +104,9 @@ export default function AdminPage() {
     }
   };
 
-  const loadCompetencies = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getCompetencies();
-      setCompetencies(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load competencies');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadCompetencies();
     loadUsers();
   }, []);
-
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteCompetency(id);
-      setCompetencies(competencies.filter(c => c.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete competency');
-    }
-  };
-
-  const handleEdit = (competency: Competency) => {
-    setSelectedCompetency(competency);
-    setIsCreating(true);
-  };
-
-  const handleFormSuccess = () => {
-    setIsCreating(false);
-    setSelectedCompetency(null);
-    loadCompetencies();
-  };
-
-  if (isCreating) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-slate-800">
-            {selectedCompetency ? 'Edit Competency' : 'Create Competency'}
-          </h1>
-          <button
-            onClick={() => {
-              setIsCreating(false);
-              setSelectedCompetency(null);
-            }}
-            className="text-sm text-slate-600 hover:text-slate-900"
-          >
-            Back
-          </button>
-        </div>
-        <CompetencyForm
-          competency={selectedCompetency ?? undefined}
-          onSuccess={handleFormSuccess}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -194,26 +118,7 @@ export default function AdminPage() {
         <SummaryCard label="Total Users" value={usersLoading ? '—' : users.length} />
       </div>
 
-      {/* Tab bar */}
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex gap-6">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-slate-800 text-slate-900'
-                  : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      <div className={`space-y-4 ${activeTab === 'users' ? '' : 'hidden'}`}>
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-800">Users</h2>
           <button
@@ -385,39 +290,6 @@ export default function AdminPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-
-      <div className={`space-y-4 ${activeTab === 'competencies' ? '' : 'hidden'}`}>
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-slate-800">Competencies</h2>
-          <button
-            onClick={() => {
-              setSelectedCompetency(null);
-              setIsCreating(true);
-            }}
-            className="px-4 py-2 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 text-sm"
-          >
-            Add Competency
-          </button>
-        </div>
-
-        {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-            <p className="text-sm font-medium text-red-900">{error}</p>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="text-slate-600">Loading competencies...</p>
-          </div>
-        ) : (
-          <CompetencyTable
-            competencies={competencies}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-          />
         )}
       </div>
     </div>
