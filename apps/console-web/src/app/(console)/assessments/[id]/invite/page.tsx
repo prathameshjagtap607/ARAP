@@ -30,6 +30,7 @@ export default function InvitePage() {
         sessionId={id as string}
         jobTitle={assessment.title}
         orgId={user?.orgId || ''}
+        durationMinutes={assessment.duration_minutes}
       />
     </div>
   );
