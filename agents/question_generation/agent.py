@@ -14,6 +14,73 @@ logger = logging.getLogger(__name__)
 
 _MODEL = "claude-sonnet-4-6"
 _MAX_TOKENS = 8192
+_MAX_GENERATION_ATTEMPTS = 3
+
+# Keyword fingerprints for the 6 storyline archetypes the prompt already
+# bans from repeating more than once per set (see prompts.py SYSTEM_PROMPT).
+# Prompt wording alone doesn't reliably stop the model from repeating a
+# storyline — this is a deterministic code-level check that catches it
+# before a bad set ever reaches a real candidate, triggering a regeneration
+# instead of silently shipping it.
+_STORYLINE_ARCHETYPE_KEYWORDS: dict[str, list[str]] = {
+    "underperforming_team_member": [
+        "not meeting their performance", "not meeting your performance",
+        "not meeting their targets", "not meeting your targets",
+        "missing deadlines", "struggling to keep up", "underperform",
+        "lacking confidence and motivation", "not pulling their weight",
+        "falling behind on their work",
+    ],
+    "new_to_role_unprepared": [
+        "new to your role", "new to the role", "new to their role",
+        "just started", "recently promoted", "feel unprepared",
+        "feels unprepared",
+    ],
+    "structural_change": [
+        "organizational change", "organisational change", "restructuring",
+        "undergoing a merger", "new technology is being introduced",
+        "new process is being rolled out", "workflow change",
+    ],
+    "peer_conflict": [
+        "two team members", "two of your team members",
+        "team members are in conflict", "disagree with each other",
+        "conflict between", "at odds with each other",
+    ],
+    "stakeholder_or_crisis": [
+        "unhappy customer", "customer complaint", "demanding a refund",
+        "client is unhappy", "a crisis has occurred", "crisis situation",
+    ],
+    "high_stakes_decision": [
+        "high-stakes decision", "significant implications",
+        "business-critical decision", "difficult decision",
+        "essential to make the right choice",
+    ],
+}
+
+
+def _find_repeated_storylines(questions: list[dict]) -> list[str]:
+    """Return archetype names that appear in more than one question's text —
+    a violation of the hard once-per-set rule the prompt asks the model to
+    self-enforce."""
+    counts: dict[str, int] = {name: 0 for name in _STORYLINE_ARCHETYPE_KEYWORDS}
+    for q in questions:
+        text = str(q.get("question", "")).lower()
+        for archetype, phrases in _STORYLINE_ARCHETYPE_KEYWORDS.items():
+            if any(phrase in text for phrase in phrases):
+                counts[archetype] += 1
+    return [name for name, count in counts.items() if count > 1]
+
+
+def _find_boilerplate_options(questions: list[dict]) -> list[str]:
+    """Flag generic option phrases reused across many different questions —
+    a sign the 4 options aren't genuinely DISC-differentiated per scenario,
+    just the same reworded 'communicate and make a plan' template."""
+    phrase_counts: dict[str, int] = {}
+    for q in questions:
+        for option in q.get("options") or []:
+            normalized = " ".join(str(option).lower().split())
+            phrase_counts[normalized] = phrase_counts.get(normalized, 0) + 1
+    threshold = max(3, len(questions) // 2)
+    return [phrase for phrase, count in phrase_counts.items() if count >= threshold]
 
 
 def _assign_dimensions(target_question_count: int) -> tuple[list[str], list[str]]:
@@ -75,13 +142,33 @@ def run_question_generation_agent(
     risk_flags: list,
     target_question_count: int,
 ) -> list[dict] | None:
-    try:
-        user_message = _build_user_message(
-            job_profile, candidate_profile, category_weightage,
-            difficulty_level, risk_flags, target_question_count,
+    last_questions: list[dict] | None = None
+    for attempt in range(1, _MAX_GENERATION_ATTEMPTS + 1):
+        try:
+            # Rebuilding the user message each attempt reshuffles
+            # assigned_dimensions, giving a genuinely different generation
+            # rather than repeating the same failing prompt verbatim.
+            user_message = _build_user_message(
+                job_profile, candidate_profile, category_weightage,
+                difficulty_level, risk_flags, target_question_count,
+            )
+            result = call_tool(SYSTEM_PROMPT, QUESTION_GENERATION_TOOL, user_message, max_tokens=_MAX_TOKENS)
+            questions = list(result["questions"])
+        except Exception:
+            logger.exception("Question generation agent failed — returning None")
+            return None
+
+        last_questions = questions
+        repeated = _find_repeated_storylines(questions)
+        boilerplate = _find_boilerplate_options(questions)
+        if not repeated and not boilerplate:
+            return questions
+
+        logger.warning(
+            "Question generation attempt %d/%d failed quality checks — "
+            "repeated storylines: %s, boilerplate options: %s. %s",
+            attempt, _MAX_GENERATION_ATTEMPTS, repeated, boilerplate,
+            "Retrying." if attempt < _MAX_GENERATION_ATTEMPTS else "Returning last attempt.",
         )
-        result = call_tool(SYSTEM_PROMPT, QUESTION_GENERATION_TOOL, user_message, max_tokens=_MAX_TOKENS)
-        return list(result["questions"])
-    except Exception:
-        logger.exception("Question generation agent failed — returning None")
-        return None
+
+    return last_questions

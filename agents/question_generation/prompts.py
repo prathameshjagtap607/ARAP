@@ -1,4 +1,4 @@
-PROMPT_VERSION = "v2.3"
+PROMPT_VERSION = "v2.4"
 
 # --- DISC-Based Generative Leadership Question Framework -------------------
 # Per the "DISC-Based Generative Question Framework for Generative Leadership
@@ -152,6 +152,36 @@ SYSTEM_PROMPT = (
     "any archetype appears more than once, rewrite the later occurrence(s) "
     "into a genuinely different storyline (still using its assigned "
     "competency_area and leadership_context) before returning your answer."
+    "\n\nWORKED EXAMPLE of correctly differentiated DISC options — study the "
+    "SHAPE of this, not the words (never reuse this scenario or these exact "
+    "option phrasings): "
+    "\nScenario (competency_area='Delegation & Empowerment', "
+    "leadership_context='Managing direct reports', "
+    "behavioural_triggers=['Competing priorities']): \"Your VP has just "
+    "handed you two new priority initiatives, and your team is already at "
+    "capacity delivering for existing clients. You need to decide how to "
+    "get the new work done.\" "
+    "\nDominance option (probes impatience/control/fast unilateral action): "
+    "\"I'd immediately reassign the new work to whoever can move fastest, "
+    "shifting other tasks aside without much discussion, so we don't lose "
+    "momentum.\" "
+    "\nInfluence option (probes over-optimism/relationship-first): \"I'd get "
+    "the team together, build excitement about the new initiatives, and "
+    "trust that their energy and buy-in will carry us through the extra "
+    "load.\" "
+    "\nSteadiness option (probes conflict-avoidance/resistance to sudden "
+    "change): \"I'd hold off changing anyone's plate until I've seen how the "
+    "current workload settles, then phase the new work in gradually so no "
+    "one feels overwhelmed.\" "
+    "\nConscientiousness option (probes over-analysis/perfectionism): \"I'd "
+    "map out a detailed capacity breakdown of everyone's current commitments "
+    "before assigning anything, even if that means going back to the VP "
+    "with a short delay.\" "
+    "\nNotice: all 4 are professional and defensible, none is graded right/"
+    "wrong, and each reveals a genuinely different instinct — not four "
+    "reworded versions of 'communicate clearly and make a plan.' If your "
+    "options all could be swapped between questions without anyone "
+    "noticing, they are not differentiated enough — rewrite them."
 )
 
 # Maps PRD category names to lowercase competency key aliases for weight lookup.

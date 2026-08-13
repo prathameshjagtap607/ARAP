@@ -112,6 +112,77 @@ def test_assign_dimensions_cycles_when_count_exceeds_pool_size():
     assert all(c in LEADERSHIP_CONTEXTS for c in contexts)
 
 
+def test_find_repeated_storylines_flags_archetype_used_twice():
+    from agents.question_generation.agent import _find_repeated_storylines
+
+    questions = [
+        {"question": "A team member is not meeting their performance targets. What do you do?"},
+        {"question": "Your team is undergoing organizational change. How do you respond?"},
+        {"question": "A colleague is struggling to keep up with their workload. What next?"},
+    ]
+
+    violations = _find_repeated_storylines(questions)
+
+    assert "underperforming_team_member" in violations
+    assert "structural_change" not in violations
+
+
+def test_find_boilerplate_options_flags_reused_generic_phrase():
+    from agents.question_generation.agent import _find_boilerplate_options
+
+    generic = "I would provide guidance and support to the team."
+    questions = [
+        {"options": [generic, "Option B", "Option C", "Option D"]},
+        {"options": [generic, "Option F", "Option G", "Option H"]},
+        {"options": [generic, "Option J", "Option K", "Option L"]},
+    ]
+
+    boilerplate = _find_boilerplate_options(questions)
+
+    assert generic.lower() in boilerplate
+
+
+def test_run_agent_retries_when_first_attempt_has_repeated_storyline():
+    from agents.question_generation.agent import run_question_generation_agent
+
+    bad_set = [
+        {**FAKE_QUESTIONS[0], "question": "A team member is not meeting their performance targets."},
+        {**FAKE_QUESTIONS[1], "question": "Another team member is missing deadlines on their project."},
+    ]
+    good_set = FAKE_QUESTIONS
+
+    with patch(
+        "agents.question_generation.agent.call_tool",
+        side_effect=[{"questions": bad_set}, {"questions": good_set}],
+    ) as mock_call:
+        result = run_question_generation_agent(
+            JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
+        )
+
+    assert mock_call.call_count == 2
+    assert result == good_set
+
+
+def test_run_agent_returns_last_attempt_after_exhausting_retries():
+    from agents.question_generation.agent import run_question_generation_agent
+
+    bad_set = [
+        {**FAKE_QUESTIONS[0], "question": "A team member is not meeting their performance targets."},
+        {**FAKE_QUESTIONS[1], "question": "Another team member is missing deadlines on their project."},
+    ]
+
+    with patch(
+        "agents.question_generation.agent.call_tool",
+        return_value={"questions": bad_set},
+    ) as mock_call:
+        result = run_question_generation_agent(
+            JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
+        )
+
+    assert mock_call.call_count == 3
+    assert result == bad_set
+
+
 def test_build_user_message_includes_one_assignment_per_question():
     import json
 
