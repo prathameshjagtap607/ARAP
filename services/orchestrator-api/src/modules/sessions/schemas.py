@@ -17,6 +17,10 @@ class QuestionInSession(BaseModel):
     answered_at: datetime | None
     adaptive_answer_text: str | None
     adaptive_answered_at: datetime | None
+    ranking_order: list[str] | None
+    ranking_answered_at: datetime | None
+    reflection_text: str | None
+    reflection_answered_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -63,6 +67,30 @@ class AdaptiveAnswerResponse(BaseModel):
     id: uuid.UUID
     adaptive_answer_text: str | None
     adaptive_answered_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class RankingAnswerRequest(BaseModel):
+    ranking_order: list[str]
+
+
+class RankingAnswerResponse(BaseModel):
+    id: uuid.UUID
+    ranking_order: list[str] | None
+    ranking_answered_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class ReflectionAnswerRequest(BaseModel):
+    reflection_text: str
+
+
+class ReflectionAnswerResponse(BaseModel):
+    id: uuid.UUID
+    reflection_text: str | None
+    reflection_answered_at: datetime | None
 
     model_config = {"from_attributes": True}
 

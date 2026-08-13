@@ -50,6 +50,10 @@ class SessionQuestion(Base):
     answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     adaptive_answer_text: Mapped[str | None] = mapped_column(Text)
     adaptive_answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ranking_order: Mapped[list | None] = mapped_column(JSONB)
+    ranking_answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reflection_text: Mapped[str | None] = mapped_column(Text)
+    reflection_answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     evaluation: Mapped[dict | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

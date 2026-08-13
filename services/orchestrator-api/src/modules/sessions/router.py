@@ -18,6 +18,10 @@ from src.modules.sessions.schemas import (
     CalibrationRequest,
     CalibrationResponse,
     InviteResponse,
+    RankingAnswerRequest,
+    RankingAnswerResponse,
+    ReflectionAnswerRequest,
+    ReflectionAnswerResponse,
     SessionListItem,
     SessionStateResponse,
     SubmitResponse,
@@ -142,6 +146,56 @@ def adaptive_answer(
     try:
         return service.save_adaptive_answer(
             db, session_id, question_id, claims.org_id, body.adaptive_answer_text
+        )
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.patch(
+    "/{session_id}/questions/{question_id}/ranking-answer",
+    response_model=RankingAnswerResponse,
+)
+def ranking_answer(
+    session_id: uuid.UUID,
+    question_id: uuid.UUID,
+    body: RankingAnswerRequest,
+    claims: TokenClaims = Depends(require_candidate_scope),
+    db: Session = Depends(get_db),
+):
+    """DISC-Based Generative Leadership Question Framework §7 — 'Ranking'
+    format: captures the candidate's ordering of the 4 options, as an
+    ADDITIONAL signal alongside their natural answer (saved via /answer,
+    which this never touches or gates)."""
+    try:
+        return service.save_ranking_answer(
+            db, session_id, question_id, claims.org_id, body.ranking_order
+        )
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.patch(
+    "/{session_id}/questions/{question_id}/reflection-answer",
+    response_model=ReflectionAnswerResponse,
+)
+def reflection_answer(
+    session_id: uuid.UUID,
+    question_id: uuid.UUID,
+    body: ReflectionAnswerRequest,
+    claims: TokenClaims = Depends(require_candidate_scope),
+    db: Session = Depends(get_db),
+):
+    """DISC-Based Generative Leadership Question Framework §7 — 'Reflection'
+    format: captures the candidate's free-text self-reflection, as an
+    ADDITIONAL signal alongside their natural answer (saved via /answer,
+    which this never touches or gates)."""
+    try:
+        return service.save_reflection_answer(
+            db, session_id, question_id, claims.org_id, body.reflection_text
         )
     except LookupError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

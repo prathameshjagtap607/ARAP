@@ -18,6 +18,8 @@ from src.modules.sessions.schemas import (
     AnswerResponse,
     InviteResponse,
     QuestionInSession,
+    RankingAnswerResponse,
+    ReflectionAnswerResponse,
     SessionStateResponse,
     SubmitResponse,
 )
@@ -221,6 +223,75 @@ def save_adaptive_answer(
     db.commit()
     db.refresh(q)
     return AdaptiveAnswerResponse.model_validate(q)
+
+
+def save_ranking_answer(
+    db: Session,
+    session_id: uuid.UUID,
+    question_id: uuid.UUID,
+    org_id: uuid.UUID,
+    ranking_order: list[str],
+) -> RankingAnswerResponse:
+    """DISC-Based Generative Leadership Question Framework — Question
+    Formats (spec §7), 'Ranking' format: captures the candidate's ordering
+    of the 4 options from most-to-least-likely, as an ADDITIONAL signal
+    alongside their single natural answer_text pick — never replaces or
+    gates the natural-answer flow, which still drives DISC scoring for
+    every question regardless of format."""
+    session = _get_session_or_404(db, session_id, org_id)
+    if session.status != "in_progress":
+        raise ValueError(f"session is {session.status} — answers not accepted")
+    q = (
+        db.query(SessionQuestion)
+        .join(QuestionSet, SessionQuestion.question_set_id == QuestionSet.id)
+        .filter(
+            SessionQuestion.id == question_id,
+            QuestionSet.session_id == session_id,
+        )
+        .first()
+    )
+    if not q:
+        raise LookupError("question not found")
+    q.ranking_order = ranking_order
+    q.ranking_answered_at = datetime.now(UTC)
+    db.flush()
+    db.commit()
+    db.refresh(q)
+    return RankingAnswerResponse.model_validate(q)
+
+
+def save_reflection_answer(
+    db: Session,
+    session_id: uuid.UUID,
+    question_id: uuid.UUID,
+    org_id: uuid.UUID,
+    reflection_text: str,
+) -> ReflectionAnswerResponse:
+    """DISC-Based Generative Leadership Question Framework — Question
+    Formats (spec §7), 'Reflection' format: captures the candidate's
+    free-text self-reflection as an ADDITIONAL signal alongside their
+    single natural answer_text pick — never replaces or gates the
+    natural-answer flow."""
+    session = _get_session_or_404(db, session_id, org_id)
+    if session.status != "in_progress":
+        raise ValueError(f"session is {session.status} — answers not accepted")
+    q = (
+        db.query(SessionQuestion)
+        .join(QuestionSet, SessionQuestion.question_set_id == QuestionSet.id)
+        .filter(
+            SessionQuestion.id == question_id,
+            QuestionSet.session_id == session_id,
+        )
+        .first()
+    )
+    if not q:
+        raise LookupError("question not found")
+    q.reflection_text = reflection_text
+    q.reflection_answered_at = datetime.now(UTC)
+    db.flush()
+    db.commit()
+    db.refresh(q)
+    return ReflectionAnswerResponse.model_validate(q)
 
 
 def submit_session(

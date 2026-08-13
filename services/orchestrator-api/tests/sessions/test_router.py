@@ -95,6 +95,40 @@ async def test_get_answers_endpoint_shows_natural_and_adaptive_answers(
 
 
 @pytest.mark.asyncio
+async def test_ranking_answer_endpoint_saves_order(started_client, seed, candidate_token):
+    """PATCH /sessions/{id}/questions/{qid}/ranking-answer — DISC-Based
+    Generative Leadership Question Framework §7 'Ranking' format: saves the
+    candidate's ordering of the 4 options as an additional, non-gating
+    signal alongside their natural answer."""
+    resp = await started_client.patch(
+        f"/sessions/{seed['session'].id}/questions/{seed['q1'].id}/ranking-answer",
+        json={"ranking_order": ["C", "A", "D", "B"]},
+        headers={"Authorization": f"Bearer {candidate_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["ranking_order"] == ["C", "A", "D", "B"]
+    assert data["ranking_answered_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_reflection_answer_endpoint_saves_text(started_client, seed, candidate_token):
+    """PATCH /sessions/{id}/questions/{qid}/reflection-answer — DISC-Based
+    Generative Leadership Question Framework §7 'Reflection' format: saves
+    the candidate's free-text reflection as an additional, non-gating
+    signal alongside their natural answer."""
+    resp = await started_client.patch(
+        f"/sessions/{seed['session'].id}/questions/{seed['q1'].id}/reflection-answer",
+        json={"reflection_text": "The ambiguity would be the hardest part."},
+        headers={"Authorization": f"Bearer {candidate_token}"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["reflection_text"] == "The ambiguity would be the hardest part."
+    assert data["reflection_answered_at"] is not None
+
+
+@pytest.mark.asyncio
 async def test_start_session_endpoint(async_client, seed, candidate_token, db):
     """POST /sessions/{id}/start transitions to in_progress."""
     from src.models.assessment_sessions import AssessmentSession

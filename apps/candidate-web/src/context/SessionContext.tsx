@@ -13,6 +13,8 @@ const initialState: SessionState = {
   session: null,
   answers: {},
   adaptiveAnswers: {},
+  rankingOrders: {},
+  reflectionTexts: {},
   currentIndex: 0,
   submitting: false,
 };
@@ -26,9 +28,13 @@ function reducer(state: SessionState, action: SessionAction): SessionState {
     case "REHYDRATE": {
       const serverAnswers: Record<string, string> = {};
       const serverAdaptiveAnswers: Record<string, string> = {};
+      const serverRankingOrders: Record<string, string[]> = {};
+      const serverReflectionTexts: Record<string, string> = {};
       for (const q of action.session.questions) {
         if (q.answer_text) serverAnswers[q.id] = q.answer_text;
         if (q.adaptive_answer_text) serverAdaptiveAnswers[q.id] = q.adaptive_answer_text;
+        if (q.ranking_order) serverRankingOrders[q.id] = q.ranking_order;
+        if (q.reflection_text) serverReflectionTexts[q.id] = q.reflection_text;
       }
       // Server answers fill gaps — locally unsaved answers (not yet in DB) win
       return {
@@ -36,6 +42,8 @@ function reducer(state: SessionState, action: SessionAction): SessionState {
         session: action.session,
         answers: { ...serverAnswers, ...state.answers },
         adaptiveAnswers: { ...serverAdaptiveAnswers, ...state.adaptiveAnswers },
+        rankingOrders: { ...serverRankingOrders, ...state.rankingOrders },
+        reflectionTexts: { ...serverReflectionTexts, ...state.reflectionTexts },
       };
     }
     case "SET_ANSWER":
@@ -47,6 +55,16 @@ function reducer(state: SessionState, action: SessionAction): SessionState {
       return {
         ...state,
         adaptiveAnswers: { ...state.adaptiveAnswers, [action.questionId]: action.text },
+      };
+    case "SET_RANKING_ORDER":
+      return {
+        ...state,
+        rankingOrders: { ...state.rankingOrders, [action.questionId]: action.order },
+      };
+    case "SET_REFLECTION_TEXT":
+      return {
+        ...state,
+        reflectionTexts: { ...state.reflectionTexts, [action.questionId]: action.text },
       };
     case "SET_INDEX":
       return { ...state, currentIndex: action.index };

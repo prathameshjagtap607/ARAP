@@ -23,6 +23,10 @@ export default function QuestionPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savingAdaptive, setSavingAdaptive] = useState<Record<string, boolean>>({});
   const [adaptiveSaveError, setAdaptiveSaveError] = useState<string | null>(null);
+  const [savingRanking, setSavingRanking] = useState<Record<string, boolean>>({});
+  const [rankingSaveError, setRankingSaveError] = useState<string | null>(null);
+  const [savingReflection, setSavingReflection] = useState<Record<string, boolean>>({});
+  const [reflectionSaveError, setReflectionSaveError] = useState<string | null>(null);
   const submitCalledRef = useRef(false);
 
   useEffect(() => {
@@ -116,6 +120,42 @@ export default function QuestionPage() {
       setAdaptiveSaveError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSavingAdaptive((s) => ({ ...s, [questionId]: false }));
+    }
+  }
+
+  async function saveRankingOrder(questionId: string, order: string[]) {
+    if (!state.jwt) return;
+    dispatch({ type: "SET_RANKING_ORDER", questionId, order });
+    setSavingRanking((s) => ({ ...s, [questionId]: true }));
+    setRankingSaveError(null);
+    try {
+      await apiFetch(`/sessions/${sessionId}/questions/${questionId}/ranking-answer`, {
+        method: "PATCH",
+        jwt: state.jwt,
+        body: JSON.stringify({ ranking_order: order }),
+      });
+    } catch (err: unknown) {
+      setRankingSaveError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSavingRanking((s) => ({ ...s, [questionId]: false }));
+    }
+  }
+
+  async function saveReflectionText(questionId: string, text: string) {
+    if (!state.jwt) return;
+    dispatch({ type: "SET_REFLECTION_TEXT", questionId, text });
+    setSavingReflection((s) => ({ ...s, [questionId]: true }));
+    setReflectionSaveError(null);
+    try {
+      await apiFetch(`/sessions/${sessionId}/questions/${questionId}/reflection-answer`, {
+        method: "PATCH",
+        jwt: state.jwt,
+        body: JSON.stringify({ reflection_text: text }),
+      });
+    } catch (err: unknown) {
+      setReflectionSaveError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSavingReflection((s) => ({ ...s, [questionId]: false }));
     }
   }
 
@@ -331,6 +371,102 @@ export default function QuestionPage() {
                 {adaptiveSaveError && (
                   <p role="alert" className="text-xs text-red-600">
                     {adaptiveSaveError}
+                  </p>
+                )}
+              </div>
+            )}
+
+          {/* DISC-Based Generative Leadership Question Framework §7 —
+              'Ranking' format: an ADDITIONAL, optional signal on top of the
+              required natural answer above — ordering all 4 options from
+              most-to-least likely. Never replaces or gates the natural pick,
+              which still drives DISC scoring regardless of format. */}
+          {current.question.question_format === "ranking" &&
+            current.options &&
+            state.answers[current.id] && (
+              <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
+                <p className="text-slate-700 text-sm font-medium">
+                  Optional: rank all 4 responses from most likely to least
+                  likely to be what you&apos;d do.
+                </p>
+                <ol className="space-y-2">
+                  {(
+                    state.rankingOrders[current.id] ?? Object.keys(current.options)
+                  ).map((key, i, order) => (
+                    <li
+                      key={key}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-slate-200"
+                    >
+                      <span className="text-slate-500 text-sm font-mono w-5">{i + 1}.</span>
+                      <span className="text-slate-800 flex-1">{current.options![key]}</span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          aria-label="Move up"
+                          disabled={i === 0}
+                          onClick={() => {
+                            const next = [...order];
+                            [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                            saveRankingOrder(current.id, next);
+                          }}
+                          className="px-2 py-1 text-xs rounded border border-slate-300
+                                     disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Move down"
+                          disabled={i === order.length - 1}
+                          onClick={() => {
+                            const next = [...order];
+                            [next[i], next[i + 1]] = [next[i + 1], next[i]];
+                            saveRankingOrder(current.id, next);
+                          }}
+                          className="px-2 py-1 text-xs rounded border border-slate-300
+                                     disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          ↓
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+                {savingRanking[current.id] && (
+                  <p aria-live="polite" className="text-xs text-slate-600">Saving&hellip;</p>
+                )}
+                {rankingSaveError && (
+                  <p role="alert" className="text-xs text-red-600">
+                    {rankingSaveError}
+                  </p>
+                )}
+              </div>
+            )}
+
+          {/* DISC-Based Generative Leadership Question Framework §7 —
+              'Reflection' format: an ADDITIONAL, optional free-text response
+              on top of the required natural answer above. */}
+          {current.question.question_format === "reflection" &&
+            state.answers[current.id] && (
+              <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
+                <label htmlFor={`reflection-${current.id}`} className="text-slate-700 text-sm font-medium block">
+                  Optional: what would you find most difficult about this
+                  situation?
+                </label>
+                <textarea
+                  id={`reflection-${current.id}`}
+                  rows={4}
+                  defaultValue={state.reflectionTexts[current.id] ?? ""}
+                  onBlur={(e) => saveReflectionText(current.id, e.target.value)}
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2 text-slate-900
+                             focus:outline focus:outline-2 focus:outline-slate-900 resize-y"
+                />
+                {savingReflection[current.id] && (
+                  <p aria-live="polite" className="text-xs text-slate-600">Saving&hellip;</p>
+                )}
+                {reflectionSaveError && (
+                  <p role="alert" className="text-xs text-red-600">
+                    {reflectionSaveError}
                   </p>
                 )}
               </div>

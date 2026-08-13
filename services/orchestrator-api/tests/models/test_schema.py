@@ -304,7 +304,8 @@ def test_session_questions_columns(engine):
         "id", "org_id", "question_set_id", "sequence_no", "question",
         "category", "target_competencies", "difficulty", "answer_format",
         "options", "answer_text", "answered_at", "adaptive_answer_text",
-        "adaptive_answered_at", "evaluation", "created_at",
+        "adaptive_answered_at", "ranking_order", "ranking_answered_at",
+        "reflection_text", "reflection_answered_at", "evaluation", "created_at",
     }
     assert cols == expected
 
