@@ -4,7 +4,15 @@ SYSTEM_PROMPT = (
     "Given raw resume text and an optional job profile, extract structured candidate information "
     "using the provided tool. For each field, assign a confidence score between 0.0 and 1.0 "
     "reflecting how clearly the information was stated (1.0 = explicitly stated, "
-    "0.5 = inferred, 0.0 = not found/guessed). Be factual — do not invent information."
+    "0.5 = inferred, 0.0 = not found/guessed). Be factual — do not invent information. "
+    "\n\nCRITICAL — the tool call parameters are the EXTRACTED, STRUCTURED fields listed in the "
+    "tool schema (skills, projects, tech_used, employment_history, education, certifications, "
+    "achievements, leadership_indicators, career_timeline, domain_keywords, field_confidence) — "
+    "ALL ELEVEN are required, every time, even if empty (use an empty array/object/0.0 confidence "
+    "when the resume genuinely has nothing for that field; never omit a required field). "
+    "NEVER pass the raw resume text or job profile back as a parameter (e.g. never a 'resume_text' "
+    "or 'job_profile' parameter) — those are your INPUT, not part of the tool's schema, and passing "
+    "them back will fail. Do not invent, rename, or add any parameter not in the schema."
 )
 
 RESUME_EXTRACTION_TOOL = {
