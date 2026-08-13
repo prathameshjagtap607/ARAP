@@ -15,8 +15,15 @@ from agents.question_generation.prompts import (
 logger = logging.getLogger(__name__)
 
 _MODEL = "claude-sonnet-4-6"
-_MAX_TOKENS = 8192
+# Groq enforces a combined per-request token cap (input + this reserved
+# completion budget) well below 8192 on some accounts — 8192 was set
+# defensively high but a real 10-13 question set only needs ~3000-5000
+# output tokens, so trimming this frees real headroom for the input side
+# (job/candidate profile data) without ever needing to shrink it below what
+# a full question set actually requires.
+_MAX_TOKENS = 6144
 _REPAIR_MAX_TOKENS = 1024
+_MAX_PROFILE_JSON_CHARS = 6000  # ~1500 tokens each — safety cap per profile field
 
 # Keyword fingerprints for the 6 storyline archetypes the prompt already
 # bans from repeating more than once per set (see prompts.py SYSTEM_PROMPT).
@@ -176,6 +183,24 @@ def _assign_question_formats(target_question_count: int) -> list[str]:
     return result[:target_question_count]
 
 
+def _bounded_json(obj: dict, label: str) -> str:
+    """Serialize a dict for the prompt, capped at _MAX_PROFILE_JSON_CHARS —
+    a candidate with an unusually large skill/experience matrix (or a
+    detailed job profile) could otherwise push the total request past
+    Groq's per-request token cap regardless of how lean the fixed prompt
+    text is. Truncating is a safe degradation (the model still gets most of
+    the real content) rather than the request failing outright."""
+    dumped = json.dumps(obj)
+    if len(dumped) <= _MAX_PROFILE_JSON_CHARS:
+        return dumped
+    logger.warning(
+        "Question generation %s JSON truncated from %d to %d chars to stay "
+        "under the per-request token cap.",
+        label, len(dumped), _MAX_PROFILE_JSON_CHARS,
+    )
+    return dumped[:_MAX_PROFILE_JSON_CHARS] + "...[truncated]"
+
+
 def _build_user_message(
     job_profile: dict,
     candidate_profile: dict,
@@ -198,8 +223,8 @@ def _build_user_message(
         )
     ]
     return "\n".join([
-        f"job_profile: {json.dumps(job_profile)}",
-        f"candidate_profile: {json.dumps(candidate_profile)}",
+        f"job_profile: {_bounded_json(job_profile, 'job_profile')}",
+        f"candidate_profile: {_bounded_json(candidate_profile, 'candidate_profile')}",
         f"category_weightage: {json.dumps(category_weightage)}",
         f"difficulty_level: {difficulty_level}",
         f"risk_flags: {json.dumps(risk_flags)}",

@@ -112,6 +112,45 @@ def test_assign_dimensions_cycles_when_count_exceeds_pool_size():
     assert all(c in LEADERSHIP_CONTEXTS for c in contexts)
 
 
+def test_bounded_json_passes_through_small_dict_unchanged():
+    from agents.question_generation.agent import _bounded_json
+
+    small = {"a": 1, "b": "hello"}
+
+    assert _bounded_json(small, "test") == '{"a": 1, "b": "hello"}'
+
+
+def test_bounded_json_truncates_oversized_dict():
+    """A candidate with an unusually large skill/experience matrix (or a
+    detailed job profile) could otherwise push a single request past
+    Groq's per-request token cap regardless of how lean the fixed prompt
+    text is — truncating degrades safely instead of the whole request
+    failing outright."""
+    from agents.question_generation.agent import _MAX_PROFILE_JSON_CHARS, _bounded_json
+
+    huge = {"skills": ["skill"] * 5000}
+
+    result = _bounded_json(huge, "candidate_profile")
+
+    assert len(result) <= _MAX_PROFILE_JSON_CHARS + len("...[truncated]")
+    assert result.endswith("...[truncated]")
+
+
+def test_build_user_message_stays_bounded_for_huge_candidate_profile():
+    from agents.question_generation.agent import _MAX_PROFILE_JSON_CHARS, _build_user_message
+
+    huge_profile = {**CANDIDATE_PROFILE, "skill_matrix": {"explicit": ["skill"] * 5000}}
+
+    message = _build_user_message(
+        JOB_PROFILE, huge_profile, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 10
+    )
+
+    candidate_line = next(
+        line for line in message.splitlines() if line.startswith("candidate_profile:")
+    )
+    assert len(candidate_line) <= _MAX_PROFILE_JSON_CHARS + 100
+
+
 def test_assign_question_formats_includes_ranking_and_reflection_for_default_count():
     """Question format was previously left to the model's free choice, which
     could silently never surface 'ranking' or 'reflection' at all across an
