@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 _MODEL = "claude-sonnet-4-6"
 _MAX_TOKENS = 8192
-_MAX_GENERATION_ATTEMPTS = 3
 
 # Keyword fingerprints for the 6 storyline archetypes the prompt already
 # bans from repeating more than once per set (see prompts.py SYSTEM_PROMPT).
@@ -71,16 +70,37 @@ def _find_repeated_storylines(questions: list[dict]) -> list[str]:
 
 
 def _find_boilerplate_options(questions: list[dict]) -> list[str]:
-    """Flag generic option phrases reused across many different questions —
-    a sign the 4 options aren't genuinely DISC-differentiated per scenario,
-    just the same reworded 'communicate and make a plan' template."""
+    """Flag any option phrase that appears verbatim in more than one
+    question — zero tolerance, since a genuinely scenario-specific,
+    DISC-differentiated option should never be interchangeable with an
+    option from a different question."""
     phrase_counts: dict[str, int] = {}
     for q in questions:
         for option in q.get("options") or []:
             normalized = " ".join(str(option).lower().split())
             phrase_counts[normalized] = phrase_counts.get(normalized, 0) + 1
-    threshold = max(3, len(questions) // 2)
-    return [phrase for phrase, count in phrase_counts.items() if count >= threshold]
+    return [phrase for phrase, count in phrase_counts.items() if count > 1]
+
+
+def _find_duplicate_option_sets(questions: list[dict]) -> list[int]:
+    """Flag questions whose 4 options are the same set as another
+    question's (regardless of order) — catches two differently-worded
+    scenarios that were given identical answer choices, which is not a
+    genuinely distinct question no matter how different the prompt text
+    reads. Returns the 1-based indices (within `questions`) of the later
+    duplicate(s)."""
+    seen: dict[frozenset, int] = {}
+    duplicates: list[int] = []
+    for i, q in enumerate(questions, start=1):
+        options = q.get("options") or []
+        fingerprint = frozenset(" ".join(str(o).lower().split()) for o in options)
+        if not fingerprint:
+            continue
+        if fingerprint in seen:
+            duplicates.append(i)
+        else:
+            seen[fingerprint] = i
+    return duplicates
 
 
 def _assign_dimensions(target_question_count: int) -> tuple[list[str], list[str]]:
@@ -142,33 +162,32 @@ def run_question_generation_agent(
     risk_flags: list,
     target_question_count: int,
 ) -> list[dict] | None:
-    last_questions: list[dict] | None = None
-    for attempt in range(1, _MAX_GENERATION_ATTEMPTS + 1):
-        try:
-            # Rebuilding the user message each attempt reshuffles
-            # assigned_dimensions, giving a genuinely different generation
-            # rather than repeating the same failing prompt verbatim.
-            user_message = _build_user_message(
-                job_profile, candidate_profile, category_weightage,
-                difficulty_level, risk_flags, target_question_count,
-            )
-            result = call_tool(SYSTEM_PROMPT, QUESTION_GENERATION_TOOL, user_message, max_tokens=_MAX_TOKENS)
-            questions = list(result["questions"])
-        except Exception:
-            logger.exception("Question generation agent failed — returning None")
-            return None
+    """Single generation attempt — no automatic retry, so this makes exactly
+    one Groq call regardless of output quality (retrying on a failed quality
+    check was found to multiply API/quota usage per invite, which is worse
+    for a rate-limited account than accepting a first-attempt result). The
+    quality checks still run and log a warning so failures are visible in
+    the logs, but they no longer trigger a second call here."""
+    try:
+        user_message = _build_user_message(
+            job_profile, candidate_profile, category_weightage,
+            difficulty_level, risk_flags, target_question_count,
+        )
+        result = call_tool(SYSTEM_PROMPT, QUESTION_GENERATION_TOOL, user_message, max_tokens=_MAX_TOKENS)
+        questions = list(result["questions"])
+    except Exception:
+        logger.exception("Question generation agent failed — returning None")
+        return None
 
-        last_questions = questions
-        repeated = _find_repeated_storylines(questions)
-        boilerplate = _find_boilerplate_options(questions)
-        if not repeated and not boilerplate:
-            return questions
-
+    repeated = _find_repeated_storylines(questions)
+    boilerplate = _find_boilerplate_options(questions)
+    duplicate_sets = _find_duplicate_option_sets(questions)
+    if repeated or boilerplate or duplicate_sets:
         logger.warning(
-            "Question generation attempt %d/%d failed quality checks — "
-            "repeated storylines: %s, boilerplate options: %s. %s",
-            attempt, _MAX_GENERATION_ATTEMPTS, repeated, boilerplate,
-            "Retrying." if attempt < _MAX_GENERATION_ATTEMPTS else "Returning last attempt.",
+            "Question generation failed quality checks (no retry) — "
+            "repeated storylines: %s, boilerplate options: %s, "
+            "duplicate option sets at questions: %s.",
+            repeated, boilerplate, duplicate_sets,
         )
 
-    return last_questions
+    return questions

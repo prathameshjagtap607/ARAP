@@ -22,6 +22,12 @@ NARRATIVE_SYSTEM_PROMPT = (
     "Before finalizing each bullet, re-check that the cited Q{n} and the quoted text match the "
     "answer excerpts given in the input. "
     "Never invent quotes or information not present in the input. "
+    "NAME ACCURACY RULE: the input's 'Candidate:' line gives the candidate's actual name — use that "
+    "EXACT name, verbatim, every time you refer to the candidate by name in any section. Never "
+    "substitute a different name, a placeholder name, or a name from any other context — if you are "
+    "not certain of the exact spelling, refer to them as 'the candidate' instead of guessing a name. "
+    "Before finalizing your output, re-check every section for a name and confirm it matches the "
+    "input's 'Candidate:' line exactly. "
     "The final_verdict field must be a full paragraph summarizing the candidate's DISC profile and "
     "what it suggests about their working style — never a hire/reject label or score reference. "
     + _SECTION_15_EXCLUSION

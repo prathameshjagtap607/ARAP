@@ -142,28 +142,40 @@ def test_find_boilerplate_options_flags_reused_generic_phrase():
     assert generic.lower() in boilerplate
 
 
-def test_run_agent_retries_when_first_attempt_has_repeated_storyline():
-    from agents.question_generation.agent import run_question_generation_agent
+def test_find_boilerplate_options_flags_phrase_reused_just_twice():
+    from agents.question_generation.agent import _find_boilerplate_options
 
-    bad_set = [
-        {**FAKE_QUESTIONS[0], "question": "A team member is not meeting their performance targets."},
-        {**FAKE_QUESTIONS[1], "question": "Another team member is missing deadlines on their project."},
+    generic = "You seek input from other team members and stakeholders."
+    questions = [
+        {"options": [generic, "Option B", "Option C", "Option D"]},
+        {"options": ["Option E", "Option F", "Option G", generic]},
     ]
-    good_set = FAKE_QUESTIONS
 
-    with patch(
-        "agents.question_generation.agent.call_tool",
-        side_effect=[{"questions": bad_set}, {"questions": good_set}],
-    ) as mock_call:
-        result = run_question_generation_agent(
-            JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
-        )
+    boilerplate = _find_boilerplate_options(questions)
 
-    assert mock_call.call_count == 2
-    assert result == good_set
+    assert generic.lower() in boilerplate
 
 
-def test_run_agent_returns_last_attempt_after_exhausting_retries():
+def test_find_duplicate_option_sets_flags_reordered_identical_options():
+    from agents.question_generation.agent import _find_duplicate_option_sets
+
+    questions = [
+        {"options": ["A option", "B option", "C option", "D option"]},
+        {"options": ["D option", "A option", "C option", "B option"]},  # same set, shuffled
+        {"options": ["E option", "F option", "G option", "H option"]},
+    ]
+
+    duplicates = _find_duplicate_option_sets(questions)
+
+    assert duplicates == [2]
+
+
+def test_run_agent_makes_exactly_one_call_even_on_failed_quality_check():
+    """No auto-retry: a set that fails the quality checks (repeated
+    storyline here) is still returned as-is, and the model is called
+    exactly once — retrying on a failed check was found to multiply
+    API/quota usage per invite, which matters more for a rate-limited
+    account than accepting a first-attempt result."""
     from agents.question_generation.agent import run_question_generation_agent
 
     bad_set = [
@@ -179,7 +191,7 @@ def test_run_agent_returns_last_attempt_after_exhausting_retries():
             JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
         )
 
-    assert mock_call.call_count == 3
+    assert mock_call.call_count == 1
     assert result == bad_set
 
 

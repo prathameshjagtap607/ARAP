@@ -219,6 +219,50 @@ def test_validate_citations_no_warning_when_all_quotes_match(caplog):
     assert not any("citation mismatch" in r.message for r in caplog.records)
 
 
+# Case 1a-bis: name accuracy check — logs a warning when the model wrote a
+# different name than the actual candidate's in the narrative sections.
+def test_validate_candidate_name_logs_warning_on_mismatch(caplog):
+    with patch.dict(sys.modules, _FAKE_ORM):
+        from agents.report_generator.agent import _validate_candidate_name
+
+        narrative = {
+            "executive_summary": "John's primary style of Steadiness suggests...",
+            "candidate_overview": "John is a Software Development Intern...",
+        }
+
+        with caplog.at_level("WARNING"):
+            _validate_candidate_name("Prathamesh", narrative)
+
+    assert any("name mismatch" in r.message for r in caplog.records)
+
+
+def test_validate_candidate_name_no_warning_when_name_matches(caplog):
+    with patch.dict(sys.modules, _FAKE_ORM):
+        from agents.report_generator.agent import _validate_candidate_name
+
+        narrative = {
+            "executive_summary": "Prathamesh's primary style of Steadiness suggests...",
+            "candidate_overview": "Prathamesh is a Software Development Intern...",
+        }
+
+        with caplog.at_level("WARNING"):
+            _validate_candidate_name("Prathamesh", narrative)
+
+    assert not any("name mismatch" in r.message for r in caplog.records)
+
+
+def test_validate_candidate_name_skips_when_name_unknown(caplog):
+    with patch.dict(sys.modules, _FAKE_ORM):
+        from agents.report_generator.agent import _validate_candidate_name
+
+        narrative = {"executive_summary": "John's primary style...", "candidate_overview": "John is..."}
+
+        with caplog.at_level("WARNING"):
+            _validate_candidate_name("Unknown", narrative)
+
+    assert not any("name mismatch" in r.message for r in caplog.records)
+
+
 # Case 1b: developmental insights (§11) are generated and persisted additively
 # without disturbing any of the existing report sections.
 def test_generate_full_report_includes_developmental_insights():

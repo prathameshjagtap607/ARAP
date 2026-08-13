@@ -73,6 +73,25 @@ def _validate_citations(bullets: list[str], questions: list) -> None:
                 )
 
 
+def _validate_candidate_name(candidate_name: str, narrative: dict) -> None:
+    """Best-effort, non-blocking check: the model is told the candidate's
+    exact name but can still hallucinate a different one in prose sections —
+    logs a warning (never raises) if the real name doesn't appear anywhere
+    it's expected, so the failure is visible instead of silently shipping a
+    report that names the wrong person."""
+    if not candidate_name or candidate_name == "Unknown":
+        return
+    first_name = candidate_name.strip().split()[0].lower()
+    for field in ("executive_summary", "candidate_overview"):
+        text = str(narrative.get(field, "")).lower()
+        if text and first_name not in text:
+            logger.warning(
+                "report name mismatch: candidate is %r but their first name does not "
+                "appear in narrative.%s — model may have hallucinated a different name: %r",
+                candidate_name, field, narrative.get(field),
+            )
+
+
 def _build_score_section(composite_scores: dict, org_bar) -> dict:
     scores = {}
     for composite, score in composite_scores.items():
@@ -187,6 +206,10 @@ def generate_full_report(
             )
         except Exception:
             pass  # citation validation is best-effort logging only, never blocks generation
+        try:
+            _validate_candidate_name(candidate.name if candidate else "Unknown", narrative)
+        except Exception:
+            pass  # name validation is best-effort logging only, never blocks generation
 
         # Call 2 — structured sections
         structured_input = "\n".join([
