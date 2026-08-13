@@ -112,6 +112,51 @@ def test_assign_dimensions_cycles_when_count_exceeds_pool_size():
     assert all(c in LEADERSHIP_CONTEXTS for c in contexts)
 
 
+def test_assign_question_formats_includes_ranking_and_reflection_for_default_count():
+    """Question format was previously left to the model's free choice, which
+    could silently never surface 'ranking' or 'reflection' at all across an
+    entire set — force-assigning a shuffled full cycle of all 7 formats
+    guarantees both appear at least once for the standard 10-question set."""
+    from agents.question_generation.agent import _assign_question_formats
+    from agents.question_generation.prompts import QUESTION_FORMATS
+
+    formats = _assign_question_formats(10)
+
+    assert len(formats) == 10
+    assert "ranking" in formats
+    assert "reflection" in formats
+    assert all(f in QUESTION_FORMATS for f in formats)
+
+
+def test_assign_question_formats_cycles_when_count_exceeds_pool_size():
+    from agents.question_generation.agent import _assign_question_formats
+    from agents.question_generation.prompts import QUESTION_FORMATS
+
+    formats = _assign_question_formats(15)
+
+    assert len(formats) == 15
+    assert all(f in QUESTION_FORMATS for f in formats)
+
+
+def test_build_user_message_includes_question_format_per_assignment():
+    import json
+
+    from agents.question_generation.agent import _build_user_message
+
+    message = _build_user_message(
+        JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 10
+    )
+
+    assignments_line = next(
+        line for line in message.splitlines() if line.startswith("assigned_dimensions:")
+    )
+    assignments = json.loads(assignments_line[len("assigned_dimensions: "):])
+    assert len(assignments) == 10
+    formats_used = {a["question_format"] for a in assignments}
+    assert "ranking" in formats_used
+    assert "reflection" in formats_used
+
+
 def test_find_repeated_storylines_flags_archetype_used_twice():
     from agents.question_generation.agent import _find_repeated_storylines
 
@@ -170,12 +215,66 @@ def test_find_duplicate_option_sets_flags_reordered_identical_options():
     assert duplicates == [2]
 
 
-def test_run_agent_makes_exactly_one_call_even_on_failed_quality_check():
-    """No auto-retry: a set that fails the quality checks (repeated
-    storyline here) is still returned as-is, and the model is called
-    exactly once — retrying on a failed check was found to multiply
-    API/quota usage per invite, which matters more for a rate-limited
-    account than accepting a first-attempt result."""
+def test_find_repeated_storyline_indices_returns_only_the_later_occurrence():
+    from agents.question_generation.agent import _find_repeated_storyline_indices
+
+    questions = [
+        {"question": "A team member is not meeting their performance targets."},
+        {"question": "Your team is undergoing organizational change."},
+        {"question": "Another team member is missing deadlines on their project."},
+    ]
+
+    indices = _find_repeated_storyline_indices(questions)
+
+    assert indices == [3]
+
+
+def test_find_boilerplate_option_indices_returns_only_the_later_occurrence():
+    from agents.question_generation.agent import _find_boilerplate_option_indices
+
+    generic = "You seek input from other team members and stakeholders."
+    questions = [
+        {"options": [generic, "Option B", "Option C", "Option D"]},
+        {"options": ["Option E", "Option F", "Option G", "Option H"]},
+        {"options": ["Option I", "Option J", "Option K", generic]},
+    ]
+
+    indices = _find_boilerplate_option_indices(questions)
+
+    assert indices == [3]
+
+
+def test_run_agent_targeted_repairs_only_the_bad_question_not_the_whole_set():
+    """A full-batch retry (regenerating all N questions) is expensive;
+    the cheaper fix is a single, small follow-up call that only rewrites
+    the ONE question that failed the check — the model is called exactly
+    twice total (1 full-set generation + 1 single-question repair), not
+    a whole second full-set generation."""
+    from agents.question_generation.agent import run_question_generation_agent
+
+    bad_set = [
+        {**FAKE_QUESTIONS[0], "question": "A team member is not meeting their performance targets."},
+        {**FAKE_QUESTIONS[1], "question": "Another team member is missing deadlines on their project."},
+    ]
+    repaired_question = {**FAKE_QUESTIONS[1], "question": "A stakeholder disagrees with your proposed timeline."}
+
+    with patch(
+        "agents.question_generation.agent.call_tool",
+        side_effect=[{"questions": bad_set}, repaired_question],
+    ) as mock_call:
+        result = run_question_generation_agent(
+            JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
+        )
+
+    assert mock_call.call_count == 2
+    assert result[0] == bad_set[0]
+    assert result[1] == repaired_question
+
+
+def test_run_agent_keeps_original_question_if_repair_call_fails():
+    """Repair is best-effort: if the single-question repair call itself
+    fails, the original (still-flagged) question is kept rather than
+    losing the question entirely."""
     from agents.question_generation.agent import run_question_generation_agent
 
     bad_set = [
@@ -185,13 +284,12 @@ def test_run_agent_makes_exactly_one_call_even_on_failed_quality_check():
 
     with patch(
         "agents.question_generation.agent.call_tool",
-        return_value={"questions": bad_set},
-    ) as mock_call:
+        side_effect=[{"questions": bad_set}, Exception("repair call failed")],
+    ):
         result = run_question_generation_agent(
             JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
         )
 
-    assert mock_call.call_count == 1
     assert result == bad_set
 
 

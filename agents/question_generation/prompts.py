@@ -1,4 +1,4 @@
-PROMPT_VERSION = "v2.5"
+PROMPT_VERSION = "v2.7"
 
 # --- DISC-Based Generative Leadership Question Framework -------------------
 # Per the "DISC-Based Generative Question Framework for Generative Leadership
@@ -78,9 +78,16 @@ SYSTEM_PROMPT = (
     "target_competencies MUST only contain values from the fixed competency "
     "vocabulary provided in the tool schema. "
     "\n\nGENERATION LOGIC — the user message assigns a specific "
-    "competency_area and leadership_context to each question number via "
-    "assigned_dimensions; you MUST use exactly those, per question, in "
-    "order — this is not a free choice. For each question also pick "
+    "competency_area, leadership_context, AND question_format to each "
+    "question number via assigned_dimensions; you MUST use exactly those, "
+    "per question, in order — this is not a free choice for any of the "
+    "three. In particular, when question_format is 'ranking' or "
+    "'reflection', you MUST still write a scenario with exactly 4 DISC-"
+    "style options (the candidate app records their pick regardless of "
+    "format), but frame the question text itself accordingly: 'ranking' "
+    "asks the candidate to rank the 4 responses from most-to-least likely; "
+    "'reflection' asks a self-reflective question like what they'd find "
+    "most difficult about the situation. For each question also pick "
     f"ONE-OR-MORE behavioural_trigger values from {BEHAVIOURAL_TRIGGERS} "
     "that fit naturally with its assigned competency_area and "
     "leadership_context. Combine them into a realistic, concrete "
@@ -91,11 +98,6 @@ SYSTEM_PROMPT = (
     "interests and incomplete information; tier 4 (expert) is a high-"
     "ambiguity leadership challenge involving business impact, people "
     "dynamics, pressure and competing priorities. "
-    f"Also pick a question_format from {QUESTION_FORMATS} that fits the "
-    "scenario (e.g. 'first_action' asks what they would do first; "
-    "'adaptive_choice' asks which response would be most EFFECTIVE even if "
-    "not their natural instinct; 'self_awareness' asks what their team "
-    "would likely experience from their response). "
     "\n\nSTRICT FORMAT for every question: write the scenario, then give "
     "EXACTLY 4 options — never 3, never 5. Each option is a DIFFERENT ACTION "
     "the candidate could take IN THAT SPECIFIC SCENARIO, and each option "
@@ -177,55 +179,11 @@ SYSTEM_PROMPT = (
     "map out a detailed capacity breakdown of everyone's current commitments "
     "before assigning anything, even if that means going back to the VP "
     "with a short delay.\" "
-    "\n\nSECOND WORKED EXAMPLE — a different competency, so you can see the "
-    "pattern generalizes (again: never reuse this scenario or phrasing): "
-    "\nScenario (competency_area='Performance Management', "
-    "leadership_context='Managing direct reports', "
-    "behavioural_triggers=['Poor performance', 'Emotional situation']): "
-    "\"One of your direct reports has missed two consecutive quality "
-    "checkpoints on a client deliverable. You need to address it in your "
-    "next 1:1 with them.\" "
-    "\nDominance option (probes bluntness/control): \"I'd state plainly that "
-    "the standard wasn't met, set a firm deadline for the next checkpoint, "
-    "and make clear what happens if it slips again.\" "
-    "\nInfluence option (probes avoiding the hard part/staying upbeat): "
-    "\"I'd open by reminding them of their strengths and past wins, then "
-    "gently mention the checkpoints, keeping the tone encouraging so they "
-    "don't get discouraged.\" "
-    "\nSteadiness option (probes softening/indirectness): \"I'd ask open "
-    "questions about how they're doing overall and let them raise the "
-    "checkpoint misses themselves before I bring it up directly.\" "
-    "\nConscientiousness option (probes over-preparation/data-first): \"I'd "
-    "walk in with a side-by-side comparison of the checkpoint requirements "
-    "versus what was delivered, and use that as the basis for the "
-    "conversation.\" "
-    "\n\nTHIRD WORKED EXAMPLE — a stakeholder/influence-without-authority "
-    "scenario: "
-    "\nScenario (competency_area='Influencing & Stakeholder Management', "
-    "leadership_context='Managing upwards', "
-    "behavioural_triggers=['Resistance', 'Difficult stakeholder']): "
-    "\"Your director wants to cut two weeks from the project timeline you "
-    "proposed. You believe this will hurt quality, but they outrank you and "
-    "seem set on the shorter timeline.\" "
-    "\nDominance option (probes pushing back head-on): \"I'd tell them "
-    "directly that the shorter timeline isn't realistic and lay out exactly "
-    "what would have to be cut to hit it.\" "
-    "\nInfluence option (probes persuasion/relationship leverage): \"I'd "
-    "find a moment to walk them through the tradeoffs informally, framing "
-    "it around the shared goal of a strong launch rather than a flat "
-    "refusal.\" "
-    "\nSteadiness option (probes going along to avoid friction): \"I'd agree "
-    "to try the shorter timeline for now, planning to flag concerns quietly "
-    "if problems start to show up.\" "
-    "\nConscientiousness option (probes data-backed resistance): \"I'd put "
-    "together a short risk breakdown showing exactly which quality checks "
-    "would have to be skipped, and let the data make the case.\" "
-    "\nNotice across all three examples: all 4 options are professional and "
-    "defensible, none is graded right/wrong, and each reveals a genuinely "
-    "different instinct — not four reworded versions of 'communicate "
-    "clearly and make a plan.' If your options all could be swapped between "
-    "questions without anyone noticing, they are not differentiated enough "
-    "— rewrite them."
+    "\nNotice: all 4 options are professional and defensible, none is graded "
+    "right/wrong, and each reveals a genuinely different instinct — not four "
+    "reworded versions of 'communicate clearly and make a plan.' If your "
+    "options all could be swapped between questions without anyone "
+    "noticing, they are not differentiated enough — rewrite them."
 )
 
 # Maps PRD category names to lowercase competency key aliases for weight lookup.
@@ -329,5 +287,77 @@ QUESTION_GENERATION_TOOL: dict = {
             }
         },
         "required": ["questions"],
+    },
+}
+
+# --- Targeted single-question repair -----------------------------------
+# When the code-level checks in agent.py catch a duplicate/repeated
+# storyline AFTER a full generation, regenerating the whole set again is
+# expensive (a full fresh call for every question). This repair path only
+# regenerates the ONE offending question — same competency_area/
+# leadership_context/behavioural_triggers/difficulty/question_format as
+# before, just with fresh, non-duplicate content — which is far cheaper
+# per token while still guaranteeing the final set has no duplicates.
+
+REPAIR_SYSTEM_PROMPT = (
+    "You are the Question Generation Agent for a DISC-based generative leadership & "
+    "behavioural profiling assessment. You are REWRITING exactly ONE question that was "
+    "flagged as too similar to another question already in the set — either its storyline "
+    "matched another question's, or one or more of its options were duplicated elsewhere in "
+    "the set. Keep the EXACT same competency_area, leadership_context, behavioural_triggers, "
+    "difficulty, and question_format given in the input — only change the scenario wording and "
+    "the 4 options so the result is genuinely distinct from everything already used. "
+    "The input's 'already_used_storylines_and_phrases' list contains scenario language and "
+    "option phrasing already present elsewhere in this set — your new question and options "
+    "MUST NOT resemble any of them. "
+    "\n\nSTRICT FORMAT: write the scenario, then give EXACTLY 4 options — never 3, never 5. "
+    "Each option is a DIFFERENT ACTION the candidate could take IN THAT SPECIFIC SCENARIO, "
+    "and each option must be written from the lens of one DISC style's natural blind spot for "
+    "THIS competency+context+trigger combination, not a generic DISC trait: "
+    f"Dominance option should probe: {DISC_BLIND_SPOT_ANGLES['D']}. "
+    f"Influence option should probe: {DISC_BLIND_SPOT_ANGLES['I']}. "
+    f"Steadiness option should probe: {DISC_BLIND_SPOT_ANGLES['S']}. "
+    f"Conscientiousness option should probe: {DISC_BLIND_SPOT_ANGLES['C']}. "
+    "Do not label the options with D/I/S/C. All 4 options must be genuinely professional, "
+    "defensible responses that differ ONLY in behavioural style, never in competence or "
+    "integrity — never an unprofessional, unethical, or clearly inferior option. Never a "
+    "generic self-rating option. Never frame any option as objectively right or wrong."
+)
+
+QUESTION_REPAIR_TOOL: dict = {
+    "name": "regenerate_question",
+    "description": "Rewrite exactly one question that was flagged as duplicating another question in the set.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "question": {"type": "string"},
+            "category": {"type": "string", "enum": VALID_CATEGORIES},
+            "target_competencies": {
+                "type": "array",
+                "items": {"type": "string", "enum": ["disc"]},
+            },
+            "difficulty": {"type": "string", "enum": ["easy", "medium", "hard", "expert"]},
+            "answer_format": {"type": "string", "enum": ["multiple_choice"]},
+            "options": {
+                "type": "array",
+                "items": {"type": "string"},
+                "minItems": 4,
+                "maxItems": 4,
+            },
+            "resume_reference": {"type": "boolean"},
+            "competency_area": {"type": "string", "enum": LEADERSHIP_COMPETENCIES},
+            "leadership_context": {"type": "string", "enum": LEADERSHIP_CONTEXTS},
+            "behavioural_triggers": {
+                "type": "array",
+                "items": {"type": "string", "enum": BEHAVIOURAL_TRIGGERS},
+            },
+            "question_format": {"type": "string", "enum": QUESTION_FORMATS},
+        },
+        "required": [
+            "question", "category", "target_competencies",
+            "difficulty", "answer_format", "options", "resume_reference",
+            "competency_area", "leadership_context",
+            "behavioural_triggers", "question_format",
+        ],
     },
 }
