@@ -134,7 +134,12 @@ export default function QuestionPage() {
   }
 
   const allAnswered =
-    questions.length > 0 && questions.every((q) => !!state.answers[q.id]);
+    questions.length > 0 &&
+    questions.every(
+      (q) =>
+        !!state.answers[q.id] &&
+        (q.answer_format !== "multiple_choice" || !!state.adaptiveAnswers[q.id])
+    );
   const timerWarning = secondsLeft !== null && secondsLeft <= 60;
 
   return (
@@ -169,20 +174,25 @@ export default function QuestionPage() {
         role="navigation"
         aria-label="Questions"
       >
-        {questions.map((q, i) => (
-          <button
-            key={q.id}
-            onClick={() => dispatch({ type: "SET_INDEX", index: i })}
-            aria-label={`Question ${i + 1}${state.answers[q.id] ? " (answered)" : ""}`}
-            className={`w-8 h-8 rounded-full text-sm font-medium border
-              ${state.currentIndex === i ? "bg-slate-900 text-white border-slate-900" : ""}
-              ${state.answers[q.id] && state.currentIndex !== i ? "bg-green-100 border-green-400 text-green-800" : ""}
-              ${!state.answers[q.id] && state.currentIndex !== i ? "border-slate-300 text-slate-600" : ""}
-            `}
-          >
-            {i + 1}
-          </button>
-        ))}
+        {questions.map((q, i) => {
+          const isComplete =
+            !!state.answers[q.id] &&
+            (q.answer_format !== "multiple_choice" || !!state.adaptiveAnswers[q.id]);
+          return (
+            <button
+              key={q.id}
+              onClick={() => dispatch({ type: "SET_INDEX", index: i })}
+              aria-label={`Question ${i + 1}${isComplete ? " (answered)" : ""}`}
+              className={`w-8 h-8 rounded-full text-sm font-medium border
+                ${state.currentIndex === i ? "bg-slate-900 text-white border-slate-900" : ""}
+                ${isComplete && state.currentIndex !== i ? "bg-green-100 border-green-400 text-green-800" : ""}
+                ${!isComplete && state.currentIndex !== i ? "border-slate-300 text-slate-600" : ""}
+              `}
+            >
+              {i + 1}
+            </button>
+          );
+        })}
       </div>
 
       {/* Current question */}
@@ -282,9 +292,10 @@ export default function QuestionPage() {
 
           {/* DISC-Based Generative Leadership Question Framework §8 — Natural
               vs Adaptive Behaviour: once a natural (instinctive) answer is
-              given, optionally ask which response would be most EFFECTIVE,
-              even if it isn't the candidate's natural choice. Optional —
-              never gates submission or blocks the existing answer flow. */}
+              given, ask which response would be most EFFECTIVE, even if it
+              isn't the candidate's natural choice. Required — gates
+              submission, same as the natural answer, so the adaptability
+              insight in the report always has evidence to draw on. */}
           {current.answer_format === "multiple_choice" &&
             current.options &&
             state.answers[current.id] && (
