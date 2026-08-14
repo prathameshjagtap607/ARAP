@@ -27,6 +27,7 @@ export default function QuestionPage() {
   const [rankingSaveError, setRankingSaveError] = useState<string | null>(null);
   const [savingReflection, setSavingReflection] = useState<Record<string, boolean>>({});
   const [reflectionSaveError, setReflectionSaveError] = useState<string | null>(null);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
   const submitCalledRef = useRef(false);
 
   useEffect(() => {
@@ -173,13 +174,24 @@ export default function QuestionPage() {
     }
   }
 
-  const allAnswered =
-    questions.length > 0 &&
-    questions.every(
-      (q) =>
-        !!state.answers[q.id] &&
-        (q.answer_format !== "multiple_choice" || !!state.adaptiveAnswers[q.id])
+  // DISC-Based Generative Leadership Question Framework §7/§8 — 'ranking' and
+  // 'reflection' format questions are answered entirely through their own
+  // format-specific control (the ranking order / the reflection text) rather
+  // than the Natural + Adaptive pick-one pair used by every other format.
+  function isQuestionComplete(q: Question): boolean {
+    if (q.question.question_format === "ranking") {
+      return !!state.rankingOrders[q.id];
+    }
+    if (q.question.question_format === "reflection") {
+      return !!state.reflectionTexts[q.id]?.trim();
+    }
+    return (
+      !!state.answers[q.id] &&
+      (q.answer_format !== "multiple_choice" || !!state.adaptiveAnswers[q.id])
     );
+  }
+
+  const allAnswered = questions.length > 0 && questions.every(isQuestionComplete);
   const timerWarning = secondsLeft !== null && secondsLeft <= 60;
 
   return (
@@ -215,9 +227,7 @@ export default function QuestionPage() {
         aria-label="Questions"
       >
         {questions.map((q, i) => {
-          const isComplete =
-            !!state.answers[q.id] &&
-            (q.answer_format !== "multiple_choice" || !!state.adaptiveAnswers[q.id]);
+          const isComplete = isQuestionComplete(q);
           return (
             <button
               key={q.id}
@@ -242,7 +252,10 @@ export default function QuestionPage() {
             {current.question.text}
           </p>
 
-          {current.answer_format === "multiple_choice" && current.options && (
+          {current.answer_format === "multiple_choice" &&
+            current.options &&
+            current.question.question_format !== "ranking" &&
+            current.question.question_format !== "reflection" && (
             <fieldset className="space-y-2">
               <legend className="sr-only">Select an answer</legend>
               {Object.entries(current.options).map(([key, label]) => (
@@ -338,6 +351,8 @@ export default function QuestionPage() {
               insight in the report always has evidence to draw on. */}
           {current.answer_format === "multiple_choice" &&
             current.options &&
+            current.question.question_format !== "ranking" &&
+            current.question.question_format !== "reflection" &&
             state.answers[current.id] && (
               <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
                 <p className="text-slate-700 text-sm font-medium">
@@ -377,17 +392,18 @@ export default function QuestionPage() {
             )}
 
           {/* DISC-Based Generative Leadership Question Framework §7 —
-              'Ranking' format: an ADDITIONAL, optional signal on top of the
-              required natural answer above — ordering all 4 options from
-              most-to-least likely. Never replaces or gates the natural pick,
-              which still drives DISC scoring regardless of format. */}
-          {current.question.question_format === "ranking" &&
-            current.options &&
-            state.answers[current.id] && (
-              <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
+              'Ranking' format: this IS the question's answer for this format
+              (ordering all 4 options from most-to-least likely) — it
+              replaces the separate Natural/Adaptive pick-one pair used by
+              other formats, rather than sitting alongside it. */}
+          {current.question.question_format === "ranking" && current.options && (
+              <div className="space-y-2">
                 <p className="text-slate-700 text-sm font-medium">
-                  Optional: rank all 4 responses from most likely to least
-                  likely to be what you&apos;d do.
+                  Rank all 4 responses from most likely to least likely to be
+                  what you&apos;d do.
+                </p>
+                <p className="text-xs text-slate-500">
+                  Drag to reorder, or use the ↑/↓ buttons.
                 </p>
                 <ol className="space-y-2">
                   {(
@@ -395,8 +411,24 @@ export default function QuestionPage() {
                   ).map((key, i, order) => (
                     <li
                       key={key}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-slate-200"
+                      draggable
+                      onDragStart={() => setDragIndex(i)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (dragIndex === null || dragIndex === i) return;
+                        const next = [...order];
+                        const [moved] = next.splice(dragIndex, 1);
+                        next.splice(i, 0, moved);
+                        setDragIndex(null);
+                        saveRankingOrder(current.id, next);
+                      }}
+                      onDragEnd={() => setDragIndex(null)}
+                      className={`flex items-center gap-3 p-3 rounded-lg border border-slate-200
+                                  cursor-grab active:cursor-grabbing
+                                  ${dragIndex === i ? "opacity-40" : ""}`}
                     >
+                      <span aria-hidden="true" className="text-slate-400 select-none">⠿</span>
                       <span className="text-slate-500 text-sm font-mono w-5">{i + 1}.</span>
                       <span className="text-slate-800 flex-1">{current.options![key]}</span>
                       <div className="flex gap-1">
@@ -444,14 +476,13 @@ export default function QuestionPage() {
             )}
 
           {/* DISC-Based Generative Leadership Question Framework §7 —
-              'Reflection' format: an ADDITIONAL, optional free-text response
-              on top of the required natural answer above. */}
-          {current.question.question_format === "reflection" &&
-            state.answers[current.id] && (
-              <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
+              'Reflection' format: this IS the question's answer for this
+              format — it replaces the separate Natural/Adaptive pick-one
+              pair used by other formats, rather than sitting alongside it. */}
+          {current.question.question_format === "reflection" && (
+              <div className="space-y-2">
                 <label htmlFor={`reflection-${current.id}`} className="text-slate-700 text-sm font-medium block">
-                  Optional: what would you find most difficult about this
-                  situation?
+                  What would you find most difficult about this situation?
                 </label>
                 <textarea
                   id={`reflection-${current.id}`}
