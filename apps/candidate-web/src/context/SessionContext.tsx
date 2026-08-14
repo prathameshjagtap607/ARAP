@@ -8,6 +8,17 @@ import {
 } from "react";
 import type { SessionAction, SessionState } from "@/lib/types";
 
+const JWT_STORAGE_KEY = "arap_candidate_jwt";
+
+// Session-scoped (cleared when the tab closes) rather than localStorage —
+// this is a short-lived assessment token, not something that should persist
+// indefinitely on a shared machine. Read only on the client: SSR has no
+// sessionStorage, and Next.js renders this module server-side first.
+function readStoredJwt(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.sessionStorage.getItem(JWT_STORAGE_KEY);
+}
+
 const initialState: SessionState = {
   jwt: null,
   session: null,
@@ -19,9 +30,16 @@ const initialState: SessionState = {
   submitting: false,
 };
 
+function initState(): SessionState {
+  return { ...initialState, jwt: readStoredJwt() };
+}
+
 function reducer(state: SessionState, action: SessionAction): SessionState {
   switch (action.type) {
     case "SET_JWT":
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(JWT_STORAGE_KEY, action.jwt);
+      }
       return { ...state, jwt: action.jwt };
     case "SET_SESSION":
       return { ...state, session: action.session };
@@ -81,7 +99,7 @@ const SessionContext = createContext<{
 } | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, undefined, initState);
   return (
     <SessionContext.Provider value={{ state, dispatch }}>
       {children}
