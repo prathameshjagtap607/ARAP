@@ -86,6 +86,8 @@ def get_pdf_bytes(
     # Natural vs Adaptive comparison — DISC-Based Generative Leadership
     # Question Framework §8, mirrored into the PDF from the web results page.
     qa_pairs: list[dict] = []
+    ranking_pairs: list[dict] = []
+    reflection_pairs: list[dict] = []
     qset = db.query(QuestionSet).filter_by(session_id=session_id).first()
     if qset:
         questions = (
@@ -95,12 +97,23 @@ def get_pdf_bytes(
             .all()
         )
         for q in questions:
+            options = (q.question or {}).get("options") or {}
+            question_text = (q.question or {}).get("text", "")
             if q.answer_text and q.adaptive_answer_text:
-                options = (q.question or {}).get("options") or {}
                 qa_pairs.append({
-                    "question_text": (q.question or {}).get("text", ""),
+                    "question_text": question_text,
                     "natural": options.get(q.answer_text, q.answer_text),
                     "adaptive": options.get(q.adaptive_answer_text, q.adaptive_answer_text),
+                })
+            if q.ranking_order:
+                ranking_pairs.append({
+                    "question_text": question_text,
+                    "ranked_options": [options.get(letter, letter) for letter in q.ranking_order],
+                })
+            if q.reflection_text:
+                reflection_pairs.append({
+                    "question_text": question_text,
+                    "reflection": q.reflection_text,
                 })
 
     return render_pdf(
@@ -109,6 +122,8 @@ def get_pdf_bytes(
         job_title=job_title,
         include_transcript=False,
         qa_pairs=qa_pairs,
+        ranking_pairs=ranking_pairs,
+        reflection_pairs=reflection_pairs,
     )
 
 

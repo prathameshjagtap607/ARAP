@@ -100,6 +100,26 @@
 </div>
 {% endif %}
 
+{% if ranking_pairs %}
+<h2>Ranking Responses</h2>
+<div class="section">
+  {% for rp in ranking_pairs %}
+  <p style="margin-top:12px;"><strong>{{ rp.question_text }}</strong><br>
+     {% for opt in rp.ranked_options %}{{ loop.index }}. {{ opt }}<br>{% endfor %}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if reflection_pairs %}
+<h2>Reflection Responses</h2>
+<div class="section">
+  {% for rp in reflection_pairs %}
+  <p style="margin-top:12px;"><strong>{{ rp.question_text }}</strong><br>
+     {{ rp.reflection }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
 <h2>Candidate Overview</h2>
 <div class="section"><p>{{ report.candidate_overview }}</p></div>
 

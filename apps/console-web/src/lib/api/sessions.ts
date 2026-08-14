@@ -88,10 +88,12 @@ export async function getSessionReport(sessionId: string): Promise<SessionReport
 export interface SessionAnswerItem {
   id: string;
   sequence_no: number;
-  question: { text: string; options?: Record<string, string> };
+  question: { text: string; options?: Record<string, string>; question_format?: string };
   options: Record<string, string> | null;
   answer_text: string | null;
   adaptive_answer_text: string | null;
+  ranking_order: string[] | null;
+  reflection_text: string | null;
 }
 
 export interface SessionAnswersResponse {

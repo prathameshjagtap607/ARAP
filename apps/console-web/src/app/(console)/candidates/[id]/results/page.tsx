@@ -223,6 +223,50 @@ export default function ResultsPage() {
         </div>
       )}
 
+      {/* Ranking responses — DISC-Based Generative Leadership Question
+          Framework §7 (Ranking format). Additive: only shown for questions
+          the candidate actually answered in ranking form. */}
+      {answers.some((a) => a.ranking_order && a.ranking_order.length > 0) && (
+        <div className="rounded-lg border border-slate-200 bg-white p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-slate-900">Ranking Responses</h2>
+          <div className="space-y-4">
+            {answers
+              .filter((a) => a.ranking_order && a.ranking_order.length > 0)
+              .map((a) => (
+                <div key={a.id} className="border-t border-slate-100 pt-4">
+                  <p className="text-sm font-medium text-slate-800 mb-2">{a.question.text}</p>
+                  <ol className="space-y-1">
+                    {a.ranking_order!.map((letter, i) => (
+                      <li key={letter} className="text-sm text-slate-700">
+                        {i + 1}. {a.options?.[letter] ?? letter}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Reflection responses — DISC-Based Generative Leadership Question
+          Framework §7 (Reflection format). Additive: only shown for
+          questions the candidate actually answered in free-text form. */}
+      {answers.some((a) => a.reflection_text) && (
+        <div className="rounded-lg border border-slate-200 bg-white p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-slate-900">Reflection Responses</h2>
+          <div className="space-y-4">
+            {answers
+              .filter((a) => a.reflection_text)
+              .map((a) => (
+                <div key={a.id} className="border-t border-slate-100 pt-4">
+                  <p className="text-sm font-medium text-slate-800 mb-2">{a.question.text}</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">{a.reflection_text}</p>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {!isFullReportGenerated ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm font-medium text-amber-900">
