@@ -51,7 +51,10 @@ RESUME_EXTRACTION_TOOL = {
                         "title": {"type": "string"},
                         "start": {"type": ["string", "null"]},
                         "end": {"type": ["string", "null"]},
-                        "team_size": {"type": ["integer", "null"]},
+                        "team_size": {
+                            "type": ["integer", "string", "null"],
+                            "description": "Team size at this role. Prefer a plain integer, but a string is accepted if the resume states it non-numerically.",
+                        },
                         "scope": {"type": ["string", "null"]},
                         "key_achievements": {"type": "array", "items": {"type": "string"}},
                     },
@@ -66,7 +69,10 @@ RESUME_EXTRACTION_TOOL = {
                         "degree": {"type": "string"},
                         "field": {"type": ["string", "null"]},
                         "institution": {"type": ["string", "null"]},
-                        "year": {"type": ["integer", "null"]},
+                        "year": {
+                            "type": ["integer", "string", "null"],
+                            "description": "Graduation year. Prefer a plain integer, but a string is accepted if the resume's date is a range or otherwise non-numeric.",
+                        },
                     },
                     "required": ["degree", "field", "institution", "year"],
                 },
@@ -78,7 +84,10 @@ RESUME_EXTRACTION_TOOL = {
                     "properties": {
                         "name": {"type": "string"},
                         "issuer": {"type": ["string", "null"]},
-                        "year": {"type": ["integer", "null"]},
+                        "year": {
+                            "type": ["integer", "string", "null"],
+                            "description": "Certification year. Prefer a plain integer, but a string is accepted if the resume's date is non-numeric.",
+                        },
                     },
                     "required": ["name", "issuer", "year"],
                 },
@@ -87,7 +96,10 @@ RESUME_EXTRACTION_TOOL = {
             "leadership_indicators": {
                 "type": "object",
                 "properties": {
-                    "max_team_size": {"type": ["integer", "null"]},
+                    "max_team_size": {
+                        "type": ["integer", "string", "null"],
+                        "description": "Largest team size managed. Prefer a plain integer, but a string is accepted if the resume states it non-numerically.",
+                    },
                     "scope": {"type": ["string", "null"]},
                     "budget_ownership": {"type": ["string", "null"]},
                 },

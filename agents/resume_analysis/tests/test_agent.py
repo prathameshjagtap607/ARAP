@@ -71,6 +71,52 @@ def test_agent_accepts_none_job_profile():
     assert result is not None
 
 
+def test_coerce_year_handles_plain_int_string_and_nullish():
+    from agents.resume_analysis.agent import _coerce_year
+
+    assert _coerce_year(2025) == 2025
+    assert _coerce_year(None) is None
+    assert _coerce_year("2025") == 2025
+    assert _coerce_year("12/2024 - Present(Aug 2026)") == 2024
+    assert _coerce_year("null") is None
+    assert _coerce_year("N/A") is None
+    assert _coerce_year("") is None
+    assert _coerce_year("no numbers here") is None
+
+
+def test_coerce_count_handles_small_numbers_as_strings():
+    from agents.resume_analysis.agent import _coerce_count
+
+    assert _coerce_count(5) == 5
+    assert _coerce_count("5") == 5
+    assert _coerce_count(None) is None
+    assert _coerce_count("null") is None
+    assert _coerce_count("a dozen") is None
+
+
+def test_agent_normalizes_string_years_and_team_sizes():
+    messy_output = dict(MOCK_TOOL_OUTPUT)
+    messy_output["education"] = [
+        {"degree": "MCA", "field": None, "institution": "DSU", "year": "12/2024 - Present(Aug 2026)"}
+    ]
+    messy_output["certifications"] = [
+        {"name": "Cisco Cert", "issuer": "Cisco", "year": "null"}
+    ]
+    messy_output["employment_history"] = [
+        {"company": "TechCorp", "title": "Developer", "start": "2020-01",
+         "end": "2025-01", "team_size": "5", "scope": "regional", "key_achievements": []}
+    ]
+    messy_output["leadership_indicators"] = {
+        "max_team_size": "null", "scope": "regional", "budget_ownership": None
+    }
+    with patch("agents.resume_analysis.agent.call_tool", return_value=messy_output):
+        result = run_resume_analysis_agent(RAW_TEXT, JOB_PROFILE)
+    assert result["education"][0]["year"] == 2024
+    assert result["certifications"][0]["year"] is None
+    assert result["employment_history"][0]["team_size"] == 5
+    assert result["leadership_indicators"]["max_team_size"] is None
+
+
 def test_derive_leadership_level_boundaries():
     from agents.resume_analysis.agent import _derive_leadership_level
     assert _derive_leadership_level(None) == "IC"

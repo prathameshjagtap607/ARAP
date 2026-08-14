@@ -1,4 +1,4 @@
-PROMPT_VERSION = "v2.8"
+PROMPT_VERSION = "v2.9"
 
 # --- DISC-Based Generative Leadership Question Framework -------------------
 # Per the "DISC-Based Generative Question Framework for Generative Leadership
@@ -321,7 +321,11 @@ REPAIR_SYSTEM_PROMPT = (
     "Do not label the options with D/I/S/C. All 4 options must be genuinely professional, "
     "defensible responses that differ ONLY in behavioural style, never in competence or "
     "integrity — never an unprofessional, unethical, or clearly inferior option. Never a "
-    "generic self-rating option. Never frame any option as objectively right or wrong."
+    "generic self-rating option. Never frame any option as objectively right or wrong. "
+    "\n\nCRITICAL — target_competencies is ALWAYS exactly [\"disc\"], nothing else, on every "
+    "single question, no exceptions. Do NOT put the competency_area value (e.g. \"Strategic "
+    "Thinking\") or any other competency name into target_competencies — that field's only "
+    "valid value is the literal string \"disc\"."
 )
 
 QUESTION_REPAIR_TOOL: dict = {
