@@ -59,7 +59,10 @@ CANDIDATE_PROFILE_TOOL = {
                     "scope": {
                         "type": "object",
                         "properties": {
-                            "team_size": {"type": ["integer", "null"]},
+                            "team_size": {
+                                "type": ["integer", "string", "null"],
+                                "description": "Largest team size managed. Prefer a plain integer, but a string is accepted if the resume states it non-numerically.",
+                            },
                             "budget": {"type": ["string", "null"]},
                             "geography": {"type": ["string", "null"]},
                         },

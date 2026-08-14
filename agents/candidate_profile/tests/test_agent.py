@@ -75,6 +75,31 @@ def test_agent_returns_structured_output():
     assert isinstance(result["risk_flags"], list)
 
 
+def test_coerce_count_handles_int_string_and_nullish():
+    from agents.candidate_profile.agent import _coerce_count
+
+    assert _coerce_count(8) == 8
+    assert _coerce_count(None) is None
+    assert _coerce_count("8") == 8
+    assert _coerce_count("null") is None
+    assert _coerce_count("a dozen") is None
+
+
+def test_agent_normalizes_string_team_size():
+    from agents.candidate_profile.agent import run_candidate_profile_agent
+
+    messy_result = dict(_FAKE_RESULT)
+    messy_result["leadership"] = {
+        "level": "Manager",
+        "career_velocity": "Promoted twice in 4 years",
+        "scope": {"team_size": "8", "budget": None, "geography": "Remote — APAC"},
+    }
+    with patch("agents.candidate_profile.agent.call_tool", return_value=messy_result):
+        result = run_candidate_profile_agent(_EXTRACTION, _JOB_PROFILE)
+
+    assert result["leadership"]["scope"]["team_size"] == 8
+
+
 def test_agent_returns_none_on_api_error():
     from agents.candidate_profile.agent import run_candidate_profile_agent
 
