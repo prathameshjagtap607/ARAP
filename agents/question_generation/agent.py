@@ -183,6 +183,24 @@ def _assign_question_formats(target_question_count: int) -> list[str]:
     return result[:target_question_count]
 
 
+_DIFFICULTY_TIERS: list[str] = ["easy", "medium", "hard", "expert"]
+
+
+def _assign_difficulties(target_question_count: int) -> list[str]:
+    """Explicitly assign one difficulty tier per question, same reasoning as
+    _assign_dimensions/_assign_question_formats above — left to the model's
+    free choice, it was observed defaulting every question to 'medium' even
+    though the framework spec requires all 4 difficulty tiers to be
+    represented. A shuffled cycle guarantees every tier appears at least
+    once for any target_question_count >= 4 (the common case)."""
+    result: list[str] = []
+    while len(result) < target_question_count:
+        shuffled = _DIFFICULTY_TIERS[:]
+        random.shuffle(shuffled)
+        result.extend(shuffled)
+    return result[:target_question_count]
+
+
 def _bounded_json(obj: dict, label: str) -> str:
     """Serialize a dict for the prompt, capped at _MAX_PROFILE_JSON_CHARS —
     a candidate with an unusually large skill/experience matrix (or a
@@ -211,15 +229,17 @@ def _build_user_message(
 ) -> str:
     assigned_competencies, assigned_contexts = _assign_dimensions(target_question_count)
     assigned_formats = _assign_question_formats(target_question_count)
+    assigned_difficulties = _assign_difficulties(target_question_count)
     assignments = [
         {
             "question_number": i + 1,
             "competency_area": c,
             "leadership_context": ctx,
             "question_format": fmt,
+            "difficulty": diff,
         }
-        for i, (c, ctx, fmt) in enumerate(
-            zip(assigned_competencies, assigned_contexts, assigned_formats)
+        for i, (c, ctx, fmt, diff) in enumerate(
+            zip(assigned_competencies, assigned_contexts, assigned_formats, assigned_difficulties)
         )
     ]
     return "\n".join([
@@ -234,13 +254,15 @@ def _build_user_message(
         (
             "Generate exactly target_question_count questions, in the same "
             "order as assigned_dimensions. For question N, you MUST use "
-            "exactly the competency_area, leadership_context, AND "
-            "question_format given for question_number=N in "
+            "exactly the competency_area, leadership_context, "
+            "question_format, AND difficulty given for question_number=N in "
             "assigned_dimensions — do not substitute a different one, even "
             "if another feels like a better fit. This guarantees variety "
             "across the set, including making sure formats like 'ranking' "
             "and 'reflection' actually appear rather than always defaulting "
-            "to a single-pick MCQ framing. "
+            "to a single-pick MCQ framing, and that all 4 difficulty tiers "
+            "(easy, medium, hard, expert) are represented rather than "
+            "defaulting every question to 'medium'. "
             "Seed at least one question per risk flag."
         ),
     ])

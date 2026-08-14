@@ -196,6 +196,47 @@ def test_build_user_message_includes_question_format_per_assignment():
     assert "reflection" in formats_used
 
 
+def test_assign_difficulties_includes_all_four_tiers_for_default_count():
+    """Difficulty was previously left to the model's free choice, which was
+    observed collapsing every question to 'medium' — force-assigning a
+    shuffled full cycle of all 4 tiers guarantees each appears at least once
+    for the standard 10-question set."""
+    from agents.question_generation.agent import _DIFFICULTY_TIERS, _assign_difficulties
+
+    difficulties = _assign_difficulties(10)
+
+    assert len(difficulties) == 10
+    assert set(_DIFFICULTY_TIERS) <= set(difficulties)
+    assert all(d in _DIFFICULTY_TIERS for d in difficulties)
+
+
+def test_assign_difficulties_cycles_when_count_exceeds_pool_size():
+    from agents.question_generation.agent import _DIFFICULTY_TIERS, _assign_difficulties
+
+    difficulties = _assign_difficulties(15)
+
+    assert len(difficulties) == 15
+    assert all(d in _DIFFICULTY_TIERS for d in difficulties)
+
+
+def test_build_user_message_includes_difficulty_per_assignment():
+    import json
+
+    from agents.question_generation.agent import _DIFFICULTY_TIERS, _build_user_message
+
+    message = _build_user_message(
+        JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 10
+    )
+
+    assignments_line = next(
+        line for line in message.splitlines() if line.startswith("assigned_dimensions:")
+    )
+    assignments = json.loads(assignments_line[len("assigned_dimensions: "):])
+    assert len(assignments) == 10
+    difficulties_used = {a["difficulty"] for a in assignments}
+    assert set(_DIFFICULTY_TIERS) <= difficulties_used
+
+
 def test_find_repeated_storylines_flags_archetype_used_twice():
     from agents.question_generation.agent import _find_repeated_storylines
 

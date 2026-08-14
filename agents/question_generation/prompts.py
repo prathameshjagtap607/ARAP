@@ -1,4 +1,4 @@
-PROMPT_VERSION = "v2.7"
+PROMPT_VERSION = "v2.8"
 
 # --- DISC-Based Generative Leadership Question Framework -------------------
 # Per the "DISC-Based Generative Question Framework for Generative Leadership

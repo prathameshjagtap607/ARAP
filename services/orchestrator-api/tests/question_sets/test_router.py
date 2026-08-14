@@ -15,7 +15,7 @@ async def test_generate_returns_201(async_client, seed, user_token, mock_agent, 
     body = resp.json()
     assert body["session_id"] == str(seed["session"].id)
     assert body["locked_at"] is not None
-    assert body["generation_prompt_version"] == "v2.7"
+    assert body["generation_prompt_version"] == "v2.8"
     assert len(body["questions"]) == 2
     assert body["questions"][0]["sequence_no"] == 1
     assert body["questions"][0]["question"] == FAKE_QUESTIONS[0]["question"]
