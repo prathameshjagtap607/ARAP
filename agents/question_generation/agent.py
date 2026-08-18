@@ -25,6 +25,27 @@ _MAX_TOKENS = 6144
 _REPAIR_MAX_TOKENS = 1024
 _MAX_PROFILE_JSON_CHARS = 6000  # ~1500 tokens each — safety cap per profile field
 
+# The current Groq account tier caps at 8000 tokens/minute (TPM), and a
+# single call for a full ~13-question set was observed requesting ~10-11k
+# tokens — over the cap regardless of model. Splitting one generation call
+# into multiple smaller batches keeps each individual request under 8000,
+# at the cost of paying the fixed system-prompt/profile overhead more than
+# once. Dimensions/formats/difficulties are assigned ONCE across the full
+# target_question_count before splitting, so format/difficulty/competency
+# coverage guarantees are unaffected by how the batches are cut.
+#
+# _TOKENS_PER_QUESTION was originally set to 480 based on the old model's
+# output, but this model's actual questions/options run far more verbose —
+# live logs showed a batch of 6 truncated mid-JSON after producing barely 2
+# full questions inside a 2880-token budget (6 * 480), forcing repeated
+# failed retries. Raised to 1000/question and batch size dropped to 3 so
+# each batch's output budget (3000) plus the ~4500-token fixed prompt
+# overhead (system prompt + job/candidate profile + assignments) stays
+# safely under the 8000 TPM cap without truncating.
+_MAX_BATCH_SIZE = 3
+_TOKENS_PER_QUESTION = 1000
+_MIN_BATCH_MAX_TOKENS = 1500
+
 # Keyword fingerprints for the 6 storyline archetypes the prompt already
 # bans from repeating more than once per set (see prompts.py SYSTEM_PROMPT).
 # Prompt wording alone doesn't reliably stop the model from repeating a
@@ -219,18 +240,11 @@ def _bounded_json(obj: dict, label: str) -> str:
     return dumped[:_MAX_PROFILE_JSON_CHARS] + "...[truncated]"
 
 
-def _build_user_message(
-    job_profile: dict,
-    candidate_profile: dict,
-    category_weightage: dict,
-    difficulty_level: str,
-    risk_flags: list,
-    target_question_count: int,
-) -> str:
+def _build_assignments(target_question_count: int) -> list[dict]:
     assigned_competencies, assigned_contexts = _assign_dimensions(target_question_count)
     assigned_formats = _assign_question_formats(target_question_count)
     assigned_difficulties = _assign_difficulties(target_question_count)
-    assignments = [
+    return [
         {
             "question_number": i + 1,
             "competency_area": c,
@@ -242,6 +256,17 @@ def _build_user_message(
             zip(assigned_competencies, assigned_contexts, assigned_formats, assigned_difficulties)
         )
     ]
+
+
+def _build_user_message(
+    job_profile: dict,
+    candidate_profile: dict,
+    category_weightage: dict,
+    difficulty_level: str,
+    risk_flags: list,
+    assignments: list[dict],
+) -> str:
+    target_question_count = len(assignments)
     return "\n".join([
         f"job_profile: {_bounded_json(job_profile, 'job_profile')}",
         f"candidate_profile: {_bounded_json(candidate_profile, 'candidate_profile')}",
@@ -300,6 +325,28 @@ def _repair_question(bad_question: dict, other_questions: list[dict]) -> dict | 
         return None
 
 
+def _generate_batch(
+    job_profile: dict,
+    candidate_profile: dict,
+    category_weightage: dict,
+    difficulty_level: str,
+    risk_flags: list,
+    assignments: list[dict],
+) -> list[dict]:
+    user_message = _build_user_message(
+        job_profile, candidate_profile, category_weightage,
+        difficulty_level, risk_flags, assignments,
+    )
+    batch_max_tokens = max(
+        _MIN_BATCH_MAX_TOKENS, len(assignments) * _TOKENS_PER_QUESTION
+    )
+    result = call_tool(
+        SYSTEM_PROMPT, QUESTION_GENERATION_TOOL, user_message,
+        max_tokens=batch_max_tokens, model="openai/gpt-oss-120b",
+    )
+    return list(result["questions"])
+
+
 def run_question_generation_agent(
     job_profile: dict,
     candidate_profile: dict,
@@ -308,19 +355,27 @@ def run_question_generation_agent(
     risk_flags: list,
     target_question_count: int,
 ) -> list[dict] | None:
-    """Single full-set generation call, followed by a TARGETED repair pass:
-    instead of an expensive full-batch retry (regenerating all N questions
-    again) when the quality checks catch a duplicate, only the specific
-    offending question(s) are individually regenerated via a small,
-    cheap follow-up call each — guaranteeing the final set has no
-    duplicates without multiplying the cost of the whole batch."""
+    """Generation split into batches of at most _MAX_BATCH_SIZE questions —
+    a single call for a full ~13-question set was observed requesting
+    ~10-11k tokens, over this account's 8000 TPM cap. Dimensions/formats/
+    difficulties are assigned ONCE across the full target_question_count
+    before splitting, so coverage guarantees hold across the merged result
+    even though each individual API call only sees a slice of the set.
+    Followed by a TARGETED repair pass: instead of an expensive full-batch
+    retry (regenerating all N questions again) when the quality checks
+    catch a duplicate, only the specific offending question(s) are
+    individually regenerated via a small, cheap follow-up call each —
+    guaranteeing the final set has no duplicates without multiplying the
+    cost of the whole batch."""
     try:
-        user_message = _build_user_message(
-            job_profile, candidate_profile, category_weightage,
-            difficulty_level, risk_flags, target_question_count,
-        )
-        result = call_tool(SYSTEM_PROMPT, QUESTION_GENERATION_TOOL, user_message, max_tokens=_MAX_TOKENS)
-        questions = list(result["questions"])
+        all_assignments = _build_assignments(target_question_count)
+        questions: list[dict] = []
+        for start in range(0, len(all_assignments), _MAX_BATCH_SIZE):
+            batch_assignments = all_assignments[start:start + _MAX_BATCH_SIZE]
+            questions.extend(_generate_batch(
+                job_profile, candidate_profile, category_weightage,
+                difficulty_level, risk_flags, batch_assignments,
+            ))
     except Exception:
         logger.exception("Question generation agent failed — returning None")
         return None

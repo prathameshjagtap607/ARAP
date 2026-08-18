@@ -174,10 +174,11 @@ export default function QuestionPage() {
     }
   }
 
-  // DISC-Based Generative Leadership Question Framework §7/§8 — 'ranking' and
-  // 'reflection' format questions are answered entirely through their own
-  // format-specific control (the ranking order / the reflection text) rather
-  // than the Natural + Adaptive pick-one pair used by every other format.
+  // DISC-Based Generative Leadership Question Framework §7 — each format is
+  // answered through its own single control: 'ranking' and 'reflection' use
+  // their own format-specific control (ranking order / reflection text);
+  // 'adaptive_choice' is the ONLY format that pairs a natural pick with the
+  // "most effective" pick — every other format is a single natural pick.
   function isQuestionComplete(q: Question): boolean {
     if (q.question.question_format === "ranking") {
       return !!state.rankingOrders[q.id];
@@ -187,7 +188,7 @@ export default function QuestionPage() {
     }
     return (
       !!state.answers[q.id] &&
-      (q.answer_format !== "multiple_choice" || !!state.adaptiveAnswers[q.id])
+      (q.question.question_format !== "adaptive_choice" || !!state.adaptiveAnswers[q.id])
     );
   }
 
@@ -343,16 +344,16 @@ export default function QuestionPage() {
             </p>
           )}
 
-          {/* DISC-Based Generative Leadership Question Framework §8 — Natural
-              vs Adaptive Behaviour: once a natural (instinctive) answer is
-              given, ask which response would be most EFFECTIVE, even if it
-              isn't the candidate's natural choice. Required — gates
-              submission, same as the natural answer, so the adaptability
-              insight in the report always has evidence to draw on. */}
+          {/* DISC-Based Generative Leadership Question Framework §7/§8 —
+              'adaptive_choice' is its own distinct question format (asking
+              which response would be most EFFECTIVE, even if it isn't the
+              candidate's natural choice) — it is not a second layer added
+              onto every other format. Required — gates submission, same as
+              the natural answer, so the adaptability insight in the report
+              always has evidence to draw on. */}
           {current.answer_format === "multiple_choice" &&
             current.options &&
-            current.question.question_format !== "ranking" &&
-            current.question.question_format !== "reflection" &&
+            current.question.question_format === "adaptive_choice" &&
             state.answers[current.id] && (
               <div className="pt-6 mt-6 border-t border-slate-100 space-y-2">
                 <p className="text-slate-700 text-sm font-medium">

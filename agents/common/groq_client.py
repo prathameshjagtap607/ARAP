@@ -7,7 +7,7 @@ from src.config import settings
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 _MAX_ATTEMPTS = 3
 
 _RETRY_NUDGE = (

@@ -137,12 +137,16 @@ def test_bounded_json_truncates_oversized_dict():
 
 
 def test_build_user_message_stays_bounded_for_huge_candidate_profile():
-    from agents.question_generation.agent import _MAX_PROFILE_JSON_CHARS, _build_user_message
+    from agents.question_generation.agent import (
+        _MAX_PROFILE_JSON_CHARS,
+        _build_assignments,
+        _build_user_message,
+    )
 
     huge_profile = {**CANDIDATE_PROFILE, "skill_matrix": {"explicit": ["skill"] * 5000}}
 
     message = _build_user_message(
-        JOB_PROFILE, huge_profile, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 10
+        JOB_PROFILE, huge_profile, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, _build_assignments(10)
     )
 
     candidate_line = next(
@@ -180,10 +184,10 @@ def test_assign_question_formats_cycles_when_count_exceeds_pool_size():
 def test_build_user_message_includes_question_format_per_assignment():
     import json
 
-    from agents.question_generation.agent import _build_user_message
+    from agents.question_generation.agent import _build_assignments, _build_user_message
 
     message = _build_user_message(
-        JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 10
+        JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, _build_assignments(10)
     )
 
     assignments_line = next(
@@ -222,10 +226,14 @@ def test_assign_difficulties_cycles_when_count_exceeds_pool_size():
 def test_build_user_message_includes_difficulty_per_assignment():
     import json
 
-    from agents.question_generation.agent import _DIFFICULTY_TIERS, _build_user_message
+    from agents.question_generation.agent import (
+        _DIFFICULTY_TIERS,
+        _build_assignments,
+        _build_user_message,
+    )
 
     message = _build_user_message(
-        JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 10
+        JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, _build_assignments(10)
     )
 
     assignments_line = next(
@@ -324,6 +332,39 @@ def test_find_boilerplate_option_indices_returns_only_the_later_occurrence():
     assert indices == [3]
 
 
+def test_run_agent_splits_large_counts_into_batches_under_max_batch_size():
+    """A single call for a full ~13-question set was observed exceeding this
+    account's 8000 TPM limit — batching into calls of at most _MAX_BATCH_SIZE
+    keeps each individual request small while the merged result still totals
+    target_question_count questions."""
+    from agents.question_generation.agent import (
+        _MAX_BATCH_SIZE,
+        run_question_generation_agent,
+    )
+
+    target_count = _MAX_BATCH_SIZE * 2 + 1  # forces 3 batches: MAX, MAX, remainder
+
+    def _fake_call_tool(system, tool, user_message, max_tokens=None, model=None):
+        import json
+        assignments = json.loads(
+            next(
+                line for line in user_message.splitlines()
+                if line.startswith("assigned_dimensions:")
+            )[len("assigned_dimensions: "):]
+        )
+        return {"questions": [dict(FAKE_QUESTIONS[0]) for _ in assignments]}
+
+    with patch(
+        "agents.question_generation.agent.call_tool", side_effect=_fake_call_tool
+    ) as mock_call:
+        result = run_question_generation_agent(
+            JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, target_count
+        )
+
+    assert mock_call.call_count == 3
+    assert len(result) == target_count
+
+
 def test_run_agent_targeted_repairs_only_the_bad_question_not_the_whole_set():
     """A full-batch retry (regenerating all N questions) is expensive;
     the cheaper fix is a single, small follow-up call that only rewrites
@@ -376,10 +417,10 @@ def test_run_agent_keeps_original_question_if_repair_call_fails():
 def test_build_user_message_includes_one_assignment_per_question():
     import json
 
-    from agents.question_generation.agent import _build_user_message
+    from agents.question_generation.agent import _build_assignments, _build_user_message
 
     message = _build_user_message(
-        JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 5
+        JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, _build_assignments(5)
     )
 
     assignments_line = next(
