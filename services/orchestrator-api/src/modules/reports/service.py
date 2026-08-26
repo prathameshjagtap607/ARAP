@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import Float, or_
+from sqlalchemy import Float, func, or_
 from sqlalchemy.orm import Session
 
 from src.database import get_redis
@@ -70,7 +70,7 @@ def get_pdf_bytes(
     session, report = _load_session_and_report(db, session_id, org_id)
 
     candidate = db.query(Candidate).filter_by(id=session.candidate_id).first()
-    candidate_name = candidate.name if candidate else "Unknown"
+    candidate_name = session.candidate_name or (candidate.name if candidate else "Unknown")
 
     job = db.query(JobAssessment).filter_by(id=session.job_assessment_id).first()
     job_title = job.title if job else "Unknown"
@@ -88,6 +88,7 @@ def get_pdf_bytes(
     qa_pairs: list[dict] = []
     ranking_pairs: list[dict] = []
     reflection_pairs: list[dict] = []
+    other_pairs: list[dict] = []
     qset = db.query(QuestionSet).filter_by(session_id=session_id).first()
     if qset:
         questions = (
@@ -115,6 +116,11 @@ def get_pdf_bytes(
                     "question_text": question_text,
                     "reflection": q.reflection_text,
                 })
+            if q.answer_text and not q.adaptive_answer_text and not q.ranking_order and not q.reflection_text:
+                other_pairs.append({
+                    "question_text": question_text,
+                    "answer": options.get(q.answer_text, q.answer_text),
+                })
 
     return render_pdf(
         report_data=report_data,
@@ -124,6 +130,7 @@ def get_pdf_bytes(
         qa_pairs=qa_pairs,
         ranking_pairs=ranking_pairs,
         reflection_pairs=reflection_pairs,
+        other_pairs=other_pairs,
     )
 
 
@@ -288,7 +295,11 @@ def list_reports(
     filter_user_id: uuid.UUID | None = None,
 ) -> ReportListResponse:
     query = (
-        db.query(HiringReport, Candidate.name, JobAssessment.title)
+        db.query(
+            HiringReport,
+            func.coalesce(AssessmentSession.candidate_name, Candidate.name),
+            JobAssessment.title,
+        )
         .join(AssessmentSession, HiringReport.session_id == AssessmentSession.id)
         .join(Candidate, AssessmentSession.candidate_id == Candidate.id)
         .join(JobAssessment, AssessmentSession.job_assessment_id == JobAssessment.id)

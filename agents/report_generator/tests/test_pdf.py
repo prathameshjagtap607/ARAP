@@ -139,6 +139,43 @@ def test_render_pdf_includes_developmental_insights_and_qa_pairs():
     assert "Training Needs</h2>" not in html_string
 
 
+def test_render_pdf_includes_other_responses_for_unpaired_formats():
+    """Situational Response, First Action, standalone Behavioural Choice, and
+    Self-Awareness formats have no adaptive pair, ranking, or reflection text
+    — they were previously silently dropped from the PDF entirely. This
+    fills that gap without touching the existing 3 sections above."""
+    mock_result = MagicMock()
+    mock_result.err = 0
+
+    other_pairs = [{
+        "question_text": "What would you do first?",
+        "answer": "I would gather the affected team leads.",
+    }]
+
+    with patch("agents.report_generator.pdf.pisa.CreatePDF", return_value=mock_result) as mock_create:
+        render_pdf(
+            _SAMPLE_REPORT,
+            candidate_name="Alice",
+            job_title="Senior Engineer",
+            other_pairs=other_pairs,
+        )
+
+    html_string = mock_create.call_args.args[0]
+    assert "Other Responses" in html_string
+    assert "I would gather the affected team leads." in html_string
+
+
+def test_render_pdf_no_other_responses_section_when_absent():
+    mock_result = MagicMock()
+    mock_result.err = 0
+
+    with patch("agents.report_generator.pdf.pisa.CreatePDF", return_value=mock_result) as mock_create:
+        render_pdf(_SAMPLE_REPORT, candidate_name="Alice", job_title="Senior Engineer")
+
+    html_string = mock_create.call_args.args[0]
+    assert "Other Responses" not in html_string
+
+
 def test_render_pdf_no_developmental_insights_section_when_absent():
     mock_result = MagicMock()
     mock_result.err = 0
@@ -154,6 +191,37 @@ def test_render_pdf_no_developmental_insights_section_when_absent():
 # ---------------------------------------------------------------------------
 # Case 4: pisa reporting an error raises instead of returning bad bytes
 # ---------------------------------------------------------------------------
+def test_render_pdf_replaces_unicode_dashes_that_xhtml2pdf_cannot_render():
+    """xhtml2pdf's default fonts have no glyph for non-breaking hyphens / en
+    dashes / em dashes — the AI frequently writes hyphenated words like
+    "high‑stakes" using these, which renders as a solid black box in the
+    PDF instead of a hyphen. render_pdf must normalize them to plain ASCII
+    hyphens before handing the HTML to pisa."""
+    mock_result = MagicMock()
+    mock_result.err = 0
+
+    report_with_unicode_dashes = {
+        **_SAMPLE_REPORT,
+        "executive_summary": "Thrives in high‑stakes, cross–functional settings.",
+        "strengths": ["Strong step‑by‑step execution—even under pressure."],
+    }
+
+    with patch("agents.report_generator.pdf.pisa.CreatePDF", return_value=mock_result) as mock_create:
+        render_pdf(
+            report_with_unicode_dashes,
+            candidate_name="Ali‑ce",
+            job_title="Senior Engineer",
+        )
+
+    html_string = mock_create.call_args.args[0]
+    assert "‑" not in html_string
+    assert "–" not in html_string
+    assert "—" not in html_string
+    assert "high-stakes, cross-functional" in html_string
+    assert "step-by-step execution-even" in html_string
+    assert "Ali-ce" in html_string
+
+
 def test_render_pdf_raises_on_pisa_error():
     mock_result = MagicMock()
     mock_result.err = 1

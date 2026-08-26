@@ -267,6 +267,34 @@ export default function ResultsPage() {
         </div>
       )}
 
+      {/* Other responses — any answered question that isn't already covered
+          above (Natural/Adaptive pair, Ranking, or Reflection), e.g.
+          Situational Response, First Action, standalone Behavioural Choice,
+          or Self-Awareness formats. Additive: only fills the gap so every
+          answered question is visible somewhere on this page. */}
+      {answers.some(
+        (a) => a.answer_text && !a.adaptive_answer_text && !a.ranking_order && !a.reflection_text
+      ) && (
+        <div className="rounded-lg border border-slate-200 bg-white p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-slate-900">Other Responses</h2>
+          <div className="space-y-4">
+            {answers
+              .filter(
+                (a) =>
+                  a.answer_text && !a.adaptive_answer_text && !a.ranking_order && !a.reflection_text
+              )
+              .map((a) => (
+                <div key={a.id} className="border-t border-slate-100 pt-4">
+                  <p className="text-sm font-medium text-slate-800 mb-2">{a.question.text}</p>
+                  <p className="text-sm text-slate-700 leading-relaxed">
+                    {a.options?.[a.answer_text as string] ?? a.answer_text}
+                  </p>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {!isFullReportGenerated ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
           <p className="text-sm font-medium text-amber-900">

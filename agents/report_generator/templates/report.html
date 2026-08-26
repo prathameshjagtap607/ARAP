@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Hiring Report — {{ candidate_name }}</title>
+  <title>Hiring Report - {{ candidate_name }}</title>
   <style>
     body { font-family: Arial, sans-serif; font-size: 11pt; color: #222; margin: 40px; }
     h1 { font-size: 18pt; color: #1a3c6e; border-bottom: 2px solid #1a3c6e; padding-bottom: 6px; }
@@ -54,7 +54,7 @@
 {% if report.developmental_insights %}
 <div class="verdict-box">
   <h2 style="margin-top:0">Developmental Insights</h2>
-  <p style="font-size:9pt; color:#555;">These reflect natural behavioural tendencies, not judgments —
+  <p style="font-size:9pt; color:#555;">These reflect natural behavioural tendencies, not judgments -
   the goal is to identify where a tendency helps and where it may need conscious adaptation.</p>
 
   <p><strong>Natural Leadership Tendencies</strong></p>
@@ -90,7 +90,7 @@
 <h2>Natural vs. Adaptive Response</h2>
 <div class="section">
   <p style="font-size:9pt; color:#555;">&quot;Natural&quot; is the candidate&apos;s instinctive choice.
-  &quot;Adaptive&quot; is what they identified as most effective, even if not their instinct — a measure
+  &quot;Adaptive&quot; is what they identified as most effective, even if not their instinct - a measure
   of behavioural flexibility, not a right/wrong comparison.</p>
   {% for qa in qa_pairs %}
   <p style="margin-top:12px;"><strong>{{ qa.question_text }}</strong><br>
@@ -116,6 +116,16 @@
   {% for rp in reflection_pairs %}
   <p style="margin-top:12px;"><strong>{{ rp.question_text }}</strong><br>
      {{ rp.reflection }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if other_pairs %}
+<h2>Other Responses</h2>
+<div class="section">
+  {% for op in other_pairs %}
+  <p style="margin-top:12px;"><strong>{{ op.question_text }}</strong><br>
+     {{ op.answer }}</p>
   {% endfor %}
 </div>
 {% endif %}
