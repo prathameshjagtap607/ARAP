@@ -392,6 +392,8 @@ def list_sessions(
     role: str | None = None,
     filter_user_id: uuid.UUID | None = None,
 ) -> list:
+    from sqlalchemy import func as _func
+
     from src.modules.sessions.schemas import SessionListItem
 
     query = (
@@ -399,7 +401,7 @@ def list_sessions(
             AssessmentSession.id,
             AssessmentSession.candidate_id,
             AssessmentSession.job_assessment_id,
-            Candidate.name.label("candidate_name"),
+            _func.coalesce(AssessmentSession.candidate_name, Candidate.name).label("candidate_name"),
             Candidate.email.label("candidate_email"),
             JobAssessment.title.label("job_title"),
             AssessmentSession.status,

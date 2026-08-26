@@ -159,6 +159,7 @@ def invite_candidate(
         org_id=org_id,
         job_assessment_id=assessment_id,
         candidate_id=candidate.id,
+        candidate_name=data.candidate_name,
         time_budget_seconds=data.time_budget_seconds,
         prompt_template_id=active_template,
         invited_by=user_id,

@@ -1,5 +1,4 @@
 import logging
-import math
 import uuid
 from collections.abc import Callable
 
@@ -17,19 +16,21 @@ _MODEL = "claude-sonnet-4-6"
 _MAX_TOKENS = 4096
 
 
-def _compute_confidence(rollup: dict, integrity_summary: dict, has_behavior: bool) -> float:
+def _compute_confidence(
+    rollup: dict, integrity_summary: dict, has_behavior: bool, disc_confidence: float | None = None
+) -> float:
+    """AI confidence in this report's assessment. Since the DISC-only pivot,
+    there's no per-competency 0-5 scoring left to measure answer consistency
+    with (that belonged to the old skills-scoring pipeline) — using the
+    actual DISC classification confidence instead (how clearly the
+    candidate's answers pointed to one behavioural style) is the real
+    DISC-relevant signal available here, and it varies per candidate rather
+    than silently defaulting to the same constant for everyone."""
     question_count = rollup.get("question_count", 1) or 1
     answered_count = rollup.get("answered_count", 0)
     coverage = min(answered_count / question_count, 1.0)
 
-    comp_scores = list(rollup.get("competency_scores", {}).values())
-    if len(comp_scores) >= 2:
-        mean = sum(comp_scores) / len(comp_scores)
-        variance = sum((s - mean) ** 2 for s in comp_scores) / len(comp_scores)
-        std_dev = math.sqrt(variance)
-        consistency = max(0.0, 1.0 - std_dev / 4.0)
-    else:
-        consistency = 0.7
+    consistency = disc_confidence if disc_confidence is not None else 0.7
 
     integrity_factor = {"low": 1.0, "medium": 0.6, "high": 0.3}.get(
         integrity_summary.get("overall_risk", "low"), 1.0
@@ -69,8 +70,11 @@ def synthesize_recommendation(
         rollup = dict(report.score_rollup or {})
         integrity_summary = dict(report.integrity_summary or {})
         has_behavior = behavior is not None
+        disc_confidence = (
+            behavior.disc_style.get("confidence") if behavior and behavior.disc_style else None
+        )
 
-        confidence = _compute_confidence(rollup, integrity_summary, has_behavior)
+        confidence = _compute_confidence(rollup, integrity_summary, has_behavior, disc_confidence)
 
         composite_scores = rollup.get("composite_scores", {})
         competency_scores = rollup.get("competency_scores", {})

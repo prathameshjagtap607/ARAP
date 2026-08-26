@@ -107,6 +107,7 @@ def test_synthesize_recommendation_happy_path():
         report_obj = _make_report(_ROLLUP, _INTEGRITY_LOW)
         job_obj = _make_job()
         behavior_obj = MagicMock()
+        behavior_obj.disc_style = {"primary": "D", "secondary": "I", "confidence": 0.8}
         candidate_obj = MagicMock(); candidate_obj.name = "Alice"
 
         db = _make_db(session_obj, report_obj, job_obj, behavior_obj, candidate_obj)
@@ -139,6 +140,26 @@ def test_confidence_lower_without_behavior_profile():
     with_behavior = _compute_confidence(_ROLLUP, _INTEGRITY_LOW, has_behavior=True)
     without_behavior = _compute_confidence(_ROLLUP, _INTEGRITY_LOW, has_behavior=False)
     assert without_behavior < with_behavior
+
+
+# Case 3b: DISC confidence drives the score, so it varies per candidate
+# instead of silently collapsing to the same constant for everyone — this
+# was the actual bug (every DISC-only report showed "AI Confidence Score:
+# 91.0" regardless of candidate, because the old per-competency-score
+# consistency input this formula relied on no longer exists post-DISC-pivot
+# and was always falling back to the same fixed default).
+def test_confidence_varies_with_disc_confidence():
+    with patch.dict(sys.modules, _FAKE_ORM):
+        from agents.recommendation.agent import _compute_confidence
+
+    high_disc_confidence = _compute_confidence(
+        _ROLLUP, _INTEGRITY_LOW, has_behavior=True, disc_confidence=0.9
+    )
+    low_disc_confidence = _compute_confidence(
+        _ROLLUP, _INTEGRITY_LOW, has_behavior=True, disc_confidence=0.3
+    )
+    assert high_disc_confidence != low_disc_confidence
+    assert high_disc_confidence > low_disc_confidence
 
 
 # Case 4: LLM failure → non-fatal, prior report fields unchanged

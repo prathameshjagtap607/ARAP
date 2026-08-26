@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, func, text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .base import Base
@@ -22,6 +22,11 @@ class AssessmentSession(Base):
     org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orgs.id"), nullable=False)
     job_assessment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("job_assessments.id"), nullable=False)
     candidate_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("candidates.id"), nullable=False)
+    # Snapshot of the name typed at invite time — candidates.name is shared
+    # per (org, email) and gets overwritten on a later invite to the same
+    # email, so this keeps each session's displayed name locked to what was
+    # actually typed for THIS invite rather than silently changing later.
+    candidate_name: Mapped[str | None] = mapped_column(Text)
     candidate_profile_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("candidate_profiles.id"))
     status: Mapped[str] = mapped_column(nullable=False, server_default=text("'invited'"))
     invited_at: Mapped[datetime] = mapped_column(
