@@ -1,12 +1,9 @@
-import concurrent.futures
 import logging
 import uuid
 from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
-from agents.evaluation.agent import score_answer
-from agents.scoring.agent import roll_up
 from agents.scoring.rubric import derive_verdict
 
 logger = logging.getLogger(__name__)
@@ -26,9 +23,11 @@ def _resolve_answer_text(q) -> str | None:
 def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]) -> None:
     """
     Runs after submit_session completes. Owns its own DB session (not request-scoped).
-    Phase 1: Score each answered question via LLM (parallel).
-    Phase 2: Roll up competency scores.
-    Phase 3: Write hiring_reports row.
+    This is a DISC-only assessment — there is no correct/incorrect answer to
+    score, so per-question LLM scoring is skipped entirely (it was ~10 of the
+    ~23 AI calls made per invite, for a score/verdict no DISC view displays).
+    Phase 1: Build a minimal rollup (answered/question count only).
+    Phase 2: Write hiring_reports row.
     """
     from src.models.assessment_sessions import AssessmentSession
     from src.models.candidates import Candidate
@@ -46,7 +45,6 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
 
         job = db.query(JobAssessment).filter_by(id=session.job_assessment_id).first()
         job_title = job.title if job else ""
-        job_weightage = dict(job.competency_weightage) if job else {}
 
         qset = db.query(QuestionSet).filter_by(session_id=session_id).first()
         if not qset:
@@ -63,51 +61,24 @@ def evaluation_pipeline(session_id: uuid.UUID, db_factory: Callable[[], Session]
             .all()
         )
 
-        # Phase 1 — score each question in parallel (LLM calls only)
-        def _score_one(q):
-            return q, score_answer(
-                question_text=q.question.get("text", ""),
-                category=q.category,
-                target_competencies=list(q.target_competencies),
-                answer_text=_resolve_answer_text(q),
-                difficulty=q.difficulty,
-                job_title=job_title,
-            )
-
-        max_workers = min(len(questions), 5) if questions else 1
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(_score_one, q) for q in questions]
-            scored_pairs = [f.result() for f in futures]
-
-        # Write DB results sequentially after all LLM calls complete
-        evaluated: list[dict] = []
-        for q, eval_result in scored_pairs:
-            q.evaluation = eval_result
-            db.flush()
-            evaluated.append({
-                "target_competencies": list(q.target_competencies),
-                "difficulty": q.difficulty,
-                "evaluation": eval_result if "error" not in eval_result else None,
-            })
-
-        scored_ok = sum(1 for q in questions if q.evaluation and "error" not in q.evaluation)
-        logger.info(
-            "evaluation_pipeline: phase 1 complete — %d/%d questions scored successfully for session %s",
-            scored_ok,
-            len(questions),
-            session_id,
-        )
-
-        db.commit()
-        logger.info(
-            "evaluation_pipeline: scored %d questions for session %s",
-            len(questions),
-            session_id,
-        )
-
-        # Phase 2 — roll up
-        rollup = roll_up(evaluated, job_weightage)
+        # Phase 1 — minimal rollup: just how many questions were answered
+        # (feeds the AI Confidence Score's coverage input). No per-competency
+        # scores exist for a DISC-only assessment, so those stay empty.
+        answered_count = sum(1 for q in questions if q.answer_text)
+        rollup = {
+            "competency_scores": {},
+            "composite_scores": {},
+            "overall": 0.0,
+            "question_count": len(questions),
+            "answered_count": answered_count,
+        }
         verdict = derive_verdict(rollup["overall"])
+        logger.info(
+            "evaluation_pipeline: phase 1 complete — %d/%d questions answered for session %s",
+            answered_count,
+            len(questions),
+            session_id,
+        )
 
         # Phase 3 — write report (exec summary added by report_service later)
         existing_report = db.query(HiringReport).filter_by(session_id=session_id).first()

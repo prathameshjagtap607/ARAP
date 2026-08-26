@@ -123,7 +123,12 @@ def test_resolve_answer_text_passthrough_when_letter_not_in_options():
     assert _resolve_answer_text(q) == "Z"
 
 
-def test_evaluation_pipeline_scores_and_writes_report():
+def test_evaluation_pipeline_builds_rollup_without_scoring_and_writes_report():
+    """DISC-only assessments have no correct/incorrect answer to score, so
+    evaluation_pipeline no longer calls the LLM per question — it just counts
+    how many questions were answered (used by the AI Confidence Score's
+    coverage input) and writes the report. This was ~10 of the ~23 AI calls
+    made per invite, removed as pure waste for a personality assessment."""
     session_id = uuid.uuid4()
     org_id = uuid.uuid4()
 
@@ -150,36 +155,20 @@ def test_evaluation_pipeline_scores_and_writes_report():
     ]
     mock_db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [q1, q2]
 
-    fake_eval = {
-        "competency_scores": [{
-            "competency": "problem_solving",
-            "score": 4,
-            "explanation": "Good",
-            "evidence_quote": "I approach",
-            "strength": "Systematic",
-            "improvement": "Be more concise",
-        }]
-    }
-
-    with patch("agents.evaluation.pipeline.score_answer", return_value=fake_eval) as mock_score, \
-         patch("agents.evaluation.pipeline.roll_up", return_value={
-             "competency_scores": {"problem_solving": 3.5},
-             "composite_scores": {"Technical": 3.5},
-             "overall": 3.5,
-             "question_count": 2,
-             "answered_count": 1,
-         }) as mock_rollup, \
-         patch("agents.evaluation.pipeline.derive_verdict", return_value="hire") as mock_verdict, \
+    with patch("agents.evaluation.pipeline.derive_verdict", return_value="hire") as mock_verdict, \
          patch("agents.evaluation.pipeline._generate_executive_summary"), \
-         patch("agents.evaluation.pipeline._run_integrity_checks"):
+         patch("agents.evaluation.pipeline._run_behavior_inference"), \
+         patch("agents.evaluation.pipeline._run_integrity_checks"), \
+         patch("agents.evaluation.pipeline._run_recommendation"), \
+         patch("agents.evaluation.pipeline._run_report_generator"):
 
         db_factory = MagicMock(return_value=mock_db)
         evaluation_pipeline(session_id, db_factory)
 
-    mock_score.assert_called()
-    mock_rollup.assert_called_once()
-    mock_verdict.assert_called_once_with(3.5)
-    mock_db.add.assert_called()  # HiringReport added
+    mock_verdict.assert_called_once_with(0.0)
+    added_report = mock_db.add.call_args[0][0]
+    assert added_report.score_rollup["answered_count"] == 1  # only q1 has an answer
+    assert added_report.score_rollup["question_count"] == 2
     mock_db.commit.assert_called()
 
 
