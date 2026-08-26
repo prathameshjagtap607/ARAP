@@ -68,6 +68,30 @@ def test_agent_result_contains_required_fields():
             assert field in q, f"Missing field: {field}"
 
 
+def test_agent_defaults_answer_format_when_model_omits_it():
+    """answer_format is a fixed single-value enum ("multiple_choice" is the
+    only possible value) — the model was repeatedly omitting it and burning
+    retry attempts on an otherwise-valid response. It's no longer a required
+    field in the tool schema; the agent must fill it in itself."""
+    from agents.question_generation.agent import run_question_generation_agent
+
+    questions_without_answer_format = [
+        {k: v for k, v in q.items() if k != "answer_format"} for q in FAKE_QUESTIONS
+    ]
+
+    with patch(
+        "agents.question_generation.agent.call_tool",
+        return_value={"questions": questions_without_answer_format},
+    ):
+        result = run_question_generation_agent(
+            JOB_PROFILE, CANDIDATE_PROFILE, CATEGORY_WEIGHTAGE, "senior", RISK_FLAGS, 2
+        )
+
+    assert result is not None
+    for q in result:
+        assert q["answer_format"] == "multiple_choice"
+
+
 def test_agent_result_has_at_least_one_resume_reference():
     from agents.question_generation.agent import run_question_generation_agent
 

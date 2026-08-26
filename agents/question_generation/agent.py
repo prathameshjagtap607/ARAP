@@ -317,9 +317,11 @@ def _repair_question(bad_question: dict, other_questions: list[dict]) -> dict | 
         f"already_used_storylines_and_phrases: {json.dumps(already_used)}",
     ])
     try:
-        return call_tool(
+        repaired = call_tool(
             REPAIR_SYSTEM_PROMPT, QUESTION_REPAIR_TOOL, user_message, max_tokens=_REPAIR_MAX_TOKENS
         )
+        repaired.setdefault("answer_format", "multiple_choice")
+        return repaired
     except Exception:
         logger.exception("Single-question repair call failed — keeping original question")
         return None
@@ -344,7 +346,14 @@ def _generate_batch(
         SYSTEM_PROMPT, QUESTION_GENERATION_TOOL, user_message,
         max_tokens=batch_max_tokens, model="openai/gpt-oss-120b",
     )
-    return list(result["questions"])
+    questions = list(result["questions"])
+    for q in questions:
+        # answer_format is a fixed-enum, single-value field (always
+        # "multiple_choice") — no longer required in the tool schema since
+        # the model was repeatedly omitting it and burning retry attempts
+        # on an otherwise-valid response. Default it here instead.
+        q.setdefault("answer_format", "multiple_choice")
+    return questions
 
 
 def run_question_generation_agent(

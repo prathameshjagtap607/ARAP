@@ -295,7 +295,7 @@ QUESTION_GENERATION_TOOL: dict = {
                     },
                     "required": [
                         "question", "category", "target_competencies",
-                        "difficulty", "answer_format", "options", "resume_reference",
+                        "difficulty", "options", "resume_reference",
                         "competency_area", "leadership_context",
                         "behavioural_triggers", "question_format",
                     ],
@@ -375,7 +375,7 @@ QUESTION_REPAIR_TOOL: dict = {
         },
         "required": [
             "question", "category", "target_competencies",
-            "difficulty", "answer_format", "options", "resume_reference",
+            "difficulty", "options", "resume_reference",
             "competency_area", "leadership_context",
             "behavioural_triggers", "question_format",
         ],
