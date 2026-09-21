@@ -190,7 +190,7 @@ def test_infer_behavior_resolves_multiple_choice_letters_in_transcript():
     q.options = {"A": "Take charge immediately.", "B": "Consult the team first."}
     q.answer_text = "B"
 
-    db, profiles_stored = _make_db(session_obj, qset_obj, [q])
+    db, _ = _make_db(session_obj, qset_obj, [q])
 
     captured_transcripts = []
 
