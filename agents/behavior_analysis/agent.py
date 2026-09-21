@@ -18,6 +18,18 @@ _MODEL = "claude-sonnet-4-6"
 _MAX_TOKENS = 4096
 
 
+def _resolve_answer_text(q) -> str | None:
+    """For multiple_choice questions, the stored answer_text is just the
+    selected option's letter key (e.g. "B") — resolve it to the actual
+    option text so the DISC classification model can see which option
+    (and therefore which DISC style) the candidate actually picked.
+    Other answer formats have no options and pass through unchanged.
+    """
+    if q.answer_format == "multiple_choice" and q.options and q.answer_text in q.options:
+        return q.options[q.answer_text]
+    return q.answer_text
+
+
 def _extract_signals(transcript: str) -> dict:
     return call_tool(EXTRACT_SYSTEM_PROMPT, EXTRACT_TOOL, transcript, max_tokens=_MAX_TOKENS)
 
@@ -65,7 +77,7 @@ def infer_behavior(
             return
 
         transcript = "\n\n".join(
-            f"Q{q.sequence_no} [{q.category}]: {q.question.get('text', '')}\nA: {q.answer_text}"
+            f"Q{q.sequence_no} [{q.category}]: {q.question.get('text', '')}\nA: {_resolve_answer_text(q)}"
             for q in questions
         )
 

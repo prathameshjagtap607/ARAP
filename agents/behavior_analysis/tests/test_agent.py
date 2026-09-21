@@ -53,6 +53,41 @@ _FAKE_PROFILE = {
 }
 
 
+# ---------------------------------------------------------------------------
+# _resolve_answer_text unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_answer_text_maps_multiple_choice_letter_to_option_text():
+    from agents.behavior_analysis.agent import _resolve_answer_text
+
+    q = MagicMock()
+    q.answer_format = "multiple_choice"
+    q.options = {"A": "Take charge immediately.", "B": "Consult the team first."}
+    q.answer_text = "B"
+    assert _resolve_answer_text(q) == "Consult the team first."
+
+
+def test_resolve_answer_text_passthrough_for_non_multiple_choice():
+    from agents.behavior_analysis.agent import _resolve_answer_text
+
+    q = MagicMock()
+    q.answer_format = "reflection"
+    q.options = None
+    q.answer_text = "A detailed free-text reflection."
+    assert _resolve_answer_text(q) == "A detailed free-text reflection."
+
+
+def test_resolve_answer_text_passthrough_when_letter_not_in_options():
+    from agents.behavior_analysis.agent import _resolve_answer_text
+
+    q = MagicMock()
+    q.answer_format = "multiple_choice"
+    q.options = {"A": "Take charge immediately."}
+    q.answer_text = "Z"
+    assert _resolve_answer_text(q) == "Z"
+
+
 def _make_db(session_obj, qset_obj, questions):
     db = MagicMock()
     profiles_stored = []
@@ -132,6 +167,49 @@ def test_infer_behavior_happy_path():
     assert profile.leadership_style == "Directive / results-oriented"
     assert profile.team_compatibility_signal.startswith("Recruiter discussion prompt:")
     db.commit.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Test 1b: multiple_choice answers are resolved to option text in the
+# transcript sent to the LLM, not left as a bare letter key.
+# ---------------------------------------------------------------------------
+
+def test_infer_behavior_resolves_multiple_choice_letters_in_transcript():
+    from agents.behavior_analysis.agent import infer_behavior
+
+    session_obj = MagicMock()
+    session_obj.org_id = uuid.uuid4()
+    qset_obj = MagicMock()
+    qset_obj.id = uuid.uuid4()
+
+    q = MagicMock()
+    q.sequence_no = 1
+    q.category = "DISC"
+    q.question = {"text": "What would you do first?"}
+    q.answer_format = "multiple_choice"
+    q.options = {"A": "Take charge immediately.", "B": "Consult the team first."}
+    q.answer_text = "B"
+
+    db, profiles_stored = _make_db(session_obj, qset_obj, [q])
+
+    captured_transcripts = []
+
+    def fake_call_tool(system_prompt, tool, message, **kwargs):
+        captured_transcripts.append(message)
+        if len(captured_transcripts) == 1:
+            return dict(_FAKE_SIGNALS)
+        return dict(_FAKE_PROFILE)
+
+    with (
+        patch("agents.behavior_analysis.agent.call_tool", side_effect=fake_call_tool),
+        patch("agents.behavior_analysis.agent.Session"),
+        patch("src.models.behavior_profiles.BehaviorProfile", return_value=MagicMock()),
+    ):
+        infer_behavior(session_id=_SESSION_ID, db_factory=lambda: db)
+
+    transcript_sent = captured_transcripts[0]
+    assert "Consult the team first." in transcript_sent
+    assert "A: B" not in transcript_sent
 
 
 # ---------------------------------------------------------------------------
